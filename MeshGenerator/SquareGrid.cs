@@ -10,24 +10,24 @@ namespace MeshHelpers
     {
         Square[,] squares;
 
-        internal SquareGrid(int[,] map, float squareSize)
+        internal SquareGrid(Map map)
         {
-            int nodeCountX = map.GetLength(0);
-            int nodeCountY = map.GetLength(1);
-            ControlNode[,] controlNodes = CreateControlNodes(nodeCountX, nodeCountY, squareSize, map);
+            int nodeCountX = map.length;
+            int nodeCountY = map.width;
+            ControlNode[,] controlNodes = CreateControlNodes(nodeCountX, nodeCountY, map);
             squares = CreateSquares(nodeCountX, nodeCountY, controlNodes);
         }
 
-        ControlNode[,] CreateControlNodes(int nodeCountX, int nodeCountY, float squareSize, int[,] map)
+        ControlNode[,] CreateControlNodes(int nodeCountX, int nodeCountY, Map map)
         {
-            float mapWidth = nodeCountX * squareSize;
-            float mapHeight = nodeCountY * squareSize;
+            Vector3 positionOffset = new Vector3(map.position.x, 0f, map.position.y);
             ControlNode[,] controlNodes = new ControlNode[nodeCountX, nodeCountY];
             for (int x = 0; x < nodeCountX; x++)
                 for (int y = 0; y < nodeCountY; y++)
                 {
-                    Vector3 position = new Vector3(x - mapWidth / 2, 0f, y - mapHeight / 2) * squareSize;
-                    controlNodes[x, y] = new ControlNode(position, map[x, y] == 1, squareSize);
+                    Vector3 position = new Vector3(x, 0f, y) * map.squareSize + positionOffset;
+                    bool nodeActive = map[x, y] == 1;
+                    controlNodes[x, y] = new ControlNode(position, nodeActive, map.squareSize);
                 }
             return controlNodes;
         }

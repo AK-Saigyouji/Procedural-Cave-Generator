@@ -10,7 +10,7 @@ namespace MeshHelpers
         static List<int[]> configurationTable = new List<int[]>
         {
             new int[] { },
-            new int[] {7, 5, 6 },
+            new int[] {6, 7, 5 },
             new int[] {4, 5, 3 },
             new int[] {3, 4, 6, 7 },
             new int[] {2, 3, 1 },
@@ -24,7 +24,7 @@ namespace MeshHelpers
             new int[] {0, 2, 3, 7 },
             new int[] {0, 2, 3, 5, 6 },
             new int[] {0, 2, 4, 5, 7 },
-            new int[] {0, 2, 4, 6 }
+            new int[] {2, 4, 6, 0}
         };
 
         int configuration;
