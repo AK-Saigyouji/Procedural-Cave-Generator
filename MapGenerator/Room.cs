@@ -5,35 +5,27 @@ namespace MapHelpers
 {
     class Room : IComparable<Room>
     {
-        internal Region innerTiles { get; private set; }
-        internal Region edgeTiles { get; private set; }
+        internal TileRegion innerTiles { get; private set; }
+        internal TileRegion edgeTiles { get; private set; }
         internal int Size { get; private set; }
 
-        Map map;
-
-        internal Room(Region region, Map map)
+        internal Room(TileRegion region, Map map)
         {
-            this.map = map;
             this.innerTiles = region;
             Size = region.Size();
-            DetermineEdgeTiles();
+            DetermineEdgeTiles(map);
         }
 
-        void DetermineEdgeTiles()
+        void DetermineEdgeTiles(Map map)
         {
-            edgeTiles = new Region();
+            edgeTiles = new TileRegion();
             foreach (Coord tile in innerTiles)
             {
-                if (IsEdgeTile(tile))
+                if (map.IsEdgeTile(tile))
                 {
                     edgeTiles.Add(tile);
                 }
             }
-        }
-
-        bool IsEdgeTile(Coord tile)
-        {
-            return map.GetAdjacentTiles(tile).Any(adjTile => map[adjTile.x, adjTile.y] == 1);
         }
 
         public int CompareTo(Room otherRoom)

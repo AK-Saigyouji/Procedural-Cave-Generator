@@ -18,6 +18,8 @@ public class MapGenerator : MonoBehaviour {
     int borderSize;
     [SerializeField]
     int squareSize;
+    [SerializeField]
+    int wallHeight;
 
     Map map;
 
@@ -47,7 +49,7 @@ public class MapGenerator : MonoBehaviour {
         SmoothMap(SMOOTHING_ITERATIONS);
         ProcessMap();
         map.ApplyBorder(borderSize);
-        GetComponent<MeshGenerator>().GenerateMesh(map);
+        GetComponent<MeshGenerator>().GenerateMesh(map, wallHeight);
     }
 
     void RandomFillMap()
@@ -85,6 +87,13 @@ public class MapGenerator : MonoBehaviour {
         }
     }
 
+    void ProcessMap()
+    {
+        List<Room> rooms = RemoveSmallRegions(MINIMUM_OPEN_REGION_SIZE, 0);
+        RemoveSmallRegions(MINIMUM_WALL_REGION_SIZE, 1);
+        ConnectRooms(rooms);
+    }
+
     int GetSurroundingWallCount(int gridX, int gridY)
     {
         int wallCount = 0;
@@ -95,19 +104,12 @@ public class MapGenerator : MonoBehaviour {
         return wallCount;
     }
 
-    void ProcessMap()
-    {
-        List<Room> rooms = RemoveSmallRegions(MINIMUM_OPEN_REGION_SIZE, 0);
-        RemoveSmallRegions(MINIMUM_WALL_REGION_SIZE, 1);
-        ConnectRooms(rooms);
-    }
-
     List<Room> RemoveSmallRegions(int removalThreshold, int tileType)
     {
         int otherType = (tileType == 1) ? 0 : 1;
-        List<Region> regions = GetRegions(tileType);
+        List<TileRegion> regions = GetRegions(tileType);
         List<Room> remainingRegions = new List<Room>();
-        foreach (Region region in regions)
+        foreach (TileRegion region in regions)
         {
             if (region.Size() < removalThreshold)
             {
@@ -121,7 +123,7 @@ public class MapGenerator : MonoBehaviour {
         return remainingRegions;
     }
 
-    void FillRegion(Region region, int value)
+    void FillRegion(TileRegion region, int value)
     {
         foreach (Coord tile in region)
         {
@@ -196,9 +198,9 @@ public class MapGenerator : MonoBehaviour {
         return line;
     }
 
-    List<Region> GetRegions(int tileType)
+    List<TileRegion> GetRegions(int tileType)
     {
-        List<Region> regions = new List<Region>();
+        List<TileRegion> regions = new List<TileRegion>();
         int[,] visited = new int[length, width];
 
         for (int x = 0; x < length; x++)
@@ -207,7 +209,7 @@ public class MapGenerator : MonoBehaviour {
             {
                 if (IsValidTile(x, y, visited, tileType))
                 {
-                    Region newRegion = GetRegion(x, y, visited);
+                    TileRegion newRegion = GetRegion(x, y, visited);
                     regions.Add(newRegion);
                 }
             }
@@ -215,9 +217,9 @@ public class MapGenerator : MonoBehaviour {
         return regions;
     }
 
-    Region GetRegion(int xStart, int yStart, int[,] visited)
+    TileRegion GetRegion(int xStart, int yStart, int[,] visited)
     {
-        Region tiles = new Region();
+        TileRegion tiles = new TileRegion();
         int tileType = map[xStart, yStart];
 
         Queue<Coord> queue = new Queue<Coord>();

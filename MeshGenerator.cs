@@ -1,7 +1,8 @@
-﻿using UnityEngine;
+﻿using MeshHelpers;
 using System.Collections.Generic;
 using System.Linq;
-using MeshHelpers;
+using UnityEditor;
+using UnityEngine;
 
 public class MeshGenerator : MonoBehaviour {
 
@@ -13,6 +14,8 @@ public class MeshGenerator : MonoBehaviour {
     [SerializeField]
     Material wallMaterial;
 
+    [SerializeField]
+    bool saveMapAsPrefab;
     [SerializeField]
     bool is2D;
 
@@ -26,7 +29,13 @@ public class MeshGenerator : MonoBehaviour {
     int wallHeight;
     Map map;
 
-    int TEXTURE_REPETITION_FACTOR = 1;
+    Mesh ceilingMesh;
+    Mesh wallMesh;
+
+    [SerializeField]
+    float ceilingTextureCompress = 10f;
+    [SerializeField]
+    float wallTextureCompress = 0.1f;
 
     internal void GenerateMesh(Map map, int wallHeight = 1)
     {
@@ -37,30 +46,44 @@ public class MeshGenerator : MonoBehaviour {
         IList<Map> subMaps = map.SubdivideMap();
         foreach (Map subMap in subMaps)
         {
-            triangleMap.Clear();
-            meshTriangles.Clear();
-            baseVertices.Clear();
-            outlines.Clear();
+            Clear();
+            GenerateCeiling(subMap);
+            GenerateWalls(subMap);
 
-            TriangulateSquares(subMap);
-            Mesh baseMesh = CreateBaseMesh();
-            SetBaseMesh(baseMesh);
-
-            CalculateMeshOutlines();
-
-            if (is2D)
+            #if UNITY_EDITOR
+            if (saveMapAsPrefab)
             {
-                Generate2DColliders();
+                CreatePrefab();
             }
-            else
-            {
-                Mesh wallMesh = CreateWallMesh();
-                SetWallMesh(wallMesh);
-                MeshCollider wallCollider = walls.gameObject.AddComponent<MeshCollider>();
-                wallCollider.sharedMesh = wallMesh;
-            }
+            #endif
         }
     }
+
+    void GenerateCeiling(Map subMap)
+    {
+        TriangulateSquares(subMap);
+        ceilingMesh = CreateCeilingMesh(subMap.index);
+        SetCeilingMesh();
+    }
+
+    void GenerateWalls(Map subMap)
+    {
+        CalculateMeshOutlines();
+
+        if (is2D)
+        {
+            Generate2DColliders();
+        }
+        else
+        {
+            wallMesh = CreateWallMesh(subMap.index);
+            SetWallMesh();
+            MeshCollider wallCollider = walls.gameObject.AddComponent<MeshCollider>();
+            wallCollider.sharedMesh = wallMesh;
+        }
+    }
+
+
 
     void TriangulateSquares(Map map)
     {
@@ -123,24 +146,30 @@ public class MeshGenerator : MonoBehaviour {
         }
     }
 
-    Mesh CreateBaseMesh()
+    Mesh CreateCeilingMesh(int mapIndex)
     {
         Mesh mesh = new Mesh();
         mesh.vertices = baseVertices.ToArray();
         mesh.triangles = meshTriangles.ToArray();
         mesh.RecalculateNormals();
-        Vector2[] uv = new Vector2[baseVertices.Count];
-        for (int i = 0; i < baseVertices.Count; i++)
-        {
-            float percentX = Mathf.InverseLerp(0, map.scaledLength, baseVertices[i].x) * TEXTURE_REPETITION_FACTOR;
-            float percentY = Mathf.InverseLerp(0, map.scaledWidth, baseVertices[i].z) * TEXTURE_REPETITION_FACTOR;
-            uv[i] = new Vector2(percentX, percentY);
-        }
-        mesh.uv = uv;
+        mesh.uv = ComputeCeilingUVArray();
+        mesh.name = "Ceiling Mesh" + mapIndex;
         return mesh;
     }
 
-    void SetBaseMesh(Mesh mesh)
+    Vector2[] ComputeCeilingUVArray()
+    {
+        Vector2[] uv = new Vector2[baseVertices.Count];
+        for (int i = 0; i < baseVertices.Count; i++)
+        {
+            float percentX = Mathf.InverseLerp(0, map.scaledLength, baseVertices[i].x) * ceilingTextureCompress;
+            float percentY = Mathf.InverseLerp(0, map.scaledWidth, baseVertices[i].z) * ceilingTextureCompress;
+            uv[i] = new Vector2(percentX, percentY);
+        }
+        return uv;
+    }
+
+    void SetCeilingMesh()
     {
         ceiling = new GameObject("ceiling", typeof(MeshRenderer), typeof(MeshFilter));
         ceiling.transform.parent = transform;
@@ -148,14 +177,22 @@ public class MeshGenerator : MonoBehaviour {
         {
             ceiling.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
         }
-        ceiling.GetComponent<MeshFilter>().mesh = mesh;
+        ceiling.GetComponent<MeshFilter>().mesh = ceilingMesh;
         ceiling.GetComponent<MeshRenderer>().material = ceilingMaterial;
     }
 
-    Mesh CreateWallMesh()
+    void CreatePrefab()
+    {
+        AssetDatabase.CreateAsset(ceilingMesh, "Assets/Meshes/" + ceilingMesh.name + ".mesh");
+        AssetDatabase.CreateAsset(wallMesh, "Assets/Meshes/" + wallMesh.name + ".mesh");
+        PrefabUtility.CreatePrefab("Assets/Prefabs/Cave.prefab", this.gameObject);
+    }
+
+    Mesh CreateWallMesh(int mapIndex)
     {
         int outlineParameter = outlines.Select(x => x.Size() - 1).Sum();
         Vector3[] wallVertices = new Vector3[4 * outlineParameter];
+        Vector2[] uv = new Vector2[4 * outlineParameter];
         int[] wallTriangles = new int[6 * outlineParameter];
 
         int vertexCount = 0;
@@ -165,9 +202,14 @@ public class MeshGenerator : MonoBehaviour {
             for (int i = 0; i < outline.Size() - 1; i++)
             {
                 wallVertices[vertexCount] = baseVertices[outline[i]];
-                wallVertices[vertexCount + 1] = baseVertices[outline[i+1]];
+                wallVertices[vertexCount + 1] = baseVertices[outline[i + 1]];
                 wallVertices[vertexCount + 2] = baseVertices[outline[i]] - Vector3.up * wallHeight;
                 wallVertices[vertexCount + 3] = baseVertices[outline[i + 1]] - Vector3.up * wallHeight;
+
+                uv[vertexCount] = new Vector2(i, wallHeight) * wallTextureCompress;
+                uv[vertexCount + 1] = new Vector2(i + 1, wallHeight) * wallTextureCompress;
+                uv[vertexCount + 2] = new Vector2(i, 0f) * wallTextureCompress;
+                uv[vertexCount + 3] = new Vector2(i + 1, 0f) * wallTextureCompress;
 
                 wallTriangles[triangleCount] = vertexCount;
                 wallTriangles[triangleCount + 1] = vertexCount + 2;
@@ -185,14 +227,16 @@ public class MeshGenerator : MonoBehaviour {
         wallMesh.vertices = wallVertices;
         wallMesh.triangles = wallTriangles;
         wallMesh.RecalculateNormals();
+        wallMesh.uv = uv;
+        wallMesh.name = "Wall Mesh" + mapIndex;
         return wallMesh;
     }
 
-    void SetWallMesh(Mesh mesh)
+    void SetWallMesh()
     {
         walls = new GameObject("wall", typeof(MeshRenderer), typeof(MeshFilter));
         walls.transform.parent = gameObject.transform;
-        walls.GetComponent<MeshFilter>().mesh = mesh;
+        walls.GetComponent<MeshFilter>().mesh = wallMesh;
         walls.GetComponent<MeshRenderer>().material = wallMaterial;
     }
 
@@ -205,7 +249,7 @@ public class MeshGenerator : MonoBehaviour {
             {
                 checkedVertices[startVertexIndex] = true;
                 Outline outline = GenerateOutlineFromPoint(startVertexIndex);
-                if (outline.Size() > 2)
+                if (outline != null)
                 {
                     outlines.Add(outline);
                 }
@@ -216,6 +260,9 @@ public class MeshGenerator : MonoBehaviour {
     Outline GenerateOutlineFromPoint(int startVertexIndex)
     {
         int nextVertexIndex = GetConnectedOutlineVertex(startVertexIndex, 0);
+        if (nextVertexIndex == -1)
+            return null;
+
         Outline outline = new Outline(startVertexIndex);
         FollowOutline(nextVertexIndex, outline);
         outline.Add(startVertexIndex);
@@ -232,20 +279,20 @@ public class MeshGenerator : MonoBehaviour {
         FollowOutline(nextVertexIndex, outline);
     }
 
-    int GetConnectedOutlineVertex(int indexOne, int outlineSize)
+    int GetConnectedOutlineVertex(int currentIndex, int outlineSize)
     {
-        List<Triangle> trianglesContainingVertex = triangleMap[indexOne];
+        List<Triangle> trianglesContainingVertex = triangleMap[currentIndex];
         foreach (Triangle triangle in trianglesContainingVertex)
         {
             for (int j = 0; j < 3; j++)
             {
-                int indexTwo = triangle[j];
-                bool foundNewOutlineEdge = !checkedVertices[indexTwo] && IsOutlineEdge(indexOne, indexTwo);
+                int nextIndex = triangle[j];
+                bool foundNewOutlineEdge = !checkedVertices[nextIndex] && IsOutlineEdge(currentIndex, nextIndex);
                 if (foundNewOutlineEdge)
                 {
-                    if (outlineSize > 0 || IsCorrectOrientation(indexOne, indexTwo, triangle))
+                    if (outlineSize > 0 || IsCorrectOrientation(currentIndex, nextIndex, triangle))
                     {
-                        return indexTwo;
+                        return nextIndex;
                     }
                 }
             }
@@ -291,7 +338,6 @@ public class MeshGenerator : MonoBehaviour {
 
     void Generate2DColliders()
     {
-
         EdgeCollider2D[] currentColliders = gameObject.GetComponents<EdgeCollider2D>();
         foreach (EdgeCollider2D collider in currentColliders)
         {
@@ -307,5 +353,13 @@ public class MeshGenerator : MonoBehaviour {
             }
             edgeCollider.points = edgePoints;
         }
+    }
+
+    void Clear()
+    {
+        triangleMap.Clear();
+        meshTriangles.Clear();
+        baseVertices.Clear();
+        outlines.Clear();
     }
 }

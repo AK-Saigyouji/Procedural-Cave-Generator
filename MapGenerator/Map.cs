@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 using MapHelpers;
 
 internal class Map
@@ -11,7 +12,8 @@ internal class Map
     internal int scaledLength { get { return length * squareSize; } }
     internal int scaledWidth { get { return width * squareSize; } }
     internal Vector2 position = new Vector2(0f, 0f);
-    static int MAX_MAP_SIZE = 100;
+    internal int index { get; private set; }
+    static int SUBMAP_SIZE = 100;
 
     public Map(int length, int width, int squareSize)
     {
@@ -29,6 +31,12 @@ internal class Map
     {
         get { return grid[x, y]; }
         set { grid[x, y] = value; }
+    }
+
+    internal int this[Coord tile]
+    {
+        get { return grid[tile.x, tile.y]; }
+        set { grid[tile.x, tile.y] = value; }
     }
 
     internal void ApplyBorder(int borderSize)
@@ -50,13 +58,14 @@ internal class Map
     internal IList<Map> SubdivideMap()
     {
         IList<Map> maps = new List<Map>();
-        int xNumComponents = Mathf.CeilToInt(length / (float)MAX_MAP_SIZE);
-        int yNumComponents = Mathf.CeilToInt(width / (float)MAX_MAP_SIZE);
+        int xNumComponents = Mathf.CeilToInt(length / (float)SUBMAP_SIZE);
+        int yNumComponents = Mathf.CeilToInt(width / (float)SUBMAP_SIZE);
         for (int x = 0; x < xNumComponents; x++)
         {
             for (int y = 0; y < yNumComponents; y++)
             {
-                Map subMap = GenerateSubMap(x * MAX_MAP_SIZE, y * MAX_MAP_SIZE);
+                Map subMap = GenerateSubMap(x * SUBMAP_SIZE, y * SUBMAP_SIZE);
+                subMap.index = x * yNumComponents + y;
                 maps.Add(subMap);
             }
         }
@@ -65,8 +74,8 @@ internal class Map
 
     Map GenerateSubMap(int xStart, int yStart)
     {
-        int xEnd = (xStart + MAX_MAP_SIZE >= length) ? length : xStart + MAX_MAP_SIZE + 1;
-        int yEnd = (yStart + MAX_MAP_SIZE >= width) ? width : yStart + MAX_MAP_SIZE + 1;
+        int xEnd = (xStart + SUBMAP_SIZE >= length) ? length : xStart + SUBMAP_SIZE + 1;
+        int yEnd = (yStart + SUBMAP_SIZE >= width) ? width : yStart + SUBMAP_SIZE + 1;
         Map subMap = new Map(xEnd - xStart, yEnd - yStart, 1);
         for (int x = xStart; x < xEnd; x++)
         {
@@ -77,6 +86,16 @@ internal class Map
         }
         subMap.position = new Vector2(xStart * squareSize, yStart * squareSize);
         return subMap;
+    }
+
+    internal bool IsEdgeTile(int x, int y)
+    {
+        return GetAdjacentTiles(x, y).Any(adjTile => this[x, y] == 1);
+    }
+
+    internal bool IsEdgeTile(Coord tile)
+    {
+        return GetAdjacentTiles(tile).Any(adjTile => this[adjTile] == 1);
     }
 
     internal bool IsInMap(int x, int y)
