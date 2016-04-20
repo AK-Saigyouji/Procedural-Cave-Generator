@@ -6,19 +6,6 @@ using UnityEngine;
 
 public class MeshGenerator : MonoBehaviour {
 
-    GameObject ceiling;
-    [SerializeField]
-    Material ceilingMaterial;
-
-    GameObject walls;
-    [SerializeField]
-    Material wallMaterial;
-
-    [SerializeField]
-    bool saveMapAsPrefab;
-    [SerializeField]
-    bool is2D;
-
     float squareSize;
     List<Vector3> baseVertices = new List<Vector3>();
     List<int> meshTriangles = new List<int>();
@@ -26,66 +13,26 @@ public class MeshGenerator : MonoBehaviour {
     List<Outline> outlines = new List<Outline>();
     bool[] checkedVertices;
 
-    int wallHeight;
     Map map;
-
-    Mesh ceilingMesh;
-    Mesh wallMesh;
+    int wallHeight = 3;
 
     [SerializeField]
     float ceilingTextureCompress = 10f;
     [SerializeField]
     float wallTextureCompress = 0.1f;
 
-    internal void GenerateMesh(Map map, int wallHeight = 1)
+    internal MapMeshes Generate(Map map)
     {
-        DestroyChildren();
+        Clear();
         this.map = map;
-        this.wallHeight = wallHeight;
-
-        IList<Map> subMaps = map.SubdivideMap();
-        foreach (Map subMap in subMaps)
-        {
-            Clear();
-            GenerateCeiling(subMap);
-            GenerateWalls(subMap);
-
-            #if UNITY_EDITOR
-            if (saveMapAsPrefab)
-            {
-                CreatePrefab();
-            }
-            #endif
-        }
-    }
-
-    void GenerateCeiling(Map subMap)
-    {
-        TriangulateSquares(subMap);
-        ceilingMesh = CreateCeilingMesh(subMap.index);
-        SetCeilingMesh();
-    }
-
-    void GenerateWalls(Map subMap)
-    {
+        TriangulateSquares();
+        Mesh ceilingMesh = CreateCeilingMesh();
         CalculateMeshOutlines();
-
-        if (is2D)
-        {
-            Generate2DColliders();
-        }
-        else
-        {
-            wallMesh = CreateWallMesh(subMap.index);
-            SetWallMesh();
-            MeshCollider wallCollider = walls.gameObject.AddComponent<MeshCollider>();
-            wallCollider.sharedMesh = wallMesh;
-        }
+        Mesh wallMesh = CreateWallMesh();
+        return new MapMeshes(ceilingMesh, wallMesh);
     }
 
-
-
-    void TriangulateSquares(Map map)
+    void TriangulateSquares()
     {
         SquareGrid squareGrid = new SquareGrid(map);
         for (int x = 0; x < squareGrid.GetLength(0); x++)
@@ -146,14 +93,14 @@ public class MeshGenerator : MonoBehaviour {
         }
     }
 
-    Mesh CreateCeilingMesh(int mapIndex)
+    Mesh CreateCeilingMesh()
     {
         Mesh mesh = new Mesh();
         mesh.vertices = baseVertices.ToArray();
         mesh.triangles = meshTriangles.ToArray();
         mesh.RecalculateNormals();
         mesh.uv = ComputeCeilingUVArray();
-        mesh.name = "Ceiling Mesh" + mapIndex;
+        mesh.name = "Ceiling Mesh" + map.index;
         return mesh;
     }
 
@@ -162,33 +109,14 @@ public class MeshGenerator : MonoBehaviour {
         Vector2[] uv = new Vector2[baseVertices.Count];
         for (int i = 0; i < baseVertices.Count; i++)
         {
-            float percentX = Mathf.InverseLerp(0, map.scaledLength, baseVertices[i].x) * ceilingTextureCompress;
-            float percentY = Mathf.InverseLerp(0, map.scaledWidth, baseVertices[i].z) * ceilingTextureCompress;
+            float percentX = Mathf.InverseLerp(0, map.scaledTotalLength, baseVertices[i].x) * ceilingTextureCompress;
+            float percentY = Mathf.InverseLerp(0, map.scaledTotalWidth, baseVertices[i].z) * ceilingTextureCompress;
             uv[i] = new Vector2(percentX, percentY);
         }
         return uv;
     }
 
-    void SetCeilingMesh()
-    {
-        ceiling = new GameObject("ceiling", typeof(MeshRenderer), typeof(MeshFilter));
-        ceiling.transform.parent = transform;
-        if (is2D)
-        {
-            ceiling.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
-        }
-        ceiling.GetComponent<MeshFilter>().mesh = ceilingMesh;
-        ceiling.GetComponent<MeshRenderer>().material = ceilingMaterial;
-    }
-
-    void CreatePrefab()
-    {
-        AssetDatabase.CreateAsset(ceilingMesh, "Assets/Meshes/" + ceilingMesh.name + ".mesh");
-        AssetDatabase.CreateAsset(wallMesh, "Assets/Meshes/" + wallMesh.name + ".mesh");
-        PrefabUtility.CreatePrefab("Assets/Prefabs/Cave.prefab", this.gameObject);
-    }
-
-    Mesh CreateWallMesh(int mapIndex)
+    Mesh CreateWallMesh()
     {
         int outlineParameter = outlines.Select(x => x.Size() - 1).Sum();
         Vector3[] wallVertices = new Vector3[4 * outlineParameter];
@@ -228,16 +156,8 @@ public class MeshGenerator : MonoBehaviour {
         wallMesh.triangles = wallTriangles;
         wallMesh.RecalculateNormals();
         wallMesh.uv = uv;
-        wallMesh.name = "Wall Mesh" + mapIndex;
+        wallMesh.name = "Wall Mesh" + map.index;
         return wallMesh;
-    }
-
-    void SetWallMesh()
-    {
-        walls = new GameObject("wall", typeof(MeshRenderer), typeof(MeshFilter));
-        walls.transform.parent = gameObject.transform;
-        walls.GetComponent<MeshFilter>().mesh = wallMesh;
-        walls.GetComponent<MeshRenderer>().material = wallMaterial;
     }
 
     void CalculateMeshOutlines()
@@ -326,14 +246,6 @@ public class MeshGenerator : MonoBehaviour {
     bool IsRight(Vector3 a, Vector3 b, Vector3 c)
     {
         return ((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) < 0;
-    }
-
-    void DestroyChildren()
-    {
-        foreach (Transform child in transform)
-        {
-            Destroy(child.gameObject);
-        }
     }
 
     void Generate2DColliders()

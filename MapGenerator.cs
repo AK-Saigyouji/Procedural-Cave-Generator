@@ -1,6 +1,7 @@
-﻿using UnityEngine;
+﻿using MapHelpers;
 using System.Collections.Generic;
-using MapHelpers;
+using UnityEditor;
+using UnityEngine;
 
 public class MapGenerator : MonoBehaviour {
     [SerializeField]
@@ -21,7 +22,14 @@ public class MapGenerator : MonoBehaviour {
     [SerializeField]
     int wallHeight;
 
-    Map map;
+    [SerializeField]
+    Material ceilingMaterial;
+    [SerializeField]
+    Material wallMaterial;
+
+    internal Map map { get; private set; }
+    internal GameObject cave { get; private set; }
+    internal List<MapMeshes> generatedMeshes { get; private set; }
 
     int SMOOTHING_ITERATIONS = 5;
     int CELLULAR_THRESHOLD = 4;
@@ -29,17 +37,10 @@ public class MapGenerator : MonoBehaviour {
     int MINIMUM_OPEN_REGION_SIZE = 50;
     int TUNNELING_RADIUS = 1;
 
-    void Start()
+    internal void GenerateNewMap()
     {
+        DestroyChildren();
         GenerateMap();
-    }
-
-    void Update()
-    {
-        if (Input.GetMouseButtonDown(0))
-        {
-            GenerateMap();
-        }
     }
 
     void GenerateMap()
@@ -49,7 +50,20 @@ public class MapGenerator : MonoBehaviour {
         SmoothMap(SMOOTHING_ITERATIONS);
         ProcessMap();
         map.ApplyBorder(borderSize);
-        GetComponent<MeshGenerator>().GenerateMesh(map, wallHeight);
+        cave = new GameObject("Cave");
+        cave.transform.parent = transform;
+        generatedMeshes = new List<MapMeshes>();
+        foreach (Map subMap in map.SubdivideMap())
+        {
+            GameObject sector = new GameObject("Sector " + subMap.index);
+            sector.transform.parent = cave.transform;
+            MapMeshes mapMeshes = GetComponent<MeshGenerator>().Generate(subMap);
+            CreateObjectFromMesh(mapMeshes.ceilingMesh, "Ceiling", sector, ceilingMaterial);
+            GameObject walls = CreateObjectFromMesh(mapMeshes.wallMesh, "Walls", sector, wallMaterial);
+            MeshCollider wallCollider = walls.gameObject.AddComponent<MeshCollider>();
+            wallCollider.sharedMesh = mapMeshes.wallMesh;
+            generatedMeshes.Add(mapMeshes);
+        }
     }
 
     void RandomFillMap()
@@ -127,7 +141,7 @@ public class MapGenerator : MonoBehaviour {
     {
         foreach (Coord tile in region)
         {
-            map[tile.x, tile.y] = value;
+            map[tile] = value;
         }
     }
 
@@ -180,14 +194,13 @@ public class MapGenerator : MonoBehaviour {
 
     List<Coord> CreateLineBetween(Coord start, Coord end)
     {
-        Vector2 incrementor;
         Vector2 startVector = new Vector2(start.x, start.y);
         List<Coord> line = new List<Coord>();
 
         int xDelta = end.x - start.x;
         int yDelta = end.y - start.y;
         int numIterations = Mathf.Max(System.Math.Abs(xDelta), System.Math.Abs(yDelta));
-        incrementor = new Vector2(xDelta, yDelta) / numIterations;
+        Vector2 incrementor = new Vector2(xDelta, yDelta) / numIterations;
 
         for (int i = 0; i <= numIterations; i++)
         {
@@ -207,7 +220,7 @@ public class MapGenerator : MonoBehaviour {
         {
             for (int y = 0; y < width; y++)
             {
-                if (IsValidTile(x, y, visited, tileType))
+                if (IsNewTileOfGivenType(x, y, visited, tileType))
                 {
                     TileRegion newRegion = GetRegion(x, y, visited);
                     regions.Add(newRegion);
@@ -232,7 +245,7 @@ public class MapGenerator : MonoBehaviour {
 
             foreach (Coord newTile in map.GetAdjacentTiles(tile.x, tile.y))
             {
-                if (IsValidTile(newTile.x, newTile.y, visited, tileType))
+                if (IsNewTileOfGivenType(newTile.x, newTile.y, visited, tileType))
                 {
                     visited[newTile.x, newTile.y] = 1;
                     queue.Enqueue(newTile);
@@ -242,11 +255,51 @@ public class MapGenerator : MonoBehaviour {
         return tiles;
     }
 
-    bool IsValidTile(int x, int y, int[,] visited, int tileType)
+    GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
+    {
+        GameObject newObject = new GameObject(name, typeof(MeshRenderer), typeof(MeshFilter));
+        newObject.transform.parent = parent.transform;
+        // ceiling.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
+        newObject.GetComponent<MeshFilter>().mesh = mesh;
+        newObject.GetComponent<MeshRenderer>().material = material;
+        return newObject;
+    }
+
+    bool IsNewTileOfGivenType(int x, int y, int[,] visited, int tileType)
     {
         return (visited[x, y] == 0) && (map[x, y] == tileType);
     }
 
+    void DestroyChildren()
+    {
+        List<Transform> children = new List<Transform>();
+        foreach (Transform child in transform)
+        {
+            children.Add(child);
+        }
+        foreach (Transform child in children)
+        {
+            child.parent = null;
+            Destroy(child.gameObject);
+        }
+    }
+}
+
+class MapMeshes
+{
+    internal Mesh wallMesh { get; private set; }
+    internal Mesh ceilingMesh { get; private set; }
+    internal bool Is2D { get; private set; }
+
+    internal MapMeshes(Mesh ceilingMesh, Mesh wallMesh = null)
+    {
+        this.ceilingMesh = ceilingMesh;
+        this.wallMesh = wallMesh;
+        if (wallMesh == null)
+        {
+            Is2D = false;
+        }
+    }
 }
 
 
