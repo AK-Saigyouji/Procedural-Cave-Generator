@@ -17,27 +17,45 @@ public class MeshGenerator : MonoBehaviour {
     int wallHeight = 3;
 
     [SerializeField]
-    float ceilingTextureCompress = 10f;
-    [SerializeField]
     float wallTextureCompress = 0.1f;
+    [SerializeField]
+    Vector2 textureDimensions = new Vector2(100f, 100f);
 
-    internal MapMeshes Generate(Map map)
+    internal MapMeshes Generate3D(Map map)
+    {
+        Mesh ceilingMesh = Generate(map);
+        Mesh wallMesh = CreateWallMesh();
+        return new MapMeshes(ceilingMesh, wallMesh);
+    }
+
+    internal MapMeshes Generate2D(Map map)
+    {
+        Mesh ceilingMesh = Generate(map);
+        return new MapMeshes(ceilingMesh);
+    }
+
+    Mesh Generate(Map map)
     {
         Clear();
         this.map = map;
         TriangulateSquares();
         Mesh ceilingMesh = CreateCeilingMesh();
         CalculateMeshOutlines();
-        Mesh wallMesh = CreateWallMesh();
-        return new MapMeshes(ceilingMesh, wallMesh);
+        return ceilingMesh;
     }
 
     void TriangulateSquares()
     {
         SquareGrid squareGrid = new SquareGrid(map);
-        for (int x = 0; x < squareGrid.GetLength(0); x++)
-            for (int y = 0; y < squareGrid.GetLength(1); y++)
-                TriangulateSquare(squareGrid[x, y]);
+        {
+            for (int x = 0; x < squareGrid.GetLength(0); x++)
+            {
+                for (int y = 0; y < squareGrid.GetLength(1); y++)
+                {
+                    TriangulateSquare(squareGrid[x, y]);
+                }
+            }
+        }
     }
 
     void TriangulateSquare(Square square)
@@ -107,10 +125,12 @@ public class MeshGenerator : MonoBehaviour {
     Vector2[] ComputeCeilingUVArray()
     {
         Vector2[] uv = new Vector2[baseVertices.Count];
+        float xMax = textureDimensions.x;
+        float yMax = textureDimensions.y;
         for (int i = 0; i < baseVertices.Count; i++)
         {
-            float percentX = Mathf.InverseLerp(0, map.scaledTotalLength, baseVertices[i].x) * ceilingTextureCompress;
-            float percentY = Mathf.InverseLerp(0, map.scaledTotalWidth, baseVertices[i].z) * ceilingTextureCompress;
+            float percentX = baseVertices[i].x / xMax;
+            float percentY = baseVertices[i].z / yMax;
             uv[i] = new Vector2(percentX, percentY);
         }
         return uv;
@@ -248,23 +268,24 @@ public class MeshGenerator : MonoBehaviour {
         return ((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) < 0;
     }
 
-    void Generate2DColliders()
+    internal List<Vector2[]> Generate2DColliders()
     {
         EdgeCollider2D[] currentColliders = gameObject.GetComponents<EdgeCollider2D>();
         foreach (EdgeCollider2D collider in currentColliders)
         {
             Destroy(collider);
         }
+        List<Vector2[]> edgePointLists = new List<Vector2[]>();
         foreach (Outline outline in outlines)
         {
-            EdgeCollider2D edgeCollider = gameObject.AddComponent<EdgeCollider2D>();
             Vector2[] edgePoints = new Vector2[outline.Size()];
             for (int i = 0; i < outline.Size(); i++)
             {
                 edgePoints[i] = new Vector2(baseVertices[outline[i]].x, baseVertices[outline[i]].z);
             }
-            edgeCollider.points = edgePoints;
+            edgePointLists.Add(edgePoints);
         }
+        return edgePointLists;
     }
 
     void Clear()

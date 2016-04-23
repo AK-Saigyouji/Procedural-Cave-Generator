@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(MapGenerator))]
+[CustomEditor(typeof(MapGenerator), true)]
 public class MapGeneratorEditor : Editor {
     public override void OnInspectorGUI()
     {
@@ -12,7 +12,7 @@ public class MapGeneratorEditor : Editor {
         {
             if (GUILayout.Button("Generate New Map"))
             {
-                mapGenerator.GenerateNewMap();
+                mapGenerator.GenerateNewMapWithMesh();
             }
 
             if (GUILayout.Button("Create Prefab"))
@@ -36,7 +36,10 @@ public class MapGeneratorEditor : Editor {
     void CreateMeshAssets(MapMeshes meshes, string path)
     {
         AssetDatabase.CreateAsset(meshes.ceilingMesh, path + meshes.ceilingMesh.name + ".mesh");
-        AssetDatabase.CreateAsset(meshes.wallMesh, path + meshes.wallMesh.name + ".mesh");
+        if (meshes.wallMesh != null)
+        {
+            AssetDatabase.CreateAsset(meshes.wallMesh, path + meshes.wallMesh.name + ".mesh");
+        }
     }
 
     void CreateCavePrefab(string path, GameObject cave)

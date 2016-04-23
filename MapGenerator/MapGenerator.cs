@@ -1,35 +1,29 @@
 ﻿using MapHelpers;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-public class MapGenerator : MonoBehaviour {
+public abstract class MapGenerator : MonoBehaviour {
     [SerializeField]
-    int length;
+    int length = 50;
     [SerializeField]
-    int width;
+    int width = 50;
     [SerializeField]
-    [Range(0,1)]
-    float randomFillPercent;
+    [Range(0, 1)]
+    float randomFillPercent = 0.5f;
     [SerializeField]
     string seed;
     [SerializeField]
-    bool useRandomSeed;
+    bool useRandomSeed = true;
     [SerializeField]
-    int borderSize;
+    int borderSize = 0;
     [SerializeField]
-    int squareSize;
-    [SerializeField]
-    int wallHeight;
+    int squareSize = 1;
 
-    [SerializeField]
-    Material ceilingMaterial;
-    [SerializeField]
-    Material wallMaterial;
-
-    internal Map map { get; private set; }
-    internal GameObject cave { get; private set; }
-    internal List<MapMeshes> generatedMeshes { get; private set; }
+    protected Map map { get; private set; }
+    protected internal GameObject cave { get; set; }
+    protected internal List<MapMeshes> generatedMeshes { get; set; }
 
     int SMOOTHING_ITERATIONS = 5;
     int CELLULAR_THRESHOLD = 4;
@@ -37,34 +31,24 @@ public class MapGenerator : MonoBehaviour {
     int MINIMUM_OPEN_REGION_SIZE = 50;
     int TUNNELING_RADIUS = 1;
 
-    internal void GenerateNewMap()
+    public void GenerateNewMapWithMesh()
     {
         DestroyChildren();
         GenerateMap();
+        GenerateMeshFromMap(map);
     }
 
-    void GenerateMap()
+    public Map GenerateMap()
     {
         map = new Map(length, width, squareSize);
         RandomFillMap();
         SmoothMap(SMOOTHING_ITERATIONS);
         ProcessMap();
         map.ApplyBorder(borderSize);
-        cave = new GameObject("Cave");
-        cave.transform.parent = transform;
-        generatedMeshes = new List<MapMeshes>();
-        foreach (Map subMap in map.SubdivideMap())
-        {
-            GameObject sector = new GameObject("Sector " + subMap.index);
-            sector.transform.parent = cave.transform;
-            MapMeshes mapMeshes = GetComponent<MeshGenerator>().Generate(subMap);
-            CreateObjectFromMesh(mapMeshes.ceilingMesh, "Ceiling", sector, ceilingMaterial);
-            GameObject walls = CreateObjectFromMesh(mapMeshes.wallMesh, "Walls", sector, wallMaterial);
-            MeshCollider wallCollider = walls.gameObject.AddComponent<MeshCollider>();
-            wallCollider.sharedMesh = mapMeshes.wallMesh;
-            generatedMeshes.Add(mapMeshes);
-        }
+        return map;
     }
+
+    abstract protected void GenerateMeshFromMap(Map map);
 
     void RandomFillMap()
     {
@@ -112,9 +96,15 @@ public class MapGenerator : MonoBehaviour {
     {
         int wallCount = 0;
         for (int x = gridX - 1; x <= gridX + 1; x++)
+        {
             for (int y = gridY - 1; y <= gridY + 1; y++)
+            {
                 if (x != gridX || y != gridY)
+                {
                     wallCount += map[x, y];
+                }
+            }
+        }
         return wallCount;
     }
 
@@ -173,11 +163,6 @@ public class MapGenerator : MonoBehaviour {
     void CreatePassage(RoomConnection connection)
     {
         List<Coord> line = CreateLineBetween(connection.tileA, connection.tileB);
-        CreatePassage(line);
-    }
-
-    void CreatePassage(List<Coord> line)
-    {
         foreach (Coord coord in line)
         {
             ClearNeighbors(coord, TUNNELING_RADIUS);
@@ -187,9 +172,15 @@ public class MapGenerator : MonoBehaviour {
     void ClearNeighbors(Coord coord, int neighborReach)
     {
         for (int x = coord.x - neighborReach; x <= coord.x + neighborReach; x++)
+        {
             for (int y = coord.y - neighborReach; y <= coord.y + neighborReach; y++)
+            {
                 if (map.IsInMap(x, y))
+                {
                     map[x, y] = 0;
+                }
+            }
+        }
     }
 
     List<Coord> CreateLineBetween(Coord start, Coord end)
@@ -255,11 +246,10 @@ public class MapGenerator : MonoBehaviour {
         return tiles;
     }
 
-    GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
+    protected GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
     {
         GameObject newObject = new GameObject(name, typeof(MeshRenderer), typeof(MeshFilter));
         newObject.transform.parent = parent.transform;
-        // ceiling.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
         newObject.GetComponent<MeshFilter>().mesh = mesh;
         newObject.GetComponent<MeshRenderer>().material = material;
         return newObject;
@@ -285,20 +275,17 @@ public class MapGenerator : MonoBehaviour {
     }
 }
 
-class MapMeshes
+public class MapMeshes
 {
-    internal Mesh wallMesh { get; private set; }
-    internal Mesh ceilingMesh { get; private set; }
-    internal bool Is2D { get; private set; }
+    public Mesh wallMesh { get; private set; }
+    public Mesh ceilingMesh { get; private set; }
+
+    private MapMeshes() { }
 
     internal MapMeshes(Mesh ceilingMesh, Mesh wallMesh = null)
     {
         this.ceilingMesh = ceilingMesh;
         this.wallMesh = wallMesh;
-        if (wallMesh == null)
-        {
-            Is2D = false;
-        }
     }
 }
 

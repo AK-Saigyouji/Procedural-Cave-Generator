@@ -3,40 +3,28 @@ using System.Collections.Generic;
 using System.Linq;
 using MapHelpers;
 
-internal class Map
+public class Map
 {
     internal int[,] grid { get; private set; }
     internal int squareSize { get; private set; }
     internal int length { get { return grid.GetLength(0); } }
     internal int width { get { return grid.GetLength(1); } }
-    internal int scaledTotalLength { get { return parentLength * squareSize; } }
-    internal int scaledTotalWidth { get { return parentWidth * squareSize; } }
-    internal Vector2 position = new Vector2(0f, 0f);
+    internal Vector2 position { get; private set; }
     internal int index { get; private set; }
     static int SUBMAP_SIZE = 100;
-    int parentLength;
-    int parentWidth;
 
-    internal Map(int length, int width, int squareSize, Map parent = null)
+    internal Map(int length, int width, int squareSize)
     {
         grid = new int[length, width];
         this.squareSize = squareSize;
-        if (parent == null)
-        {
-            parentLength = length;
-            parentWidth = width;
-        }
-        else
-        {
-            parentLength = parent.length;
-            parentWidth = parent.width;
-        }
+        position = new Vector2(0f, 0f);
     }
 
     internal Map(Map map)
     {
         grid = map.grid;
         squareSize = map.squareSize;
+        position = new Vector2(0f, 0f);
     }
 
     public int this[int x, int y]
@@ -88,7 +76,7 @@ internal class Map
     {
         int xEnd = (xStart + SUBMAP_SIZE >= length) ? length : xStart + SUBMAP_SIZE + 1;
         int yEnd = (yStart + SUBMAP_SIZE >= width) ? width : yStart + SUBMAP_SIZE + 1;
-        Map subMap = new Map(xEnd - xStart, yEnd - yStart, squareSize, this);
+        Map subMap = new Map(xEnd - xStart, yEnd - yStart, squareSize);
         for (int x = xStart; x < xEnd; x++)
         {
             for (int y = yStart; y < yEnd; y++)
