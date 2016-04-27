@@ -1,17 +1,16 @@
 ﻿using MapHelpers;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
 public abstract class MapGenerator : MonoBehaviour {
+
     [SerializeField]
     int length = 50;
     [SerializeField]
     int width = 50;
     [SerializeField]
     [Range(0, 1)]
-    float randomFillPercent = 0.5f;
+    float mapDensity = 0.5f;
     [SerializeField]
     string seed;
     [SerializeField]
@@ -20,10 +19,14 @@ public abstract class MapGenerator : MonoBehaviour {
     int borderSize = 0;
     [SerializeField]
     int squareSize = 1;
+    [SerializeField]
+    int wallHeight = 3;
 
-    protected Map map { get; private set; }
-    protected internal GameObject cave { get; set; }
-    protected internal List<MapMeshes> generatedMeshes { get; set; }
+    public Map map { get; private set; }
+    public GameObject cave { get; protected set; }
+    public List<MapMeshes> generatedMeshes { get; protected set; }
+
+    protected MeshGenerator meshGenerator;
 
     int SMOOTHING_ITERATIONS = 5;
     int CELLULAR_THRESHOLD = 4;
@@ -31,20 +34,26 @@ public abstract class MapGenerator : MonoBehaviour {
     int MINIMUM_OPEN_REGION_SIZE = 50;
     int TUNNELING_RADIUS = 1;
 
-    public void GenerateNewMapWithMesh()
+    void Start()
+    {
+        meshGenerator = GetComponent<MeshGenerator>();
+    }
+
+    public Map GenerateNewMapWithMesh()
     {
         DestroyChildren();
         GenerateMap();
         GenerateMeshFromMap(map);
+        return map;
     }
 
     public Map GenerateMap()
     {
-        map = new Map(length, width, squareSize);
+        map = new Map(length, width, squareSize, wallHeight);
         RandomFillMap();
         SmoothMap(SMOOTHING_ITERATIONS);
         ProcessMap();
-        map.ApplyBorder(borderSize);
+        ApplyBorder(borderSize);
         return map;
     }
 
@@ -59,7 +68,7 @@ public abstract class MapGenerator : MonoBehaviour {
             for (int y = 0; y < width; y++)
             {
                 bool isEdge = (x == 0 || x == length - 1 || y == 0 || y == width - 1);
-                map[x, y] = (isEdge || Random.value < randomFillPercent) ? 1 : 0;
+                map[x, y] = (isEdge || Random.value < mapDensity) ? 1 : 0;
             }
         }
     }
@@ -92,6 +101,22 @@ public abstract class MapGenerator : MonoBehaviour {
         ConnectRooms(rooms);
     }
 
+    void ApplyBorder(int borderSize)
+    {
+        Map borderedMap = new Map(length + borderSize * 2, width + borderSize * 2, map.squareSize, map.wallHeight);
+        for (int x = 0; x < borderedMap.length; x++)
+        {
+            int xShifted = x - borderSize;
+            for (int y = 0; y < borderedMap.width; y++)
+            {
+                int yShifted = y - borderSize;
+                bool isInsideBorder = (0 <= xShifted && xShifted < length) && (0 <= yShifted && yShifted < width);
+                borderedMap[x, y] = isInsideBorder ? map[xShifted, yShifted] : 1;
+            }
+        }
+        map = borderedMap;
+    }
+
     int GetSurroundingWallCount(int gridX, int gridY)
     {
         int wallCount = 0;
@@ -115,7 +140,7 @@ public abstract class MapGenerator : MonoBehaviour {
         List<Room> remainingRegions = new List<Room>();
         foreach (TileRegion region in regions)
         {
-            if (region.Size() < removalThreshold)
+            if (region.Size < removalThreshold)
             {
                 FillRegion(region, otherType);
             }
@@ -260,6 +285,13 @@ public abstract class MapGenerator : MonoBehaviour {
         return (visited[x, y] == 0) && (map[x, y] == tileType);
     }
 
+    protected GameObject CreateChild(string name, Transform parent)
+    {
+        GameObject child = new GameObject(name);
+        child.transform.parent = parent;
+        return child;
+    }
+
     void DestroyChildren()
     {
         List<Transform> children = new List<Transform>();
@@ -282,7 +314,7 @@ public class MapMeshes
 
     private MapMeshes() { }
 
-    internal MapMeshes(Mesh ceilingMesh, Mesh wallMesh = null)
+    public MapMeshes(Mesh ceilingMesh = null, Mesh wallMesh = null)
     {
         this.ceilingMesh = ceilingMesh;
         this.wallMesh = wallMesh;

@@ -22,7 +22,7 @@ public class MapGeneratorEditor : Editor {
         }
     }
 
-    internal void CreatePrefab(MapGenerator mapGenerator)
+    public void CreatePrefab(MapGenerator mapGenerator)
     {
         string guid = AssetDatabase.CreateFolder("Assets", "GeneratedCave");
         string path = AssetDatabase.GUIDToAssetPath(guid) + "/";
@@ -35,7 +35,10 @@ public class MapGeneratorEditor : Editor {
 
     void CreateMeshAssets(MapMeshes meshes, string path)
     {
-        AssetDatabase.CreateAsset(meshes.ceilingMesh, path + meshes.ceilingMesh.name + ".mesh");
+        if (meshes.ceilingMesh != null)
+        {
+            AssetDatabase.CreateAsset(meshes.ceilingMesh, path + meshes.ceilingMesh.name + ".mesh");
+        }
         if (meshes.wallMesh != null)
         {
             AssetDatabase.CreateAsset(meshes.wallMesh, path + meshes.wallMesh.name + ".mesh");

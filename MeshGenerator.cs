@@ -6,7 +6,6 @@ using UnityEngine;
 
 public class MeshGenerator : MonoBehaviour {
 
-    float squareSize;
     List<Vector3> baseVertices = new List<Vector3>();
     List<int> meshTriangles = new List<int>();
     Dictionary<int, List<Triangle>> triangleMap = new Dictionary<int, List<Triangle>>();
@@ -14,21 +13,18 @@ public class MeshGenerator : MonoBehaviour {
     bool[] checkedVertices;
 
     Map map;
-    int wallHeight = 3;
 
     [SerializeField]
-    float wallTextureCompress = 0.1f;
-    [SerializeField]
-    Vector2 textureDimensions = new Vector2(100f, 100f);
+    Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
 
-    internal MapMeshes Generate3D(Map map)
+    public MapMeshes Generate3D(Map map)
     {
         Mesh ceilingMesh = Generate(map);
-        Mesh wallMesh = CreateWallMesh();
+        Mesh wallMesh = CreateWallMesh(map.wallHeight);
         return new MapMeshes(ceilingMesh, wallMesh);
     }
 
-    internal MapMeshes Generate2D(Map map)
+    public MapMeshes Generate2D(Map map)
     {
         Mesh ceilingMesh = Generate(map);
         return new MapMeshes(ceilingMesh);
@@ -125,8 +121,8 @@ public class MeshGenerator : MonoBehaviour {
     Vector2[] ComputeCeilingUVArray()
     {
         Vector2[] uv = new Vector2[baseVertices.Count];
-        float xMax = textureDimensions.x;
-        float yMax = textureDimensions.y;
+        float xMax = ceilingTextureDimensions.x;
+        float yMax = ceilingTextureDimensions.y;
         for (int i = 0; i < baseVertices.Count; i++)
         {
             float percentX = baseVertices[i].x / xMax;
@@ -136,7 +132,7 @@ public class MeshGenerator : MonoBehaviour {
         return uv;
     }
 
-    Mesh CreateWallMesh()
+    Mesh CreateWallMesh(int height)
     {
         int outlineParameter = outlines.Select(x => x.Size() - 1).Sum();
         Vector3[] wallVertices = new Vector3[4 * outlineParameter];
@@ -151,13 +147,13 @@ public class MeshGenerator : MonoBehaviour {
             {
                 wallVertices[vertexCount] = baseVertices[outline[i]];
                 wallVertices[vertexCount + 1] = baseVertices[outline[i + 1]];
-                wallVertices[vertexCount + 2] = baseVertices[outline[i]] - Vector3.up * wallHeight;
-                wallVertices[vertexCount + 3] = baseVertices[outline[i + 1]] - Vector3.up * wallHeight;
+                wallVertices[vertexCount + 2] = baseVertices[outline[i]] - Vector3.up * height;
+                wallVertices[vertexCount + 3] = baseVertices[outline[i + 1]] - Vector3.up * height;
 
-                uv[vertexCount] = new Vector2(i, wallHeight) * wallTextureCompress;
-                uv[vertexCount + 1] = new Vector2(i + 1, wallHeight) * wallTextureCompress;
-                uv[vertexCount + 2] = new Vector2(i, 0f) * wallTextureCompress;
-                uv[vertexCount + 3] = new Vector2(i + 1, 0f) * wallTextureCompress;
+                uv[vertexCount] = new Vector2(0f, 1f);
+                uv[vertexCount + 1] = new Vector2(1f, 1f);
+                uv[vertexCount + 2] = new Vector2(0f, 0f);
+                uv[vertexCount + 3] = new Vector2(1f, 0f);
 
                 wallTriangles[triangleCount] = vertexCount;
                 wallTriangles[triangleCount + 1] = vertexCount + 2;
@@ -260,15 +256,15 @@ public class MeshGenerator : MonoBehaviour {
     bool IsCorrectOrientation(int indexOne, int indexTwo, Triangle triangle)
     {
         int indexThree = triangle.GetThirdPoint(indexOne, indexTwo);
-        return IsRight(baseVertices[indexOne], baseVertices[indexTwo], baseVertices[indexThree]);
+        return IsRightOf(baseVertices[indexOne], baseVertices[indexTwo], baseVertices[indexThree]);
     }
 
-    bool IsRight(Vector3 a, Vector3 b, Vector3 c)
+    bool IsRightOf(Vector3 a, Vector3 b, Vector3 c)
     {
         return ((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) < 0;
     }
 
-    internal List<Vector2[]> Generate2DColliders()
+    public List<Vector2[]> Generate2DColliders()
     {
         EdgeCollider2D[] currentColliders = gameObject.GetComponents<EdgeCollider2D>();
         foreach (EdgeCollider2D collider in currentColliders)

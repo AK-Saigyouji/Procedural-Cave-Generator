@@ -2,15 +2,15 @@
 {
     class RoomConnection : System.IComparable<RoomConnection>
     {
-        internal Room roomA { get; private set; }
-        internal Room roomB { get; private set; }
-        internal Coord tileA { get; private set; }
-        internal Coord tileB { get; private set; }
-        internal int distance { get; private set; }
-        internal int indexA { get; private set; }
-        internal int indexB { get; private set; }
+        public Room roomA { get; private set; }
+        public Room roomB { get; private set; }
+        public Coord tileA { get; private set; }
+        public Coord tileB { get; private set; }
+        public int distance { get; private set; }
+        public int indexA { get; private set; }
+        public int indexB { get; private set; }
 
-        internal RoomConnection(Room roomA, Room roomB, int indexRoomA, int indexRoomB)
+        public RoomConnection(Room roomA, Room roomB, int indexRoomA, int indexRoomB)
         {
             this.roomA = roomA;
             this.roomB = roomB;

@@ -30,7 +30,7 @@ namespace MeshHelpers
         int configuration;
         Node[] nodes;
 
-        internal Square(ControlNode topLeft, ControlNode topRight, ControlNode bottomRight, ControlNode bottomLeft)
+        public Square(ControlNode topLeft, ControlNode topRight, ControlNode bottomRight, ControlNode bottomLeft)
         {
             // The eight nodes in the square are indexed from 0 to 7 by starting at the topleft and going clockwise
             nodes = new Node[]
@@ -42,7 +42,7 @@ namespace MeshHelpers
                 2 * Convert.ToInt32(bottomRight.active) + Convert.ToInt32(bottomLeft.active);
         }
 
-        internal Node[] GetPoints()
+        public Node[] GetPoints()
         {
             int[] pointIndices = configurationTable[configuration];
             Node[] points = new Node[pointIndices.Length];

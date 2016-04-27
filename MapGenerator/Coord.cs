@@ -1,17 +1,17 @@
 ﻿namespace MapHelpers
 {
-    struct Coord
+    public struct Coord
     {
-        internal int x;
-        internal int y;
+        public int x;
+        public int y;
 
-        internal Coord(int x, int y)
+        public Coord(int x, int y)
         {
             this.x = x;
             this.y = y;
         }
 
-        internal int SquaredDistance(Coord otherTile)
+        public int SquaredDistance(Coord otherTile)
         {
             int xDelta = x - otherTile.x;
             int yDelta = y - otherTile.y;

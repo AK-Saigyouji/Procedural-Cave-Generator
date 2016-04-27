@@ -7,20 +7,16 @@ namespace MapHelpers
     class TileRegion : IEnumerable<Coord>
     {
         List<Coord> tiles = new List<Coord>();
+        public int Size { get { return tiles.Count; } }
 
-        internal void Add(Coord coord)
+        public void Add(Coord coord)
         {
             tiles.Add(coord);
         }
 
-        internal Coord this[int index]
+        public Coord this[int index]
         {
             get { return tiles[index]; }
-        }
-
-        internal int Size()
-        {
-            return tiles.Count;
         }
 
         public IEnumerator<Coord> GetEnumerator()

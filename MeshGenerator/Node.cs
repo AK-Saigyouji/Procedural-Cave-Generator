@@ -8,10 +8,10 @@ namespace MeshHelpers
 {
     class Node
     {
-        internal Vector3 position { get; private set; }
-        internal int vertexIndex { get; set; }
+        public Vector3 position { get; private set; }
+        public int vertexIndex { get; set; }
 
-        internal Node(Vector3 position)
+        public Node(Vector3 position)
         {
             this.position = position;
             vertexIndex = -1;
@@ -20,11 +20,11 @@ namespace MeshHelpers
 
     class ControlNode : Node
     {
-        internal bool active { get; private set; }
-        internal Node above { get; private set; }
-        internal Node right { get; private set; }
+        public bool active { get; private set; }
+        public Node above { get; private set; }
+        public Node right { get; private set; }
 
-        internal ControlNode(Vector3 position, bool active, float squareSize) : base(position)
+        public ControlNode(Vector3 position, bool active, float squareSize) : base(position)
         {
             this.active = active;
             above = new Node(position + Vector3.forward * (squareSize / 2f));

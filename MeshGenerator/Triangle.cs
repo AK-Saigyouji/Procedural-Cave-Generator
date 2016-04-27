@@ -11,19 +11,19 @@ namespace MeshHelpers
         public int b;
         public int c;
 
-        internal Triangle(int a, int b, int c)
+        public Triangle(int a, int b, int c)
         {
             this.a = a;
             this.b = b;
             this.c = c;
         }
 
-        internal bool Contains(int vertex)
+        public bool Contains(int vertex)
         {
             return (vertex == a) || (vertex == b) || (vertex == c);
         }
 
-        internal int this[int i]
+        public int this[int i]
         {
             get
             {
@@ -38,7 +38,7 @@ namespace MeshHelpers
             }
         }
 
-        internal int GetThirdPoint(int indexOne, int indexTwo)
+        public int GetThirdPoint(int indexOne, int indexTwo)
         {
             for (int i = 0; i < 3; i++)
             {

@@ -5,25 +5,28 @@ using MapHelpers;
 
 public class Map
 {
-    internal int[,] grid { get; private set; }
-    internal int squareSize { get; private set; }
-    internal int length { get { return grid.GetLength(0); } }
-    internal int width { get { return grid.GetLength(1); } }
-    internal Vector2 position { get; private set; }
-    internal int index { get; private set; }
+    public int[,] grid { get; private set; }
+    public int squareSize { get; private set; }
+    public int length { get { return grid.GetLength(0); } }
+    public int width { get { return grid.GetLength(1); } }
+    public Vector2 position { get; private set; }
+    public int index { get; private set; }
+    public int wallHeight { get; private set; }
     static int SUBMAP_SIZE = 100;
 
-    internal Map(int length, int width, int squareSize)
+    public Map(int length, int width, int squareSize, int wallHeight)
     {
         grid = new int[length, width];
         this.squareSize = squareSize;
+        this.wallHeight = wallHeight;
         position = new Vector2(0f, 0f);
     }
 
-    internal Map(Map map)
+    public Map(Map map)
     {
         grid = map.grid;
         squareSize = map.squareSize;
+        wallHeight = map.wallHeight;
         position = new Vector2(0f, 0f);
     }
 
@@ -33,29 +36,13 @@ public class Map
         set { grid[x, y] = value; }
     }
 
-    internal int this[Coord tile]
+    public int this[Coord tile]
     {
         get { return grid[tile.x, tile.y]; }
         set { grid[tile.x, tile.y] = value; }
     }
 
-    internal void ApplyBorder(int borderSize)
-    {
-        int[,] borderedMap = new int[length + borderSize * 2, width + borderSize * 2];
-        for (int x = 0; x < borderedMap.GetLength(0); x++)
-        {
-            int xShifted = x - borderSize;
-            for (int y = 0; y < borderedMap.GetLength(1); y++)
-            {
-                int yShifted = y - borderSize;
-                bool isInsideBorder = (0 <= xShifted && xShifted < length) && (0 <= yShifted && yShifted < width);
-                borderedMap[x, y] = isInsideBorder ? grid[xShifted, yShifted] : 1;
-            }
-        }
-        grid = borderedMap;
-    }
-
-    internal IList<Map> SubdivideMap()
+    public IList<Map> SubdivideMap()
     {
         IList<Map> maps = new List<Map>();
         int xNumComponents = Mathf.CeilToInt(length / (float)SUBMAP_SIZE);
@@ -76,7 +63,7 @@ public class Map
     {
         int xEnd = (xStart + SUBMAP_SIZE >= length) ? length : xStart + SUBMAP_SIZE + 1;
         int yEnd = (yStart + SUBMAP_SIZE >= width) ? width : yStart + SUBMAP_SIZE + 1;
-        Map subMap = new Map(xEnd - xStart, yEnd - yStart, squareSize);
+        Map subMap = new Map(xEnd - xStart, yEnd - yStart, squareSize, wallHeight);
         for (int x = xStart; x < xEnd; x++)
         {
             for (int y = yStart; y < yEnd; y++)
@@ -88,27 +75,27 @@ public class Map
         return subMap;
     }
 
-    internal bool IsEdgeTile(int x, int y)
+    public bool IsEdgeTile(int x, int y)
     {
         return GetAdjacentTiles(x, y).Any(adjTile => this[x, y] == 1);
     }
 
-    internal bool IsEdgeTile(Coord tile)
+    public bool IsEdgeTile(Coord tile)
     {
         return GetAdjacentTiles(tile).Any(adjTile => this[adjTile] == 1);
     }
 
-    internal bool IsInMap(int x, int y)
+    public bool IsInMap(int x, int y)
     {
         return 0 <= x && x <= length && 0 <= y && y <= width;
     }
 
-    internal bool IsInMap(Coord coord)
+    public bool IsInMap(Coord coord)
     {
         return IsInMap(coord.x, coord.y);
     }
 
-    internal IEnumerable<Coord> GetAdjacentTiles(int x, int y)
+    public IEnumerable<Coord> GetAdjacentTiles(int x, int y)
     {
         if (x > 0)
             yield return new Coord(x - 1, y);
@@ -120,7 +107,7 @@ public class Map
             yield return new Coord(x, y + 1);
     }
 
-    internal IEnumerable<Coord> GetAdjacentTiles(Coord tile)
+    public IEnumerable<Coord> GetAdjacentTiles(Coord tile)
     {
         return GetAdjacentTiles(tile.x, tile.y);
     }

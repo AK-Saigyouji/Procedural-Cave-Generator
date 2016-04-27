@@ -4,7 +4,7 @@ namespace MapHelpers
 {
     static class Kruskal
     {
-        static internal List<RoomConnection> GetPrunedConnections(List<RoomConnection> connections, int numRooms)
+        static public List<RoomConnection> GetPrunedConnections(List<RoomConnection> connections, int numRooms)
         {
             DisjointSet components = new DisjointSet();
             connections.Sort();

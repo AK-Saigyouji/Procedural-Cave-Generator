@@ -10,7 +10,7 @@ namespace MeshHelpers
     {
         Square[,] squares;
 
-        internal SquareGrid(Map map)
+        public SquareGrid(Map map)
         {
             int nodeCountX = map.length;
             int nodeCountY = map.width;
@@ -41,13 +41,13 @@ namespace MeshHelpers
             return squares;
         }
 
-        internal Square this[int x, int y]
+        public Square this[int x, int y]
         {
             get { return squares[x, y]; }
             private set { squares[x, y] = value; }
         }
 
-        internal int GetLength(int axis)
+        public int GetLength(int axis)
         {
             return squares.GetLength(axis);
         }
