@@ -16,13 +16,11 @@ public class Map
     public int width { get { return grid.GetLength(1); } }
     public Vector2 position { get; private set; }
     public int index { get; private set; }
-    public int wallHeight { get; private set; }
 
-    public Map(int length, int width, int squareSize, int wallHeight)
+    public Map(int length, int width, int squareSize)
     {
         grid = new int[length, width];
         this.squareSize = squareSize;
-        this.wallHeight = wallHeight;
         position = new Vector2(0f, 0f);
     }
 
@@ -30,7 +28,6 @@ public class Map
     {
         grid = map.grid;
         squareSize = map.squareSize;
-        wallHeight = map.wallHeight;
         position = map.position;
     }
 
@@ -72,7 +69,7 @@ public class Map
     {
         int xEnd = (xStart + submapSize >= length) ? length : xStart + submapSize + 1;
         int yEnd = (yStart + submapSize >= width) ? width : yStart + submapSize + 1;
-        Map subMap = new Map(xEnd - xStart, yEnd - yStart, squareSize, wallHeight);
+        Map subMap = new Map(xEnd - xStart, yEnd - yStart, squareSize);
         for (int x = xStart; x < xEnd; x++)
         {
             for (int y = yStart; y < yEnd; y++)

@@ -24,8 +24,6 @@ public abstract class MapGenerator : MonoBehaviour
     int borderSize = 0;
     [SerializeField]
     int squareSize = 1;
-    [SerializeField]
-    int wallHeight = 3;
 
     public Map map { get; private set; }
     public GameObject cave { get; protected set; }
@@ -65,7 +63,7 @@ public abstract class MapGenerator : MonoBehaviour
     /// <returns>Returns the generated Map object</returns>
     public Map GenerateMap()
     {
-        map = new Map(length, width, squareSize, wallHeight);
+        map = new Map(length, width, squareSize);
         RandomFillMap();
         SmoothMap(SMOOTHING_ITERATIONS);
         List<Room> rooms = RemoveSmallRegions(MINIMUM_WALL_REGION_SIZE, MINIMUM_OPEN_REGION_SIZE);
@@ -328,7 +326,7 @@ public abstract class MapGenerator : MonoBehaviour
     /// <param name="borderSize">How thick the border should be.</param>
     void ApplyBorder(int borderSize)
     {
-        Map borderedMap = new Map(length + borderSize * 2, width + borderSize * 2, map.squareSize, map.wallHeight);
+        Map borderedMap = new Map(length + borderSize * 2, width + borderSize * 2, map.squareSize);
         for (int x = 0; x < borderedMap.length; x++)
         {
             int xShifted = x - borderSize;

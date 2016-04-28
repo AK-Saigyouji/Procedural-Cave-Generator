@@ -28,10 +28,10 @@ public class MeshGenerator : MonoBehaviour {
     /// </summary>
     /// <param name="map">Map object, usually produced by an appropriate Map Generator</param>
     /// <returns>MapMeshes object containing the generated meshes.</returns>
-    public MapMeshes Generate3D(Map map)
+    public MapMeshes Generate3D(Map map, int wallHeight)
     {
         Mesh ceilingMesh = Generate(map);
-        Mesh wallMesh = CreateWallMesh(map.wallHeight);
+        Mesh wallMesh = CreateWallMesh(wallHeight);
         return new MapMeshes(ceilingMesh, wallMesh);
     }
 

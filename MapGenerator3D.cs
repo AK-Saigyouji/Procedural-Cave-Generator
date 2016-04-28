@@ -8,6 +8,8 @@ using System.Collections.Generic;
 public class MapGenerator3D : MapGenerator
 {
     [SerializeField]
+    int wallHeight = 3;
+    [SerializeField]
     Material ceilingMaterial;
     [SerializeField]
     Material wallMaterial;
@@ -19,7 +21,7 @@ public class MapGenerator3D : MapGenerator
         foreach (Map subMap in map.SubdivideMap(MAP_CHUNK_SIZE))
         {
             GameObject sector = CreateChild("Sector " + subMap.index, cave.transform);
-            MapMeshes mapMeshes = meshGenerator.Generate3D(subMap);
+            MapMeshes mapMeshes = meshGenerator.Generate3D(subMap, wallHeight);
             CreateObjectFromMesh(mapMeshes.ceilingMesh, "Ceiling", sector, ceilingMaterial);
             GameObject walls = CreateObjectFromMesh(mapMeshes.wallMesh, "Walls", sector, wallMaterial);
             AddWallCollider(walls, mapMeshes);
