@@ -26,11 +26,17 @@ The MapGenerator scripts have a number of variables in the inspector that can be
 
 * Wall Material (3D only) and Ceiling Material
 
-   These control the materials for the two separate components of the cave: the ceiling (top of the walls) and the walls themselves. To control tiling for the walls, use the Tiling properties on the Materials used, particularly if the square size and wall height parameters differ by a significant amount. By default, each flat section of the walls will have the entire texture mapped across it. To control tiling for the ceiling, the MeshGenerator script offers one additional property that can be altered:
+   These control the materials for the two separate components of the cave: the ceiling (top of the walls) and the walls themselves. 
 
-* Ceiling Texture Dimensions (on the MeshGenerator script)
+The MeshGenerator script also has a few variables relating to texture tiling. If a texture is too stretched out or compressed, these variables can be tweaked to adjust that. Additionally, Tiling can be adjusted on the chosen Material itself for further control. 
 
-   Gives an x and y value corresponding to how the ceiling texture should be applied, implicitly determining tiling. e.g. if the map is 300 by 200 and you're using a texture that is meant to be spread across a 100 by 100 space in game units, then the texture will be tiled a total of 6 times across the map. 
+* Ceiling Texture Dimensions
+
+   Determines ceiling tiling. If the map is 300 by 200 and the dimensions are set to 100 by 100, then the ceiling texture will be tiled 6 times, in each 100 by 100 region. 
+   
+* Walls Per Texture Tile
+
+   Determines how many sections of wall the wall texture will span before tiling. Reducing this number will increase tiling, increasing it will reduce tiling. 
   
 ## 2. Brief overview of how the generator works
 
@@ -79,3 +85,4 @@ The mapgenerator produces a 2D grid of 0s and 1s, the 1s corresponding to the wa
 * The room and connection information processed during map creation can be use to produce a more optimized path-finding algorithm than a direct A* search over the entire map. 
 * The map object could be enriched to support more tile-based features, such as holding information about what enemies or items are occupying a given tile. 
 * The main computational bottleneck is computing the shortest path between every pair of rooms. Finding a way to optimize this would result in a significant speedup for larger maps. 
+* The code for generating outlines is in significant need of refactoring.
