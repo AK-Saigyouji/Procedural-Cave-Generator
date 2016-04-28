@@ -3,6 +3,11 @@ using System.Collections.Generic;
 using System.Linq;
 using MapHelpers;
 
+/// <summary>
+/// The 2D representation of the generated map. Points in the map are given by either an x and y integer coordinate
+/// like a 2D array, or a Coord object. Values of 1 correspond to walls, 0 to open space. By default, it is not necessary
+/// to manually create maps: the map generator will do so. 
+/// </summary>
 public class Map
 {
     public int[,] grid { get; private set; }
@@ -12,7 +17,6 @@ public class Map
     public Vector2 position { get; private set; }
     public int index { get; private set; }
     public int wallHeight { get; private set; }
-    static int SUBMAP_SIZE = 100;
 
     public Map(int length, int width, int squareSize, int wallHeight)
     {
@@ -27,7 +31,7 @@ public class Map
         grid = map.grid;
         squareSize = map.squareSize;
         wallHeight = map.wallHeight;
-        position = new Vector2(0f, 0f);
+        position = map.position;
     }
 
     public int this[int x, int y]
@@ -42,16 +46,21 @@ public class Map
         set { grid[tile.x, tile.y] = value; }
     }
 
-    public IList<Map> SubdivideMap()
+    /// <summary>
+    /// Cut up the Map into smaller Map chunks.
+    /// </summary>
+    /// <param name="submapSize">The maximum size of either dimension.</param>
+    /// <returns>Returns a list of smaller Map objects.</returns>
+    public IList<Map> SubdivideMap(int submapSize)
     {
         IList<Map> maps = new List<Map>();
-        int xNumComponents = Mathf.CeilToInt(length / (float)SUBMAP_SIZE);
-        int yNumComponents = Mathf.CeilToInt(width / (float)SUBMAP_SIZE);
+        int xNumComponents = Mathf.CeilToInt(length / (float)submapSize);
+        int yNumComponents = Mathf.CeilToInt(width / (float)submapSize);
         for (int x = 0; x < xNumComponents; x++)
         {
             for (int y = 0; y < yNumComponents; y++)
             {
-                Map subMap = GenerateSubMap(x * SUBMAP_SIZE, y * SUBMAP_SIZE);
+                Map subMap = GenerateSubMap(x * submapSize, y * submapSize, submapSize);
                 subMap.index = x * yNumComponents + y;
                 maps.Add(subMap);
             }
@@ -59,10 +68,10 @@ public class Map
         return maps;
     }
 
-    Map GenerateSubMap(int xStart, int yStart)
+    Map GenerateSubMap(int xStart, int yStart, int submapSize)
     {
-        int xEnd = (xStart + SUBMAP_SIZE >= length) ? length : xStart + SUBMAP_SIZE + 1;
-        int yEnd = (yStart + SUBMAP_SIZE >= width) ? width : yStart + SUBMAP_SIZE + 1;
+        int xEnd = (xStart + submapSize >= length) ? length : xStart + submapSize + 1;
+        int yEnd = (yStart + submapSize >= width) ? width : yStart + submapSize + 1;
         Map subMap = new Map(xEnd - xStart, yEnd - yStart, squareSize, wallHeight);
         for (int x = xStart; x < xEnd; x++)
         {
@@ -87,7 +96,7 @@ public class Map
 
     public bool IsInMap(int x, int y)
     {
-        return 0 <= x && x <= length && 0 <= y && y <= width;
+        return 0 <= x && x < length && 0 <= y && y < width;
     }
 
     public bool IsInMap(Coord coord)

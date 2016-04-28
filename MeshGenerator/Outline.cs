@@ -1,13 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Collections.Generic;
 
 namespace MeshHelpers
 {
+    /// <summary>
+    /// Outline represents a collection of indices corresponding to points that separate a region of walls from a 
+    /// region of space.
+    /// </summary>
     class Outline
     {
         List<int> indices = new List<int>();
+        public int size { get { return indices.Count; } }
 
         public Outline(int vertexIndex)
         {
@@ -24,11 +26,5 @@ namespace MeshHelpers
             get { return indices[i]; }
             private set { indices[i] = value; }
         }
-
-        public int Size()
-        {
-            return indices.Count;
-        }
-
     }
 }

@@ -1,7 +1,10 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// A 2D map generator, intended to be used in 2D mode. Generates flat cavernous regions and edge colliders that run along
+/// the outlines of these regions for collision detection.
+/// </summary>
 public class MapGenerator2D : MapGenerator {
 
     [SerializeField]
@@ -11,7 +14,7 @@ public class MapGenerator2D : MapGenerator {
     {
         cave = CreateChild("Cave2D", transform);
         generatedMeshes = new List<MapMeshes>();
-        foreach (Map subMap in map.SubdivideMap())
+        foreach (Map subMap in map.SubdivideMap(MAP_CHUNK_SIZE))
         {
             GameObject sector = CreateChild("sector " + subMap.index, cave.transform);
             MapMeshes mapMeshes = meshGenerator.Generate2D(subMap);
@@ -23,7 +26,13 @@ public class MapGenerator2D : MapGenerator {
 
     void AddColliders(GameObject gameObject)
     {
-        List<Vector2[]> edgePointsList = meshGenerator.Generate2DColliders();
+        EdgeCollider2D[] currentColliders = gameObject.GetComponents<EdgeCollider2D>();
+        foreach (EdgeCollider2D collider in currentColliders)
+        {
+            Destroy(collider);
+        }
+
+        List<Vector2[]> edgePointsList = meshGenerator.GenerateColliderEdges();
         foreach (Vector2[] edgePoints in edgePointsList)
         {
             EdgeCollider2D edgeCollider = gameObject.AddComponent<EdgeCollider2D>();

@@ -1,7 +1,10 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 
+/// <summary>
+/// A 3D map generator. Generates flat cavernous regions and perpendicular walls along these outlines of those regions.
+/// The walls receive a mesh collider for collision detection.
+/// </summary>
 public class MapGenerator3D : MapGenerator
 {
     [SerializeField]
@@ -13,7 +16,7 @@ public class MapGenerator3D : MapGenerator
     {
         cave = CreateChild("Cave3D", transform);
         generatedMeshes = new List<MapMeshes>();
-        foreach (Map subMap in map.SubdivideMap())
+        foreach (Map subMap in map.SubdivideMap(MAP_CHUNK_SIZE))
         {
             GameObject sector = CreateChild("Sector " + subMap.index, cave.transform);
             MapMeshes mapMeshes = meshGenerator.Generate3D(subMap);

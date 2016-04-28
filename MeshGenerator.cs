@@ -1,9 +1,13 @@
 ﻿using MeshHelpers;
 using System.Collections.Generic;
 using System.Linq;
-using UnityEditor;
 using UnityEngine;
 
+/// <summary>
+/// This class produces meshes and colliders for Map objects, offering methods for both 2D and 3D projects. 
+/// The meshes are created using the marching squares algorithm. Note that maps larger than 200 by 200 may result in an error
+/// due to Unity's built in vertex limitation for single meshes.
+/// </summary>
 public class MeshGenerator : MonoBehaviour {
 
     List<Vector3> baseVertices = new List<Vector3>();
@@ -16,7 +20,14 @@ public class MeshGenerator : MonoBehaviour {
 
     [SerializeField]
     Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
+    [SerializeField]
+    int wallsPerTextureTile = 5;
 
+    /// <summary>
+    /// Generates two meshes. One for the flat cavernous regions, and another for the perpendicular walls. 
+    /// </summary>
+    /// <param name="map">Map object, usually produced by an appropriate Map Generator</param>
+    /// <returns>MapMeshes object containing the generated meshes.</returns>
     public MapMeshes Generate3D(Map map)
     {
         Mesh ceilingMesh = Generate(map);
@@ -24,6 +35,10 @@ public class MeshGenerator : MonoBehaviour {
         return new MapMeshes(ceilingMesh, wallMesh);
     }
 
+    /// <summary>
+    /// Generates one mesh for the flat cavernous region of a 2D map.
+    /// </summary>
+    /// <returns>MapMeshes object containing the generated ceiling mesh.</returns>
     public MapMeshes Generate2D(Map map)
     {
         Mesh ceilingMesh = Generate(map);
@@ -40,6 +55,10 @@ public class MeshGenerator : MonoBehaviour {
         return ceilingMesh;
     }
 
+    /// <summary>
+    /// Turns the Map object into a grid of squares, then triangulates the squares according to the marching squares algorithm.
+    /// In the process, this method populates the baseVertices, triangleMap and and meshTriangles collections.
+    /// </summary>
     void TriangulateSquares()
     {
         SquareGrid squareGrid = new SquareGrid(map);
@@ -58,9 +77,13 @@ public class MeshGenerator : MonoBehaviour {
     {
         Node[] points = square.GetPoints();
         AssignVertices(points);
-        MeshFromPoints(points);
+        TrianglesFromPoints(points);
     }
 
+    /// <summary>
+    /// Assigns each position an index. Rather than passing positions (Vector3s) around directly, each position is associated 
+    /// with an index used to track its position in the baseVertices array. 
+    /// </summary>
     void AssignVertices(Node[] points)
     {
         for (int i = 0; i < points.Length; i++)
@@ -73,7 +96,7 @@ public class MeshGenerator : MonoBehaviour {
         }
     }
 
-    void MeshFromPoints(Node[] points)
+    void TrianglesFromPoints(Node[] points)
     {
         if (points.Length >= 3)
             CreateTriangle(points[0], points[1], points[2]);
@@ -85,6 +108,9 @@ public class MeshGenerator : MonoBehaviour {
             CreateTriangle(points[0], points[4], points[5]);
     }
 
+    /// <summary>
+    /// Adds the triangles to the mesh, and keeps a record of all triangles that each vertex belongs to.
+    /// </summary>
     void CreateTriangle(Node a, Node b, Node c)
     {
         Triangle triangle = new Triangle(a.vertexIndex, b.vertexIndex, c.vertexIndex);
@@ -134,26 +160,31 @@ public class MeshGenerator : MonoBehaviour {
 
     Mesh CreateWallMesh(int height)
     {
-        int outlineParameter = outlines.Select(x => x.Size() - 1).Sum();
+        int outlineParameter = outlines.Select(x => x.size - 1).Sum();
         Vector3[] wallVertices = new Vector3[4 * outlineParameter];
         Vector2[] uv = new Vector2[4 * outlineParameter];
         int[] wallTriangles = new int[6 * outlineParameter];
 
         int vertexCount = 0;
         int triangleCount = 0;
+        // Run along each outline, and create a quad between each pair of points in the outline.
         foreach (Outline outline in outlines)
         {
-            for (int i = 0; i < outline.Size() - 1; i++)
+            for (int i = 0; i < outline.size - 1; i++)
             {
                 wallVertices[vertexCount] = baseVertices[outline[i]];
                 wallVertices[vertexCount + 1] = baseVertices[outline[i + 1]];
                 wallVertices[vertexCount + 2] = baseVertices[outline[i]] - Vector3.up * height;
                 wallVertices[vertexCount + 3] = baseVertices[outline[i + 1]] - Vector3.up * height;
 
-                uv[vertexCount] = new Vector2(0f, 1f);
-                uv[vertexCount + 1] = new Vector2(1f, 1f);
-                uv[vertexCount + 2] = new Vector2(0f, 0f);
-                uv[vertexCount + 3] = new Vector2(1f, 0f);
+                // This uv configuration ends that the texture gets tiled once every wallsPerTextureTile quads in the 
+                // horizontal direction.
+                float uFirst = i % wallsPerTextureTile / (float)wallsPerTextureTile;
+                float uSecond = (i + 1) % wallsPerTextureTile / (float)wallsPerTextureTile;
+                uv[vertexCount] = new Vector2(uFirst, 1f);
+                uv[vertexCount + 1] = new Vector2(uSecond, 1f);
+                uv[vertexCount + 2] = new Vector2(uFirst, 0f);
+                uv[vertexCount + 3] = new Vector2(uSecond, 0f);
 
                 wallTriangles[triangleCount] = vertexCount;
                 wallTriangles[triangleCount + 1] = vertexCount + 2;
@@ -211,7 +242,7 @@ public class MeshGenerator : MonoBehaviour {
             return;
         outline.Add(vertexIndex);
         checkedVertices[vertexIndex] = true;
-        int nextVertexIndex = GetConnectedOutlineVertex(vertexIndex, outline.Size());
+        int nextVertexIndex = GetConnectedOutlineVertex(vertexIndex, outline.size);
         FollowOutline(nextVertexIndex, outline);
     }
 
@@ -253,29 +284,40 @@ public class MeshGenerator : MonoBehaviour {
         return sharedTriangleCount == 1;
     }
 
+    /// <summary>
+    /// Will these indices produce an Outline going in the right direction? The direction of the Outline will determine
+    /// whether the walls are visible.
+    /// </summary>
+    /// <param name="indexOne">The starting index.</param>
+    /// <param name="indexTwo">The discovered index in question.</param>
+    /// <param name="triangle">A triangle containing both indices.</param>
+    /// <returns>Returns whether using the second index will result in a correctly oriented Outline.</returns>
     bool IsCorrectOrientation(int indexOne, int indexTwo, Triangle triangle)
     {
         int indexThree = triangle.GetThirdPoint(indexOne, indexTwo);
         return IsRightOf(baseVertices[indexOne], baseVertices[indexTwo], baseVertices[indexThree]);
     }
 
+    /// <summary>
+    /// Is the vector c positioned "to the right of" the line formed by a and b?
+    /// </summary>
+    /// <returns>Returns whether the vector c is positioned to the right of the line formed by a and b.</returns>
     bool IsRightOf(Vector3 a, Vector3 b, Vector3 c)
     {
         return ((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) < 0;
     }
 
-    public List<Vector2[]> Generate2DColliders()
+    /// <summary>
+    /// Generates a list of 2D points for the creation of edge colliders along 2D boundaries in the cave.
+    /// </summary>
+    /// <returns>Returns a list of Vector2 points indicating where edge colliders should be placed.</returns>
+    public List<Vector2[]> GenerateColliderEdges()
     {
-        EdgeCollider2D[] currentColliders = gameObject.GetComponents<EdgeCollider2D>();
-        foreach (EdgeCollider2D collider in currentColliders)
-        {
-            Destroy(collider);
-        }
         List<Vector2[]> edgePointLists = new List<Vector2[]>();
         foreach (Outline outline in outlines)
         {
-            Vector2[] edgePoints = new Vector2[outline.Size()];
-            for (int i = 0; i < outline.Size(); i++)
+            Vector2[] edgePoints = new Vector2[outline.size];
+            for (int i = 0; i < outline.size; i++)
             {
                 edgePoints[i] = new Vector2(baseVertices[outline[i]].x, baseVertices[outline[i]].z);
             }

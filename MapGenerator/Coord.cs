@@ -1,5 +1,8 @@
 ﻿namespace MapHelpers
 {
+    /// <summary>
+    /// Coord is an integer equivalent of Vector2. 
+    /// </summary>
     public struct Coord
     {
         public int x;
@@ -11,6 +14,10 @@
             this.y = y;
         }
 
+        /// <summary>
+        /// Get the squared distance between this coordinate and the given one. Faster than computing the actual distance.
+        /// </summary>
+        /// <returns>Returns the squared distance between Coords.</returns>
         public int SquaredDistance(Coord otherTile)
         {
             int xDelta = x - otherTile.x;

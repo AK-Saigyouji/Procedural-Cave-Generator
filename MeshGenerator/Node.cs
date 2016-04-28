@@ -1,11 +1,10 @@
-﻿using System;
-using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using UnityEngine;
 
 namespace MeshHelpers
 {
+    /// <summary>
+    /// Node associates a position with an index.  
+    /// </summary>
     class Node
     {
         public Vector3 position { get; private set; }
@@ -18,6 +17,10 @@ namespace MeshHelpers
         }
     }
 
+    /// <summary>
+    /// Each square will have a control node in each corner. Which control nodes are active will determine configuration. 
+    /// In addition, the control nodes will manage the additional midpoint nodes to obtain a finger triangulation of squares.
+    /// </summary>
     class ControlNode : Node
     {
         public bool active { get; private set; }

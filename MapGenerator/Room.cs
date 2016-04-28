@@ -1,17 +1,20 @@
 ﻿using System;
-using System.Linq;
 
 namespace MapHelpers
 {
+    /// <summary>
+    /// This class represents a connected, open space in the map. It keeps track of the tiles on its fringe (tiles adjacent
+    /// to walls or exits from the room). 
+    /// </summary>
     class Room : IComparable<Room>
     {
-        public TileRegion innerTiles { get; private set; }
+        public TileRegion allTiles { get; private set; }
         public TileRegion edgeTiles { get; private set; }
         public int Size { get; private set; }
 
         public Room(TileRegion region, Map map)
         {
-            this.innerTiles = region;
+            this.allTiles = region;
             Size = region.Size;
             DetermineEdgeTiles(map);
         }
@@ -19,7 +22,7 @@ namespace MapHelpers
         void DetermineEdgeTiles(Map map)
         {
             edgeTiles = new TileRegion();
-            foreach (Coord tile in innerTiles)
+            foreach (Coord tile in allTiles)
             {
                 if (map.IsEdgeTile(tile))
                 {
@@ -35,7 +38,7 @@ namespace MapHelpers
 
         public override string ToString()
         {
-            return String.Format("Room with {0} tiles, {1} on the edge.", innerTiles.Size, edgeTiles.Size);
+            return String.Format("Room with {0} tiles, {1} on the edge.", allTiles.Size, edgeTiles.Size);
         }
     } 
 }

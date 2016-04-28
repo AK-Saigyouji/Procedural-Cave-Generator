@@ -1,12 +1,16 @@
 ﻿namespace MapHelpers
 {
+    /// <summary>
+    /// Class representing a possible connection between two rooms. Keeps track of the rooms it's connecting and the pair
+    /// of tiles corresponding to the shortest distance between them.
+    /// </summary>
     class RoomConnection : System.IComparable<RoomConnection>
     {
         public Room roomA { get; private set; }
         public Room roomB { get; private set; }
         public Coord tileA { get; private set; }
         public Coord tileB { get; private set; }
-        public int distance { get; private set; }
+        public int squaredDistance { get; private set; }
         public int indexA { get; private set; }
         public int indexB { get; private set; }
 
@@ -16,7 +20,7 @@
             this.roomB = roomB;
             indexA = indexRoomA;
             indexB = indexRoomB;
-            distance = int.MaxValue;
+            squaredDistance = int.MaxValue;
             FindShortestConnection();
         }
 
@@ -27,7 +31,7 @@
                 foreach (Coord tileB in roomB.edgeTiles)
                 {
                     int distance = tileA.SquaredDistance(tileB);
-                    if (distance < this.distance)
+                    if (distance < this.squaredDistance)
                     {
                         Update(tileA, tileB, distance);
                     }
@@ -37,14 +41,14 @@
 
         public int CompareTo(RoomConnection other)
         {
-            return distance.CompareTo(other.distance);
+            return squaredDistance.CompareTo(other.squaredDistance);
         }
 
         void Update(Coord tileA, Coord tileB, int distance)
         {
             this.tileA = tileA;
             this.tileB = tileB;
-            this.distance = distance;
+            this.squaredDistance = distance;
         }
     } 
 }

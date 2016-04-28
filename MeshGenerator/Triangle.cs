@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
-namespace MeshHelpers
+﻿namespace MeshHelpers
 {
+    /// <summary>
+    /// A struct to hold three indices corresponding to points in space. The Triangle does not keep track of what points
+    /// these indices refer to.
+    /// </summary>
     struct Triangle
     {
         public int a;
@@ -18,6 +17,11 @@ namespace MeshHelpers
             this.c = c;
         }
 
+        /// <summary>
+        /// Does the triangle contain this index?
+        /// </summary>
+        /// <param name="vertex">The index corresponding to the point. Not the point itself.</param>
+        /// <returns>Returns whether this triangle contains the index.</returns>
         public bool Contains(int vertex)
         {
             return (vertex == a) || (vertex == b) || (vertex == c);
@@ -38,6 +42,13 @@ namespace MeshHelpers
             }
         }
 
+        /// <summary>
+        /// Gets the first point not equal to the arguments. Does not check that the indices passed in are actually in the 
+        /// triangle.
+        /// </summary>
+        /// <param name="indexOne">An index already in the triangle.</param>
+        /// <param name="indexTwo">Another index already in the triangle.</param>
+        /// <returns>Returns the first index not equal to either of the arguments.</returns>
         public int GetThirdPoint(int indexOne, int indexTwo)
         {
             for (int i = 0; i < 3; i++)

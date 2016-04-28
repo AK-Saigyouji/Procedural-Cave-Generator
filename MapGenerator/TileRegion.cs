@@ -4,6 +4,9 @@ using System.Text;
 
 namespace MapHelpers
 {
+    /// <summary>
+    /// A simple class corresponding to a collection of tiles in the map.
+    /// </summary>
     class TileRegion : IEnumerable<Coord>
     {
         List<Coord> tiles = new List<Coord>();
