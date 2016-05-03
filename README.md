@@ -1,6 +1,8 @@
 # Procedural-Cave-Generator
 
-This is a set of scripts that allow the creation of both 2D and 3D cave meshes in Unity. They can be created either on the fly during gameplay, or saved as prefabs and built upon in the editor. This project was built upon the [Procedural Cave Generator tutorial](https://unity3d.com/learn/tutorials/projects/procedural-cave-generation-tutorial) on the Unity website by Sebastian Lague.
+This is a set of scripts that allow the creation of both 2D and 3D cave meshes in Unity with full collision support. They can be created either on the fly during gameplay through code, or saved as prefabs and built upon in the editor without touching a line of code. This project was built upon the [Procedural Cave Generator tutorial](https://unity3d.com/learn/tutorials/projects/procedural-cave-generation-tutorial) on the Unity website by Sebastian Lague.
+
+[A few examples of what these maps look like can be found here.](http://imgur.com/a/jeZHR) 
 
 ## 1. Using the procedural cave generator
 
@@ -72,7 +74,7 @@ The mapgenerator produces a 2D grid of 0s and 1s, the 1s corresponding to the wa
 * Separated 2D and 3D functionality into separate classes that now inherit from a common abstract class.
 * Turned the 16 case switch statement into a lookup table (using an array), significantly speeding up the triangulation process during mesh creation. 
 * Fixed a bug with the smoothing function. In the original project, this was done in place. This means once a cell is changed, this change will affects its neighbors when it's their turn. By copying changes into a new map, this issue is avoided.
-* Large-scale reorgnanization of the code, introducing many new classes to isolate functionality and improve readability.
+* Large-scale reorganization of the code, introducing many new classes to isolate functionality and improve readability.
 * Use of Kruskal's minimum spanning tree algorithm to connect the rooms, resulting in much simpler code than the original method.
 * Substantially simpler algorithm for finding the line between two points in the map. 
 
