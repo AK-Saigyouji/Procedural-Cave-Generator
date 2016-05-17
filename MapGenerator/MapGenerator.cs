@@ -8,7 +8,6 @@ using UnityEngine;
 /// </summary>
 public abstract class MapGenerator : MonoBehaviour
 {
-
     [SerializeField]
     int length = 50;
     [SerializeField]

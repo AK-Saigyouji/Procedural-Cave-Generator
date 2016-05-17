@@ -6,7 +6,7 @@ using UnityEngine;
 /// <summary>
 /// This class produces meshes and colliders for Map objects, offering methods for both 2D and 3D projects. 
 /// The meshes are created using the marching squares algorithm. Note that maps larger than 200 by 200 may result in an error
-/// due to Unity's built in vertex limitation for single meshes.
+/// due to Unity's built in vertex limitation for single meshes, and should be segmented before passing to the mesh generator.
 /// </summary>
 public class MeshGenerator : MonoBehaviour {
 
@@ -177,14 +177,14 @@ public class MeshGenerator : MonoBehaviour {
                 wallVertices[vertexCount + 2] = baseVertices[outline[i]] - Vector3.up * height;
                 wallVertices[vertexCount + 3] = baseVertices[outline[i + 1]] - Vector3.up * height;
 
-                // This uv configuration ends that the texture gets tiled once every wallsPerTextureTile quads in the 
+                // This uv configuration ensures that the texture gets tiled once every wallsPerTextureTile quads in the 
                 // horizontal direction.
-                float uFirst = i % wallsPerTextureTile / (float)wallsPerTextureTile;
-                float uSecond = (i + 1) % wallsPerTextureTile / (float)wallsPerTextureTile;
-                uv[vertexCount] = new Vector2(uFirst, 1f);
-                uv[vertexCount + 1] = new Vector2(uSecond, 1f);
-                uv[vertexCount + 2] = new Vector2(uFirst, 0f);
-                uv[vertexCount + 3] = new Vector2(uSecond, 0f);
+                float uLeft = i / (float)wallsPerTextureTile;
+                float uRight = (i + 1) / (float)wallsPerTextureTile;
+                uv[vertexCount] = new Vector2(uLeft, 1f);
+                uv[vertexCount + 1] = new Vector2(uRight, 1f);
+                uv[vertexCount + 2] = new Vector2(uLeft, 0f);
+                uv[vertexCount + 3] = new Vector2(uRight, 0f);
 
                 wallTriangles[triangleCount] = vertexCount;
                 wallTriangles[triangleCount + 1] = vertexCount + 2;
