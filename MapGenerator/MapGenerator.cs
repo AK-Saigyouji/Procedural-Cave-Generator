@@ -1,63 +1,44 @@
-﻿using MapHelpers;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using MapHelpers;
 
 /// <summary>
-/// This abstract class is responsible for creating and processing a Map object. Subclasses must implement the generateMesh 
-/// method to tell the class how to interface with the mesh generator.
+/// Generates a randomized cave-like Map object. Ensures that every point is reachable from every other point. Boundary of the
+/// map is guaranteed to consist of walls. 
 /// </summary>
-public abstract class MapGenerator : MonoBehaviour
+public class MapGenerator : IMapGenerator
 {
-    [SerializeField]
-    int length = 50;
-    [SerializeField]
-    int width = 50;
-    [SerializeField]
-    [Range(0, 1)]
-    float mapDensity = 0.5f;
-    [SerializeField]
-    string seed;
-    [SerializeField]
-    bool useRandomSeed = true;
-    [SerializeField]
-    int borderSize = 0;
-    [SerializeField]
-    int squareSize = 1;
+    public int length { get; set; }
+    public int width { get; set; }
+    public float mapDensity { get; set; }
+    public string seed { get; set; }
+    public bool useRandomSeed { get; set; }
+    public int borderSize { get; set; }
+    public int squareSize { get; set; }
 
     public Map map { get; private set; }
-    public GameObject cave { get; protected set; }
-    public List<MapMeshes> generatedMeshes { get; protected set; }
-
-    protected MeshGenerator meshGenerator;
 
     int SMOOTHING_ITERATIONS = 5;
     int CELLULAR_THRESHOLD = 4;
     int MINIMUM_WALL_REGION_SIZE = 50;
     int MINIMUM_OPEN_REGION_SIZE = 50;
     int TUNNELING_RADIUS = 1;
-    protected int MAP_CHUNK_SIZE = 100;
 
-    void Start()
+    public MapGenerator(int length, int width, float mapDensity = 0.5f, string seed = "", bool useRandomSeed = true, 
+        int borderSize = 0, int squareSize = 1)
     {
-        meshGenerator = GetComponent<MeshGenerator>();
+        this.length = length;
+        this.width = width;
+        this.mapDensity = mapDensity;
+        this.seed = seed;
+        this.useRandomSeed = useRandomSeed;
+        this.borderSize = borderSize;
+        this.squareSize = squareSize;
     }
 
     /// <summary>
-    /// Generates a randomized Map object based on map generator's properties, and creates a new child game object
-    /// with the appropriate meshes assigned to it.
-    /// </summary>
-    /// <returns>Returns the generated Map object.</returns>
-    public Map GenerateNewMapWithMesh()
-    {
-        DestroyChildren();
-        GenerateMap();
-        GenerateMeshFromMap(map);
-        return map;
-    }
-
-    /// <summary>
-    /// Generates a randomized Map object based on the map generator's properties, but does not create a child object, nor
-    /// does it create any meshes.
+    /// Generates a randomized Map object based on the map generator's properties. May take a long time for large maps 
+    /// (length * width > 10^7).
     /// </summary>
     /// <returns>Returns the generated Map object</returns>
     public Map GenerateMap()
@@ -71,14 +52,12 @@ public abstract class MapGenerator : MonoBehaviour
         return map;
     }
 
-    abstract protected void GenerateMeshFromMap(Map map);
-
     /// <summary>
     /// Fills the map with 1s and 0s uniformly at random, based on the map density.
     /// </summary>
     void RandomFillMap()
     {
-        Random.seed = useRandomSeed ? System.Environment.TickCount : seed.GetHashCode();
+        Random.seed = useRandomSeed ? GetRandomSeed() : seed.GetHashCode();
 
         for (int x = 0; x < length; x++)
         {
@@ -90,8 +69,13 @@ public abstract class MapGenerator : MonoBehaviour
         }
     }
 
+    int GetRandomSeed()
+    {
+        return System.Environment.TickCount;
+    }
+
     /// <summary>
-    /// Uses cellular automata to smooth out the map. Each cell becomes more like its neighbors,
+    /// Uses synchronous cellular automata to smooth out the map. Each cell becomes more like its neighbors,
     /// resulting in a more regular map.
     /// </summary>
     /// <param name="iterations">The number of smoothing passes.</param>
@@ -339,60 +323,8 @@ public abstract class MapGenerator : MonoBehaviour
         map = borderedMap;
     }
 
-    protected GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
-    {
-        GameObject newObject = new GameObject(name, typeof(MeshRenderer), typeof(MeshFilter));
-        newObject.transform.parent = parent.transform;
-        newObject.GetComponent<MeshFilter>().mesh = mesh;
-        newObject.GetComponent<MeshRenderer>().material = material;
-        return newObject;
-    }
-
     bool IsNewTileOfGivenType(int x, int y, int[,] visited, int tileType)
     {
         return (visited[x, y] == 0) && (map[x, y] == tileType);
     }
-
-    protected GameObject CreateChild(string name, Transform parent)
-    {
-        GameObject child = new GameObject(name);
-        child.transform.parent = parent;
-        return child;
-    }
-
-    /// <summary>
-    /// Safely destroy all of this object's children to make room for a new map.
-    /// </summary>
-    void DestroyChildren()
-    {
-        List<Transform> children = new List<Transform>();
-        foreach (Transform child in transform)
-        {
-            children.Add(child);
-        }
-        foreach (Transform child in children)
-        {
-            child.parent = null;
-            Destroy(child.gameObject);
-        }
-    }
 }
-
-/// <summary>
-/// Storage class to hold generated meshes.
-/// </summary>
-public class MapMeshes
-{
-    public Mesh wallMesh { get; private set; }
-    public Mesh ceilingMesh { get; private set; }
-
-    private MapMeshes() { }
-
-    public MapMeshes(Mesh ceilingMesh = null, Mesh wallMesh = null)
-    {
-        this.ceilingMesh = ceilingMesh;
-        this.wallMesh = wallMesh;
-    }
-}
-
-

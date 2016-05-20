@@ -1,36 +1,36 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
-[CustomEditor(typeof(MapGenerator), true)]
+[CustomEditor(typeof(CaveGenerator), true)]
 public class MapGeneratorEditor : Editor {
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
 
-        MapGenerator mapGenerator = (MapGenerator)target;
+        CaveGenerator caveGenerator = (CaveGenerator)target;
         if (Application.isPlaying)
         {
             if (GUILayout.Button("Generate New Map"))
             {
-                mapGenerator.GenerateNewMapWithMesh();
+                caveGenerator.GenerateCave();
             }
 
             if (GUILayout.Button("Create Prefab"))
             {
-                CreatePrefab(mapGenerator);
+                CreatePrefab(caveGenerator);
             }
         }
     }
 
-    public void CreatePrefab(MapGenerator mapGenerator)
+    public void CreatePrefab(CaveGenerator caveGenerator)
     {
         string guid = AssetDatabase.CreateFolder("Assets", "GeneratedCave");
         string path = AssetDatabase.GUIDToAssetPath(guid) + "/";
-        foreach (MapMeshes meshes in mapGenerator.generatedMeshes)
+        foreach (MapMeshes meshes in caveGenerator.generatedMeshes)
         {
             CreateMeshAssets(meshes, path);
         }
-        CreateCavePrefab(path, mapGenerator.cave);
+        CreateCavePrefab(path, caveGenerator.cave);
     }
 
     void CreateMeshAssets(MapMeshes meshes, string path)

@@ -4,9 +4,8 @@ using System.Linq;
 using MapHelpers;
 
 /// <summary>
-/// The 2D representation of the generated map. Points in the map are given by either an x and y integer coordinate
-/// like a 2D array, or a Coord object. Values of 1 correspond to walls, 0 to open space. By default, it is not necessary
-/// to manually create maps: the map generator will do so. 
+/// The 2D grid-based Map. Points in the map are given x and y integer pairs like a 2d array. 
+/// Values of 1 correspond to walls, 0 to open space.
 /// </summary>
 public class Map
 {
@@ -46,9 +45,8 @@ public class Map
     /// <summary>
     /// Cut up the Map into smaller Map chunks.
     /// </summary>
-    /// <param name="submapSize">The maximum size of either dimension.</param>
     /// <returns>Returns a list of smaller Map objects.</returns>
-    public IList<Map> SubdivideMap(int submapSize)
+    public IList<Map> SubdivideMap(int submapSize = 100)
     {
         IList<Map> maps = new List<Map>();
         int xNumComponents = Mathf.CeilToInt(length / (float)submapSize);
@@ -67,8 +65,8 @@ public class Map
 
     Map GenerateSubMap(int xStart, int yStart, int submapSize)
     {
-        int xEnd = (xStart + submapSize >= length) ? length : xStart + submapSize + 1;
-        int yEnd = (yStart + submapSize >= width) ? width : yStart + submapSize + 1;
+        int xEnd = ComputeSubMapLengthEndPoint(xStart, submapSize);
+        int yEnd = ComputeSubMapWidthEndPoint(yStart, submapSize);
         Map subMap = new Map(xEnd - xStart, yEnd - yStart, squareSize);
         for (int x = xStart; x < xEnd; x++)
         {
@@ -79,6 +77,16 @@ public class Map
         }
         subMap.position = new Vector2(xStart * squareSize, yStart * squareSize);
         return subMap;
+    }
+
+    int ComputeSubMapLengthEndPoint(int xStart, int submapSize)
+    {
+        return (xStart + submapSize >= length) ? length : xStart + submapSize + 1;
+    }
+
+    int ComputeSubMapWidthEndPoint(int yStart, int submapSize)
+    {
+        return (yStart + submapSize >= width) ? width : yStart + submapSize + 1;
     }
 
     public bool IsEdgeTile(int x, int y)
