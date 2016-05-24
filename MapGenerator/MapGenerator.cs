@@ -256,27 +256,20 @@ public class MapGenerator : IMapGenerator
     /// <returns>A list of every connection between rooms in the map.</returns>
     List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
     {
-        int connectionCount = rooms.Count * (rooms.Count - 1) / 2;
-        int workItemCount = 8;
         RoomConnection[] connections = new RoomConnection[rooms.Count * rooms.Count];
-        ManualResetEvent[] resetEvents = new ManualResetEvent[workItemCount];
-        for (int i = 0; i < workItemCount; i++)
+        List<System.Action> actions = new List<System.Action>();
+        for (int j = 0; j < rooms.Count; j ++)
         {
-            resetEvents[i] = new ManualResetEvent(false);
-            ThreadPool.QueueUserWorkItem(new WaitCallback((object index) => 
+            for (int k = j + 1; k < rooms.Count; k++)
             {
-                int workItemIndex = (int)index;
-                for (int j = workItemIndex; j < rooms.Count; j += workItemCount)
-                {
-                    for (int k = j + 1; k < rooms.Count; k++)
-                    {
-                        connections[j * rooms.Count + k] = new RoomConnection(rooms[j], rooms[k], j, k);
-                    }
-                }
-                resetEvents[workItemIndex].Set();
-            }), i);
+                int jCopy = j;
+                int kCopy = k;
+                actions.Add(() => 
+                    connections[jCopy * rooms.Count + kCopy] = new RoomConnection(rooms[jCopy], rooms[kCopy], jCopy, kCopy)
+                );
+            }
         }
-        WaitHandle.WaitAll(resetEvents);
+        Utility.Threading.ParallelExecute(actions.ToArray());
         return connections.Where(x => x != null).ToList();
     }
 

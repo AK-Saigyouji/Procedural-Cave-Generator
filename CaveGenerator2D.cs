@@ -22,19 +22,23 @@ public class CaveGenerator2D : CaveGenerator {
         cave = CreateChild("Cave2D", transform);
         IList<Map> submaps = map.SubdivideMap();
         MeshGenerator[] meshGenerators = GetMeshGenerators(submaps);
+        List<MapMeshes> meshes = new List<MapMeshes>();
         for (int i = 0; i < submaps.Count; i++)
         {
             GameObject sector = CreateSector(submaps[i].index);
-            CreateWall(meshGenerators[i], sector);
+            Mesh mesh = CreateWall(meshGenerators[i], sector);
+            meshes.Add(new MapMeshes(ceilingMesh: mesh));
         }
+        generatedMeshes = meshes;
     }
 
-    void CreateWall(MeshGenerator meshGenerator, GameObject parent)
+    Mesh CreateWall(MeshGenerator meshGenerator, GameObject parent)
     {
         Mesh ceilingMesh = meshGenerator.CreateCeilingMesh();
         GameObject wall = CreateObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial);
         OrientWall(wall);
         AddColliders(wall, meshGenerator);
+        return ceilingMesh;
     }
 
     void OrientWall(GameObject wall)

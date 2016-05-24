@@ -26,28 +26,34 @@ public class CaveGenerator3D : CaveGenerator
 
     protected override void GenerateMeshFromMap(Map map)
     {
+        
         IList<Map> submaps = map.SubdivideMap();
         MeshGenerator[] meshGenerators = GetMeshGenerators(submaps);
         cave = CreateChild("Cave3D", transform);
+        List<MapMeshes> meshes = new List<MapMeshes>();
         for (int i = 0; i < submaps.Count; i++)
         {
             GameObject sector = CreateSector(submaps[i].index);
-            CreateCeiling(meshGenerators[i], sector);
-            CreateWall(meshGenerators[i], sector);
+            Mesh ceilingMesh = CreateCeiling(meshGenerators[i], sector);
+            Mesh wallMesh = CreateWall(meshGenerators[i], sector);
+            meshes.Add(new MapMeshes(ceilingMesh, wallMesh));
         }
+        generatedMeshes = meshes;
     }
 
-    void CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
+    Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
     {
         Mesh ceilingMesh = meshGenerator.CreateCeilingMesh();
         CreateObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial);
+        return ceilingMesh;
     }
 
-    void CreateWall(MeshGenerator meshGenerator, GameObject sector)
+    Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
     {
         Mesh wallMesh = meshGenerator.CreateWallMesh(wallHeight);
         GameObject wall = CreateObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
         AddWallCollider(wall, wallMesh);
+        return wallMesh;
     }
 
     void AddWallCollider(GameObject walls, Mesh wallMesh)
