@@ -10,7 +10,7 @@ namespace MapHelpers
     class TileRegion : IEnumerable<Coord>
     {
         List<Coord> tiles = new List<Coord>();
-        public int Size { get { return tiles.Count; } }
+        public int Count { get { return tiles.Count; } }
 
         public void Add(Coord coord)
         {

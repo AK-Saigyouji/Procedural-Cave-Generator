@@ -1,4 +1,6 @@
-﻿namespace MapHelpers
+﻿using System.Collections.Generic;
+
+namespace MapHelpers
 {
     /// <summary>
     /// Class representing a possible connection between two rooms. Keeps track of the rooms it's connecting and the pair
@@ -14,6 +16,8 @@
         public int indexA { get; private set; }
         public int indexB { get; private set; }
 
+        int MAX_ERROR_IN_SHORTEST_CONNECTION = 6;
+
         public RoomConnection(Room roomA, Room roomB, int indexRoomA, int indexRoomB)
         {
             this.roomA = roomA;
@@ -26,9 +30,13 @@
 
         void FindShortestConnection()
         {
-            foreach (Coord tileA in roomA.edgeTiles)
+            var edgeTilesA = GetOptimizedEdgeTileList(roomA.edgeTiles);
+            var edgeTilesB = GetOptimizedEdgeTileList(roomB.edgeTiles);
+            //var edgeTilesA = roomA.edgeTiles;
+            //var edgeTilesB = roomB.edgeTiles;
+            foreach (Coord tileA in edgeTilesA)
             {
-                foreach (Coord tileB in roomB.edgeTiles)
+                foreach (Coord tileB in edgeTilesB)
                 {
                     int distance = tileA.SquaredDistance(tileB);
                     if (distance < this.squaredDistance)
@@ -39,6 +47,19 @@
             }
         }
 
+        IEnumerable<Coord> GetOptimizedEdgeTileList(TileRegion edgeTiles)
+        {
+            int incrementor = 1;
+            if (edgeTiles.Count > MAX_ERROR_IN_SHORTEST_CONNECTION)
+            {
+                incrementor += MAX_ERROR_IN_SHORTEST_CONNECTION;
+            }
+            for (int i = 0; i < edgeTiles.Count; i += incrementor)
+            {
+                yield return edgeTiles[i];
+            }
+        }
+        
         public int CompareTo(RoomConnection other)
         {
             return squaredDistance.CompareTo(other.squaredDistance);

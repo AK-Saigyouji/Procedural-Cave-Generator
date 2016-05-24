@@ -4,11 +4,11 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// This class produces meshes and colliders for Map objects, offering methods for both 2D and 3D projects. 
-/// The meshes are created using the marching squares algorithm. Note that maps larger than 200 by 200 may result in an error
-/// due to Unity's built in vertex limitation for single meshes, and should be segmented before passing to the mesh generator.
+/// Produces meshes and colliders for Map objects.
+/// The meshes are created using the marching squares algorithm. Break large maps (200x200 or bigger) into smaller maps
+/// before generating meshes out of them.
 /// </summary>
-public class MeshGenerator : MonoBehaviour {
+public class MeshGenerator{
 
     List<Vector3> baseVertices = new List<Vector3>();
     List<int> meshTriangles = new List<int>();
@@ -24,39 +24,97 @@ public class MeshGenerator : MonoBehaviour {
     int wallsPerTextureTile = 5;
 
     /// <summary>
-    /// Generates two meshes. One for the flat cavernous regions, and another for the perpendicular walls. 
+    /// Generate the data necessary to produce meshes. Safe to run on background threads.
     /// </summary>
-    /// <param name="map">Map object, usually produced by an appropriate Map Generator</param>
-    /// <returns>MapMeshes object containing the generated meshes.</returns>
-    public MapMeshes Generate3D(Map map, int wallHeight)
+    /// <param name="map"></param>
+    public void Generate(Map map)
     {
-        Mesh ceilingMesh = Generate(map);
-        Mesh wallMesh = CreateWallMesh(wallHeight);
-        return new MapMeshes(ceilingMesh, wallMesh);
-    }
-
-    /// <summary>
-    /// Generates one mesh for the flat cavernous region of a 2D map.
-    /// </summary>
-    /// <returns>MapMeshes object containing the generated ceiling mesh.</returns>
-    public MapMeshes Generate2D(Map map)
-    {
-        Mesh ceilingMesh = Generate(map);
-        return new MapMeshes(ceilingMesh);
-    }
-
-    Mesh Generate(Map map)
-    {
-        Clear();
         this.map = map;
         TriangulateSquares();
-        Mesh ceilingMesh = CreateCeilingMesh();
         CalculateMeshOutlines();
-        return ceilingMesh;
+    }
+
+    public Mesh CreateCeilingMesh()
+    {
+        Mesh mesh = new Mesh();
+        mesh.vertices = baseVertices.ToArray();
+        mesh.triangles = meshTriangles.ToArray();
+        mesh.RecalculateNormals();
+        mesh.uv = ComputeCeilingUVArray();
+        mesh.name = "Ceiling Mesh" + map.index;
+        return mesh;
+    }
+
+    public Mesh CreateWallMesh(int height)
+    {
+        int outlineParameter = outlines.Select(x => x.size - 1).Sum();
+        Vector3[] wallVertices = new Vector3[4 * outlineParameter];
+        Vector2[] uv = new Vector2[4 * outlineParameter];
+        int[] wallTriangles = new int[6 * outlineParameter];
+
+        int vertexCount = 0;
+        int triangleCount = 0;
+        // Run along each outline, and create a quad between each pair of points in the outline.
+        foreach (Outline outline in outlines)
+        {
+            for (int i = 0; i < outline.size - 1; i++)
+            {
+                wallVertices[vertexCount] = baseVertices[outline[i]];
+                wallVertices[vertexCount + 1] = baseVertices[outline[i + 1]];
+                wallVertices[vertexCount + 2] = baseVertices[outline[i]] - Vector3.up * height;
+                wallVertices[vertexCount + 3] = baseVertices[outline[i + 1]] - Vector3.up * height;
+
+                // This uv configuration ensures that the texture gets tiled once every wallsPerTextureTile quads in the 
+                // horizontal direction.
+                float uLeft = i / (float)wallsPerTextureTile;
+                float uRight = (i + 1) / (float)wallsPerTextureTile;
+                uv[vertexCount] = new Vector2(uLeft, 1f);
+                uv[vertexCount + 1] = new Vector2(uRight, 1f);
+                uv[vertexCount + 2] = new Vector2(uLeft, 0f);
+                uv[vertexCount + 3] = new Vector2(uRight, 0f);
+
+                wallTriangles[triangleCount] = vertexCount;
+                wallTriangles[triangleCount + 1] = vertexCount + 2;
+                wallTriangles[triangleCount + 2] = vertexCount + 3;
+
+                wallTriangles[triangleCount + 3] = vertexCount + 3;
+                wallTriangles[triangleCount + 4] = vertexCount + 1;
+                wallTriangles[triangleCount + 5] = vertexCount;
+                vertexCount += 4;
+                triangleCount += 6;
+            }
+        }
+
+        Mesh wallMesh = new Mesh();
+        wallMesh.vertices = wallVertices;
+        wallMesh.triangles = wallTriangles;
+        wallMesh.RecalculateNormals();
+        wallMesh.uv = uv;
+        wallMesh.name = "Wall Mesh" + map.index;
+        return wallMesh;
     }
 
     /// <summary>
-    /// Turns the Map object into a grid of squares, then triangulates the squares according to the marching squares algorithm.
+    /// Generates a list of 2D points for the creation of edge colliders along 2D boundaries in the cave.
+    /// </summary>
+    /// <returns>Returns a list of Vector2 points indicating where edge colliders should be placed.</returns>
+    public List<Vector2[]> GenerateColliderEdges()
+    {
+        List<Vector2[]> edgePointLists = new List<Vector2[]>();
+        foreach (Outline outline in outlines)
+        {
+            Vector2[] edgePoints = new Vector2[outline.size];
+            for (int i = 0; i < outline.size; i++)
+            {
+                edgePoints[i] = new Vector2(baseVertices[outline[i]].x, baseVertices[outline[i]].z);
+            }
+            edgePointLists.Add(edgePoints);
+        }
+        return edgePointLists;
+    }
+
+    /// <summary>
+    /// Triangulates the squares according to the marching squares algorithm.
     /// In the process, this method populates the baseVertices, triangleMap and and meshTriangles collections.
     /// </summary>
     void TriangulateSquares()
@@ -133,17 +191,6 @@ public class MeshGenerator : MonoBehaviour {
         }
     }
 
-    Mesh CreateCeilingMesh()
-    {
-        Mesh mesh = new Mesh();
-        mesh.vertices = baseVertices.ToArray();
-        mesh.triangles = meshTriangles.ToArray();
-        mesh.RecalculateNormals();
-        mesh.uv = ComputeCeilingUVArray();
-        mesh.name = "Ceiling Mesh" + map.index;
-        return mesh;
-    }
-
     Vector2[] ComputeCeilingUVArray()
     {
         Vector2[] uv = new Vector2[baseVertices.Count];
@@ -156,55 +203,6 @@ public class MeshGenerator : MonoBehaviour {
             uv[i] = new Vector2(percentX, percentY);
         }
         return uv;
-    }
-
-    Mesh CreateWallMesh(int height)
-    {
-        int outlineParameter = outlines.Select(x => x.size - 1).Sum();
-        Vector3[] wallVertices = new Vector3[4 * outlineParameter];
-        Vector2[] uv = new Vector2[4 * outlineParameter];
-        int[] wallTriangles = new int[6 * outlineParameter];
-
-        int vertexCount = 0;
-        int triangleCount = 0;
-        // Run along each outline, and create a quad between each pair of points in the outline.
-        foreach (Outline outline in outlines)
-        {
-            for (int i = 0; i < outline.size - 1; i++)
-            {
-                wallVertices[vertexCount] = baseVertices[outline[i]];
-                wallVertices[vertexCount + 1] = baseVertices[outline[i + 1]];
-                wallVertices[vertexCount + 2] = baseVertices[outline[i]] - Vector3.up * height;
-                wallVertices[vertexCount + 3] = baseVertices[outline[i + 1]] - Vector3.up * height;
-
-                // This uv configuration ensures that the texture gets tiled once every wallsPerTextureTile quads in the 
-                // horizontal direction.
-                float uLeft = i / (float)wallsPerTextureTile;
-                float uRight = (i + 1) / (float)wallsPerTextureTile;
-                uv[vertexCount] = new Vector2(uLeft, 1f);
-                uv[vertexCount + 1] = new Vector2(uRight, 1f);
-                uv[vertexCount + 2] = new Vector2(uLeft, 0f);
-                uv[vertexCount + 3] = new Vector2(uRight, 0f);
-
-                wallTriangles[triangleCount] = vertexCount;
-                wallTriangles[triangleCount + 1] = vertexCount + 2;
-                wallTriangles[triangleCount + 2] = vertexCount + 3;
-
-                wallTriangles[triangleCount + 3] = vertexCount + 3;
-                wallTriangles[triangleCount + 4] = vertexCount + 1;
-                wallTriangles[triangleCount + 5] = vertexCount;
-                vertexCount += 4;
-                triangleCount += 6;
-            }
-        }
-
-        Mesh wallMesh = new Mesh();
-        wallMesh.vertices = wallVertices;
-        wallMesh.triangles = wallTriangles;
-        wallMesh.RecalculateNormals();
-        wallMesh.uv = uv;
-        wallMesh.name = "Wall Mesh" + map.index;
-        return wallMesh;
     }
 
     void CalculateMeshOutlines()
@@ -305,32 +303,5 @@ public class MeshGenerator : MonoBehaviour {
     bool IsRightOf(Vector3 a, Vector3 b, Vector3 c)
     {
         return ((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) < 0;
-    }
-
-    /// <summary>
-    /// Generates a list of 2D points for the creation of edge colliders along 2D boundaries in the cave.
-    /// </summary>
-    /// <returns>Returns a list of Vector2 points indicating where edge colliders should be placed.</returns>
-    public List<Vector2[]> GenerateColliderEdges()
-    {
-        List<Vector2[]> edgePointLists = new List<Vector2[]>();
-        foreach (Outline outline in outlines)
-        {
-            Vector2[] edgePoints = new Vector2[outline.size];
-            for (int i = 0; i < outline.size; i++)
-            {
-                edgePoints[i] = new Vector2(baseVertices[outline[i]].x, baseVertices[outline[i]].z);
-            }
-            edgePointLists.Add(edgePoints);
-        }
-        return edgePointLists;
-    }
-
-    void Clear()
-    {
-        triangleMap.Clear();
-        meshTriangles.Clear();
-        baseVertices.Clear();
-        outlines.Clear();
     }
 }

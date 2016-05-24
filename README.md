@@ -57,7 +57,7 @@ The mapgenerator produces a 2D grid of 0s and 1s, the 1s corresponding to the wa
 ### Mesh generation
 
 1. Triangulate the grid using the marching squares algorithm (note: this produces a finer grid than the original map, producing smoother looking walls). 
-2. Use these triangles to product the ceiling mesh. 
+2. Use these triangles to produce the ceiling mesh. 
 3. Determine the outlines in this map (i.e. the points between interiors of walls and space). 
 4. 
   * If the map is 3D, create walls along these outlines for the wall mesh.

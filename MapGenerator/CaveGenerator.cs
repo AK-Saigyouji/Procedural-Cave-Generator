@@ -22,7 +22,6 @@ public abstract class CaveGenerator : MonoBehaviour
 
     public GameObject cave { get; protected set; }
     public List<MapMeshes> generatedMeshes { get; protected set; }
-    protected MeshGenerator meshGenerator { get; set; }
 
     public CaveGenerator(int length, int width, float mapDensity = 0.5f, string seed = "", bool useRandomSeed = true, 
         int borderSize = 0, int squareSize = 1)
@@ -45,17 +44,46 @@ public abstract class CaveGenerator : MonoBehaviour
         DestroyChildren();
         IMapGenerator mapGenerator = GetMapGenerator();
         Map map = mapGenerator.GenerateMap();
-        meshGenerator = GetComponent<MeshGenerator>() ?? gameObject.AddComponent<MeshGenerator>();
         GenerateMeshFromMap(map);
     }
 
     virtual protected IMapGenerator GetMapGenerator()
     {
-        return new MapGenerator(length: length, width: width, mapDensity: mapDensity, seed: seed, useRandomSeed: useRandomSeed,
-                        squareSize: squareSize, borderSize: borderSize);
+        return new MapGenerator(
+            length: length, 
+            width: width, 
+            mapDensity: mapDensity, 
+            seed: seed, 
+            useRandomSeed: useRandomSeed,
+            squareSize: squareSize, 
+            borderSize: borderSize
+            );
     }
 
     abstract protected void GenerateMeshFromMap(Map map);
+
+    protected MeshGenerator[] GetMeshGenerators(IList<Map> submaps)
+    {
+        MeshGenerator[] meshGenerators = InitializeMeshGenerators(submaps.Count);
+        System.Action[] actions = new System.Action[meshGenerators.Length];
+        for (int i = 0; i < meshGenerators.Length; i++)
+        {
+            int indexCopy = i;
+            actions[i] = () => meshGenerators[indexCopy].Generate(submaps[indexCopy]);
+        }
+        Utility.Threading.ParallelExecute(actions);
+        return meshGenerators;
+    }
+
+    MeshGenerator[] InitializeMeshGenerators(int count)
+    {
+        MeshGenerator[] meshGenerators = new MeshGenerator[count];
+        for (int i = 0; i < count; i++)
+        {
+            meshGenerators[i] = new MeshGenerator();
+        }
+        return meshGenerators;
+    }
 
     protected GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
     {
@@ -66,6 +94,11 @@ public abstract class CaveGenerator : MonoBehaviour
         return newObject;
     }
 
+    protected GameObject CreateSector(int sectorIndex)
+    {
+        return CreateChild(name: "Sector " + sectorIndex, parent: cave.transform);
+    }
+
     protected GameObject CreateChild(string name, Transform parent)
     {
         GameObject child = new GameObject(name);
@@ -73,9 +106,6 @@ public abstract class CaveGenerator : MonoBehaviour
         return child;
     }
 
-    /// <summary>
-    /// Safely destroy all of this object's children to make room for a new map.
-    /// </summary>
     void DestroyChildren()
     {
         List<Transform> children = new List<Transform>();

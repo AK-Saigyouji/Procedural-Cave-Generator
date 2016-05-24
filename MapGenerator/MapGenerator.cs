@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using MapHelpers;
+using System.Linq;
+using System.Threading;
 
 /// <summary>
 /// Generates a randomized cave-like Map object. Ensures that every point is reachable from every other point. Boundary of the
@@ -145,7 +147,7 @@ public class MapGenerator : IMapGenerator
         List<Room> remainingRegions = new List<Room>();
         foreach (TileRegion region in regions)
         {
-            if (region.Size < removalThreshold)
+            if (region.Count < removalThreshold)
             {
                 FillRegion(region, otherType);
             }
@@ -230,6 +232,22 @@ public class MapGenerator : IMapGenerator
         }
     }
 
+    //Old, singlethreaded method for computing room connections. The new method does the same thing,
+    //but spread across multiple threads.
+
+    //List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
+    //{
+    //    List<RoomConnection> connections = new List<RoomConnection>();
+    //    for (int i = 0; i < rooms.Count; i++)
+    //    {
+    //        for (int k = i + 1; k < rooms.Count; k++)
+    //        {
+    //            connections.Add(new RoomConnection(rooms[i], rooms[k], i, k));
+    //        }
+    //    }
+    //    return connections;
+    //}
+
     /// <summary>
     /// Generate a RoomConnection object between every two rooms in the map, where the connection stores information
     /// about the shortest distance between the two rooms and the tiles corresponding to this distance.
@@ -238,17 +256,28 @@ public class MapGenerator : IMapGenerator
     /// <returns>A list of every connection between rooms in the map.</returns>
     List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
     {
-        List<RoomConnection> connections = new List<RoomConnection>();
-        for (int i = 0; i < rooms.Count; i++)
+        int connectionCount = rooms.Count * (rooms.Count - 1) / 2;
+        int workItemCount = 8;
+        RoomConnection[] connections = new RoomConnection[rooms.Count * rooms.Count];
+        ManualResetEvent[] resetEvents = new ManualResetEvent[workItemCount];
+        for (int i = 0; i < workItemCount; i++)
         {
-            Room roomA = rooms[i];
-            for (int k = i + 1; k < rooms.Count; k++)
+            resetEvents[i] = new ManualResetEvent(false);
+            ThreadPool.QueueUserWorkItem(new WaitCallback((object index) => 
             {
-                Room roomB = rooms[k];
-                connections.Add(new RoomConnection(roomA, roomB, i, k));
-            }
+                int workItemIndex = (int)index;
+                for (int j = workItemIndex; j < rooms.Count; j += workItemCount)
+                {
+                    for (int k = j + 1; k < rooms.Count; k++)
+                    {
+                        connections[j * rooms.Count + k] = new RoomConnection(rooms[j], rooms[k], j, k);
+                    }
+                }
+                resetEvents[workItemIndex].Set();
+            }), i);
         }
-        return connections;
+        WaitHandle.WaitAll(resetEvents);
+        return connections.Where(x => x != null).ToList();
     }
 
     /// <summary>

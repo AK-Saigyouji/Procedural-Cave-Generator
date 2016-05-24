@@ -20,19 +20,29 @@ public class CaveGenerator2D : CaveGenerator {
     protected override void GenerateMeshFromMap(Map map)
     {
         cave = CreateChild("Cave2D", transform);
-        generatedMeshes = new List<MapMeshes>();
-        foreach (Map subMap in map.SubdivideMap())
+        IList<Map> submaps = map.SubdivideMap();
+        MeshGenerator[] meshGenerators = GetMeshGenerators(submaps);
+        for (int i = 0; i < submaps.Count; i++)
         {
-            GameObject sector = CreateChild("sector " + subMap.index, cave.transform);
-            MapMeshes mapMeshes = meshGenerator.Generate2D(subMap);
-            GameObject ceiling = CreateObjectFromMesh(mapMeshes.ceilingMesh, "Wall", sector, wallMaterial);
-            ceiling.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
-            generatedMeshes.Add(mapMeshes);
-            AddColliders(ceiling);
+            GameObject sector = CreateSector(submaps[i].index);
+            CreateWall(meshGenerators[i], sector);
         }
     }
 
-    void AddColliders(GameObject wall)
+    void CreateWall(MeshGenerator meshGenerator, GameObject parent)
+    {
+        Mesh ceilingMesh = meshGenerator.CreateCeilingMesh();
+        GameObject wall = CreateObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial);
+        OrientWall(wall);
+        AddColliders(wall, meshGenerator);
+    }
+
+    void OrientWall(GameObject wall)
+    {
+        wall.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
+    }
+    
+    void AddColliders(GameObject wall, MeshGenerator meshGenerator)
     {
         EdgeCollider2D[] currentColliders = wall.GetComponents<EdgeCollider2D>();
         foreach (EdgeCollider2D collider in currentColliders)

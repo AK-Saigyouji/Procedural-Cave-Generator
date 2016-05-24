@@ -15,7 +15,7 @@ namespace MapHelpers
         public Room(TileRegion region, Map map)
         {
             this.allTiles = region;
-            Size = region.Size;
+            Size = region.Count;
             DetermineEdgeTiles(map);
         }
 
@@ -38,7 +38,7 @@ namespace MapHelpers
 
         public override string ToString()
         {
-            return String.Format("Room with {0} tiles, {1} on the edge.", allTiles.Size, edgeTiles.Size);
+            return String.Format("Room with {0} tiles, {1} on the edge.", allTiles.Count, edgeTiles.Count);
         }
     } 
 }
