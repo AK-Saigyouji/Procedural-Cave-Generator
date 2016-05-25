@@ -9,7 +9,7 @@ namespace MapHelpers
         /// a vertex. Given a list of connections, this will find a minimal subset of connections with the shortest distances
         /// between rooms. 
         /// </summary>
-        /// <param name="connections">A list of RoomConnection objects. The distance property determines edge weight.</param>
+        /// <param name="connections">A list of RoomConnection objects.</param>
         /// <param name="numRooms">Total number of Rooms (vertices).</param>
         /// <returns>Returns a minimum list of RoomConnection objects needed to connect rooms together.</returns>
         static public List<RoomConnection> GetPrunedConnections(List<RoomConnection> connections, int numRooms)

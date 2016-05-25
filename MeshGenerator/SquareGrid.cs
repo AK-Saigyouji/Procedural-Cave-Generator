@@ -20,9 +20,6 @@ namespace MeshHelpers
         /// <summary>
         /// For each point in the original Map, a ControlNode is created. If it was a wall it's active, otherwise it's inactive.
         /// </summary>
-        /// <param name="nodeCountX"></param>
-        /// <param name="nodeCountY"></param>
-        /// <param name="map"></param>
         /// <returns>A grid of ControlNodes, one for each point in the original Map.</returns>
         ControlNode[,] CreateControlNodes(int nodeCountX, int nodeCountY, Map map)
         {
@@ -33,8 +30,8 @@ namespace MeshHelpers
                 for (int y = 0; y < nodeCountY; y++)
                 {
                     Vector3 position = new Vector3(x, 0f, y) * map.squareSize + positionOffset;
-                    bool nodeActive = map[x, y] == 1;
-                    controlNodes[x, y] = new ControlNode(position, nodeActive, map.squareSize);
+                    bool isNodeActive = (map[x, y] == Tile.Wall);
+                    controlNodes[x, y] = new ControlNode(position, isNodeActive, map.squareSize);
                 }
             }
             return controlNodes;

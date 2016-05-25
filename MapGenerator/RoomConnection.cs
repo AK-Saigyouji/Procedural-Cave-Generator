@@ -12,11 +12,9 @@ namespace MapHelpers
         public Room roomB { get; private set; }
         public Coord tileA { get; private set; }
         public Coord tileB { get; private set; }
-        public int squaredDistance { get; private set; }
+        public int squaredDistanceBetweenRooms { get; private set; }
         public int indexA { get; private set; }
         public int indexB { get; private set; }
-
-        int MAX_ERROR_IN_SHORTEST_CONNECTION = 6;
 
         public RoomConnection(Room roomA, Room roomB, int indexRoomA, int indexRoomB)
         {
@@ -24,52 +22,51 @@ namespace MapHelpers
             this.roomB = roomB;
             indexA = indexRoomA;
             indexB = indexRoomB;
-            squaredDistance = int.MaxValue;
+            squaredDistanceBetweenRooms = int.MaxValue;
             FindShortestConnection();
         }
 
         void FindShortestConnection()
         {
-            var edgeTilesA = GetOptimizedEdgeTileList(roomA.edgeTiles);
-            var edgeTilesB = GetOptimizedEdgeTileList(roomB.edgeTiles);
-            //var edgeTilesA = roomA.edgeTiles;
-            //var edgeTilesB = roomB.edgeTiles;
-            foreach (Coord tileA in edgeTilesA)
+            int thresholdToTerminateSearch = 3;
+            TileRegion edgeTilesA = roomA.edgeTiles;
+            TileRegion edgeTilesB = roomB.edgeTiles;
+            int indexA = 0;
+            while (indexA < edgeTilesA.Count)
             {
-                foreach (Coord tileB in edgeTilesB)
+                Coord tileA = edgeTilesA[indexA];
+                int indexB = 0;
+                while (indexB < edgeTilesB.Count)
                 {
+                    Coord tileB = edgeTilesB[indexB];
                     int distance = tileA.SquaredDistance(tileB);
-                    if (distance < this.squaredDistance)
+                    if (distance < squaredDistanceBetweenRooms)
                     {
                         Update(tileA, tileB, distance);
+                        if (distance < thresholdToTerminateSearch)
+                            return;
                     }
+                    indexB += GetIncrementBasedOnDistance(distance);
                 }
+                indexA += GetIncrementBasedOnDistance(squaredDistanceBetweenRooms);
             }
         }
 
-        IEnumerable<Coord> GetOptimizedEdgeTileList(TileRegion edgeTiles)
+        int GetIncrementBasedOnDistance(int distance)
         {
-            int incrementor = 1;
-            if (edgeTiles.Count > MAX_ERROR_IN_SHORTEST_CONNECTION)
-            {
-                incrementor += MAX_ERROR_IN_SHORTEST_CONNECTION;
-            }
-            for (int i = 0; i < edgeTiles.Count; i += incrementor)
-            {
-                yield return edgeTiles[i];
-            }
+            return distance / 2;
         }
-        
+
         public int CompareTo(RoomConnection other)
         {
-            return squaredDistance.CompareTo(other.squaredDistance);
+            return squaredDistanceBetweenRooms.CompareTo(other.squaredDistanceBetweenRooms);
         }
 
         void Update(Coord tileA, Coord tileB, int distance)
         {
             this.tileA = tileA;
             this.tileB = tileB;
-            this.squaredDistance = distance;
+            squaredDistanceBetweenRooms = distance;
         }
     } 
 }

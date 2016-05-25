@@ -19,7 +19,7 @@ namespace MeshHelpers
 
     /// <summary>
     /// Each square will have a control node in each corner. Which control nodes are active will determine configuration. 
-    /// In addition, the control nodes will manage the additional midpoint nodes to obtain a finger triangulation of squares.
+    /// In addition, the control nodes will manage the additional midpoint nodes to obtain a finer triangulation of squares.
     /// </summary>
     class ControlNode : Node
     {

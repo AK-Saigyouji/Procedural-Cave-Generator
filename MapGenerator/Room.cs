@@ -3,19 +3,21 @@
 namespace MapHelpers
 {
     /// <summary>
-    /// This class represents a connected, open space in the map. It keeps track of the tiles on its fringe (tiles adjacent
-    /// to walls or exits from the room). 
+    /// A connected, open space in the map, keeping track of which of its tiles are adjacent to walls.
     /// </summary>
     class Room : IComparable<Room>
     {
         public TileRegion allTiles { get; private set; }
+        /// <summary>
+        /// All floor tiles in this room that have an adjacent wall tile. 
+        /// </summary>
         public TileRegion edgeTiles { get; private set; }
-        public int Size { get; private set; }
+        public int Count { get; private set; }
 
         public Room(TileRegion region, Map map)
         {
-            this.allTiles = region;
-            Size = region.Count;
+            allTiles = region;
+            Count = region.Count;
             DetermineEdgeTiles(map);
         }
 
@@ -33,7 +35,7 @@ namespace MapHelpers
 
         public int CompareTo(Room otherRoom)
         {
-            return Size.CompareTo(otherRoom.Size);
+            return Count.CompareTo(otherRoom.Count);
         }
 
         public override string ToString()

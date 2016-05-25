@@ -9,8 +9,8 @@ public abstract class CaveGenerator : MonoBehaviour
     [SerializeField]
     protected int width = 50;
     [SerializeField]
-    [Range(0, 1)]
-    protected float mapDensity = 0.5f;
+    [Range(0.4f, 0.6f)]
+    protected float initialMapDensity = 0.5f;
     [SerializeField]
     protected string seed;
     [SerializeField]
@@ -28,7 +28,7 @@ public abstract class CaveGenerator : MonoBehaviour
     {
         this.length = length;
         this.width = width;
-        this.mapDensity = mapDensity;
+        this.initialMapDensity = mapDensity;
         this.seed = seed;
         this.useRandomSeed = useRandomSeed;
         this.borderSize = borderSize;
@@ -38,7 +38,6 @@ public abstract class CaveGenerator : MonoBehaviour
     /// <summary>
     /// Generates cavernous terrain and stores it in a child game object. 
     /// </summary>
-    /// <returns>Returns the generated Map object.</returns>
     public void GenerateCave()
     {
         DestroyChildren();
@@ -52,7 +51,7 @@ public abstract class CaveGenerator : MonoBehaviour
         return new MapGenerator(
             length: length, 
             width: width, 
-            mapDensity: mapDensity, 
+            mapDensity: initialMapDensity, 
             seed: seed, 
             useRandomSeed: useRandomSeed,
             squareSize: squareSize, 
@@ -69,7 +68,7 @@ public abstract class CaveGenerator : MonoBehaviour
         for (int i = 0; i < meshGenerators.Length; i++)
         {
             int indexCopy = i;
-            actions[i] = () => meshGenerators[indexCopy].Generate(submaps[indexCopy]);
+            actions[i] = (() => meshGenerators[indexCopy].Generate(submaps[indexCopy]));
         }
         Utility.Threading.ParallelExecute(actions);
         return meshGenerators;

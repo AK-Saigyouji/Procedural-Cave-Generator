@@ -2,7 +2,6 @@
 using UnityEngine;
 using MapHelpers;
 using System.Linq;
-using System.Threading;
 
 /// <summary>
 /// Generates a randomized cave-like Map object. Ensures that every point is reachable from every other point. Boundary of the
@@ -20,11 +19,11 @@ public class MapGenerator : IMapGenerator
 
     public Map map { get; private set; }
 
-    int SMOOTHING_ITERATIONS = 5;
-    int CELLULAR_THRESHOLD = 4;
-    int MINIMUM_WALL_REGION_SIZE = 50;
-    int MINIMUM_OPEN_REGION_SIZE = 50;
-    int TUNNELING_RADIUS = 1;
+    readonly int SMOOTHING_ITERATIONS = 5;
+    readonly int CELLULAR_THRESHOLD = 4;
+    readonly int MINIMUM_WALL_REGION_SIZE = 50;
+    readonly int MINIMUM_OPEN_REGION_SIZE = 50;
+    readonly int TUNNELING_RADIUS = 1;
 
     public MapGenerator(int length, int width, float mapDensity = 0.5f, string seed = "", bool useRandomSeed = true, 
         int borderSize = 0, int squareSize = 1)
@@ -39,8 +38,8 @@ public class MapGenerator : IMapGenerator
     }
 
     /// <summary>
-    /// Generates a randomized Map object based on the map generator's properties. May take a long time for large maps 
-    /// (length * width > 10^7).
+    /// Generates a randomized Map object based on the map generator's properties. May take prohibitively long for very 
+    /// large maps (width * length > 10^6).
     /// </summary>
     /// <returns>Returns the generated Map object</returns>
     public Map GenerateMap()
@@ -59,21 +58,21 @@ public class MapGenerator : IMapGenerator
     /// </summary>
     void RandomFillMap()
     {
-        Random.seed = useRandomSeed ? GetRandomSeed() : seed.GetHashCode();
+        Random.seed = DetermineSeed();
 
         for (int x = 0; x < length; x++)
         {
             for (int y = 0; y < width; y++)
             {
-                bool isEdge = (x == 0 || x == length - 1 || y == 0 || y == width - 1);
-                map[x, y] = (isEdge || Random.value < mapDensity) ? 1 : 0;
+                bool isOnMapEdge = (x == 0 || x == length - 1 || y == 0 || y == width - 1);
+                map[x, y] = (isOnMapEdge || Random.value < mapDensity) ? Tile.Wall : Tile.Floor;
             }
         }
     }
 
-    int GetRandomSeed()
+    int DetermineSeed()
     {
-        return System.Environment.TickCount;
+        return useRandomSeed ? System.Environment.TickCount : seed.GetHashCode();
     }
 
     /// <summary>
@@ -94,7 +93,7 @@ public class MapGenerator : IMapGenerator
                     int neighborCount = GetSurroundingWallCount(x, y);
                     if (neighborCount != CELLULAR_THRESHOLD)
                     {
-                        newMap[x, y] = (neighborCount > CELLULAR_THRESHOLD) ? 1 : 0;
+                        newMap[x, y] = (neighborCount > CELLULAR_THRESHOLD) ? Tile.Wall : Tile.Floor;
                     }
                 }
             }
@@ -108,7 +107,7 @@ public class MapGenerator : IMapGenerator
     /// <returns>List of Room objects corresponding to open regions that were not removed.</returns>
     List<Room> RemoveSmallRegions(int minWallRegionSize, int minOpenRegionSize)
     {
-        RemoveSmallRegionsOfType(minWallRegionSize, 1);
+        RemoveSmallRegionsOfType(minWallRegionSize, Tile.Wall);
         List<Room> rooms = RemoveSmallRegionsOfType(minOpenRegionSize, 0);
         return rooms;
     }
@@ -127,7 +126,7 @@ public class MapGenerator : IMapGenerator
             {
                 if (x != gridX || y != gridY)
                 {
-                    wallCount += map[x, y];
+                    wallCount += (int)map[x, y];
                 }
             }
         }
@@ -138,11 +137,11 @@ public class MapGenerator : IMapGenerator
     /// Remove small regions of the given type and return the rest.
     /// </summary>
     /// <param name="removalThreshold">Number of tiles a region must have to not be removed.</param>
-    /// <param name="tileType">1 or 0, corresponding to which type of regions should be removed.</param>
+    /// <param name="tileType">Tile corresponding to which type of regions should be removed.</param>
     /// <returns>List of Rooms at least as large as the removal threshold.</returns>
-    List<Room> RemoveSmallRegionsOfType(int removalThreshold, int tileType)
+    List<Room> RemoveSmallRegionsOfType(int removalThreshold, Tile tileType)
     {
-        int otherType = (tileType == 1) ? 0 : 1;
+        Tile otherType = (tileType == Tile.Wall) ? Tile.Floor : Tile.Wall;
         List<TileRegion> regions = GetRegions(tileType);
         List<Room> remainingRegions = new List<Room>();
         foreach (TileRegion region in regions)
@@ -159,10 +158,10 @@ public class MapGenerator : IMapGenerator
         return remainingRegions;
     }
 
-    List<TileRegion> GetRegions(int tileType)
+    List<TileRegion> GetRegions(Tile tileType)
     {
         List<TileRegion> regions = new List<TileRegion>();
-        int[,] visited = new int[length, width];
+        bool[,] visited = new bool[length, width];
 
         for (int x = 0; x < length; x++)
         {
@@ -184,14 +183,14 @@ public class MapGenerator : IMapGenerator
     /// </summary>
     /// <param name="visited">A 2D int array tracking visited nodes to reduce work.</param>
     /// <returns>The region of tiles containing the start point.</returns>
-    TileRegion GetRegion(int xStart, int yStart, int[,] visited)
+    TileRegion GetRegion(int xStart, int yStart, bool[,] visited)
     {
         TileRegion tiles = new TileRegion();
-        int tileType = map[xStart, yStart];
+        Tile tileType = map[xStart, yStart];
 
         Queue<Coord> queue = new Queue<Coord>();
         queue.Enqueue(new Coord(xStart, yStart));
-        visited[xStart, yStart] = 1;
+        visited[xStart, yStart] = true;
         while (queue.Count > 0)
         {
             Coord tile = queue.Dequeue();
@@ -201,7 +200,7 @@ public class MapGenerator : IMapGenerator
             {
                 if (IsNewTileOfGivenType(newTile.x, newTile.y, visited, tileType))
                 {
-                    visited[newTile.x, newTile.y] = 1;
+                    visited[newTile.x, newTile.y] = true;
                     queue.Enqueue(newTile);
                 }
             }
@@ -209,11 +208,11 @@ public class MapGenerator : IMapGenerator
         return tiles;
     }
 
-    void FillRegion(TileRegion region, int value)
+    void FillRegion(TileRegion region, Tile tileType)
     {
-        foreach (Coord tile in region)
+        foreach (Coord coord in region)
         {
-            map[tile] = value;
+            map[coord] = tileType;
         }
     }
 
@@ -232,22 +231,6 @@ public class MapGenerator : IMapGenerator
         }
     }
 
-    //Old, singlethreaded method for computing room connections. The new method does the same thing,
-    //but spread across multiple threads.
-
-    //List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
-    //{
-    //    List<RoomConnection> connections = new List<RoomConnection>();
-    //    for (int i = 0; i < rooms.Count; i++)
-    //    {
-    //        for (int k = i + 1; k < rooms.Count; k++)
-    //        {
-    //            connections.Add(new RoomConnection(rooms[i], rooms[k], i, k));
-    //        }
-    //    }
-    //    return connections;
-    //}
-
     /// <summary>
     /// Generate a RoomConnection object between every two rooms in the map, where the connection stores information
     /// about the shortest distance between the two rooms and the tiles corresponding to this distance.
@@ -257,7 +240,7 @@ public class MapGenerator : IMapGenerator
     List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
     {
         RoomConnection[] connections = new RoomConnection[rooms.Count * rooms.Count];
-        List<System.Action> actions = new List<System.Action>();
+        var actions = new List<System.Action>();
         for (int j = 0; j < rooms.Count; j ++)
         {
             for (int k = j + 1; k < rooms.Count; k++)
@@ -295,7 +278,7 @@ public class MapGenerator : IMapGenerator
             {
                 if (map.IsInMap(x, y))
                 {
-                    map[x, y] = 0;
+                    map[x, y] = Tile.Floor;
                 }
             }
         }
@@ -339,14 +322,14 @@ public class MapGenerator : IMapGenerator
             {
                 int yShifted = y - borderSize;
                 bool isInsideBorder = (0 <= xShifted && xShifted < length) && (0 <= yShifted && yShifted < width);
-                borderedMap[x, y] = isInsideBorder ? map[xShifted, yShifted] : 1;
+                borderedMap[x, y] = isInsideBorder ? map[xShifted, yShifted] : Tile.Wall;
             }
         }
         map = borderedMap;
     }
 
-    bool IsNewTileOfGivenType(int x, int y, int[,] visited, int tileType)
+    bool IsNewTileOfGivenType(int x, int y, bool[,] visited, Tile tileType)
     {
-        return (visited[x, y] == 0) && (map[x, y] == tileType);
+        return (!visited[x, y]) && (map[x, y] == tileType);
     }
 }

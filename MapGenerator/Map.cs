@@ -3,13 +3,19 @@ using System.Collections.Generic;
 using System.Linq;
 using MapHelpers;
 
+public enum Tile : byte
+{
+    Floor = 0,
+    Wall = 1
+}
+
 /// <summary>
 /// The 2D grid-based Map. Points in the map are given x and y integer pairs like a 2d array. 
 /// Values of 1 correspond to walls, 0 to open space.
 /// </summary>
 public class Map
 {
-    public int[,] grid { get; private set; }
+    public Tile[,] grid { get; private set; }
     public int squareSize { get; private set; }
     public int length { get { return grid.GetLength(0); } }
     public int width { get { return grid.GetLength(1); } }
@@ -18,7 +24,7 @@ public class Map
 
     public Map(int length, int width, int squareSize)
     {
-        grid = new int[length, width];
+        grid = new Tile[length, width];
         this.squareSize = squareSize;
         position = new Vector2(0f, 0f);
     }
@@ -30,13 +36,13 @@ public class Map
         position = map.position;
     }
 
-    public int this[int x, int y]
+    public Tile this[int x, int y]
     {
         get { return grid[x, y]; }
         set { grid[x, y] = value; }
     }
 
-    public int this[Coord tile]
+    public Tile this[Coord tile]
     {
         get { return grid[tile.x, tile.y]; }
         set { grid[tile.x, tile.y] = value; }
@@ -91,12 +97,12 @@ public class Map
 
     public bool IsEdgeTile(int x, int y)
     {
-        return GetAdjacentTiles(x, y).Any(adjTile => this[x, y] == 1);
+        return GetAdjacentTiles(x, y).Any(adjTile => this[x, y] == Tile.Wall);
     }
 
     public bool IsEdgeTile(Coord tile)
     {
-        return GetAdjacentTiles(tile).Any(adjTile => this[adjTile] == 1);
+        return GetAdjacentTiles(tile).Any(adjTile => this[adjTile] == Tile.Wall);
     }
 
     public bool IsInMap(int x, int y)
