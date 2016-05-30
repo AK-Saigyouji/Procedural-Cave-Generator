@@ -1,4 +1,6 @@
-﻿namespace MapHelpers
+﻿using System;
+
+namespace MapHelpers
 {
     /// <summary>
     /// Coord is an integer equivalent of Vector2. 
@@ -23,6 +25,18 @@
             int xDelta = x - otherTile.x;
             int yDelta = y - otherTile.y;
             return xDelta * xDelta + yDelta * yDelta;
+        }
+
+
+        /// <summary>
+        /// Get the distance between this coordinate and given one as given by the supremum norm. Examples:
+        /// (2,3).SupNormDistance(5,105) -> 102
+        /// (2,2).SupNormDistance(1,1) -> 1
+        /// </summary>
+        /// <returns>Returns the maximum of the absolute difference between individual dimensions.</returns>
+        public int SupNormDistance(Coord otherTile)
+        {
+            return Math.Max(Math.Abs(x - otherTile.x), Math.Abs(y - otherTile.y));
         }
 
         public static bool operator ==(Coord tileA, Coord tileB)

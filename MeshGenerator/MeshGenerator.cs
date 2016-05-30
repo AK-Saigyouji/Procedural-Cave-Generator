@@ -10,11 +10,15 @@ using UnityEngine;
 /// </summary>
 public class MeshGenerator
 {
-    List<Vector3> baseVertices = new List<Vector3>();
-    List<int> meshTriangles = new List<int>();
-    Dictionary<int, List<Triangle>> triangleMap = new Dictionary<int, List<Triangle>>();
+    List<Vector3> ceilingVertices = new List<Vector3>();
+    List<int> ceilingTriangles = new List<int>();
+
+    List<Vector3> wallVertices = new List<Vector3>();
+    List<int> wallTriangles = new List<int>();
+
+    Dictionary<int, List<Triangle>> vertexToTriangleMap = new Dictionary<int, List<Triangle>>();
     List<Outline> outlines = new List<Outline>();
-    bool[] checkedVertices;
+    bool[] checkedOutlineVertices;
 
     Map map;
 
@@ -37,8 +41,8 @@ public class MeshGenerator
     public Mesh CreateCeilingMesh()
     {
         Mesh mesh = new Mesh();
-        mesh.vertices = baseVertices.ToArray();
-        mesh.triangles = meshTriangles.ToArray();
+        mesh.vertices = ceilingVertices.ToArray();
+        mesh.triangles = ceilingTriangles.ToArray();
         mesh.RecalculateNormals();
         mesh.uv = ComputeCeilingUVArray();
         mesh.name = "Ceiling Mesh" + map.index;
@@ -59,10 +63,10 @@ public class MeshGenerator
         {
             for (int i = 0; i < outline.size - 1; i++)
             {
-                wallVertices[vertexCount] = baseVertices[outline[i]];
-                wallVertices[vertexCount + 1] = baseVertices[outline[i + 1]];
-                wallVertices[vertexCount + 2] = baseVertices[outline[i]] - Vector3.up * height;
-                wallVertices[vertexCount + 3] = baseVertices[outline[i + 1]] - Vector3.up * height;
+                wallVertices[vertexCount] = ceilingVertices[outline[i]];
+                wallVertices[vertexCount + 1] = ceilingVertices[outline[i + 1]];
+                wallVertices[vertexCount + 2] = ceilingVertices[outline[i]] - Vector3.up * height;
+                wallVertices[vertexCount + 3] = ceilingVertices[outline[i + 1]] - Vector3.up * height;
 
                 // This uv configuration ensures that the texture gets tiled once every wallsPerTextureTile quads in the 
                 // horizontal direction.
@@ -106,7 +110,7 @@ public class MeshGenerator
             Vector2[] edgePoints = new Vector2[outline.size];
             for (int i = 0; i < outline.size; i++)
             {
-                edgePoints[i] = new Vector2(baseVertices[outline[i]].x, baseVertices[outline[i]].z);
+                edgePoints[i] = new Vector2(ceilingVertices[outline[i]].x, ceilingVertices[outline[i]].z);
             }
             edgePointLists.Add(edgePoints);
         }
@@ -148,8 +152,8 @@ public class MeshGenerator
         {
             if (points[i].vertexIndex == -1)
             {
-                points[i].vertexIndex = baseVertices.Count;
-                baseVertices.Add(points[i].position);
+                points[i].vertexIndex = ceilingVertices.Count;
+                ceilingVertices.Add(points[i].position);
             }
         }
     }
@@ -174,32 +178,32 @@ public class MeshGenerator
         Triangle triangle = new Triangle(a.vertexIndex, b.vertexIndex, c.vertexIndex);
         for (int i = 0; i < 3; i++)
         {
-            meshTriangles.Add(triangle[i]);
+            ceilingTriangles.Add(triangle[i]);
             AddTriangleToDictionary(triangle[i], triangle);
         }
     }
 
     void AddTriangleToDictionary(int vertexIndex, Triangle triangle)
     {
-        if (triangleMap.ContainsKey(vertexIndex))
+        if (vertexToTriangleMap.ContainsKey(vertexIndex))
         {
-            triangleMap[vertexIndex].Add(triangle);
+            vertexToTriangleMap[vertexIndex].Add(triangle);
         }
         else
         {
-            triangleMap.Add(vertexIndex, new List<Triangle> { triangle });
+            vertexToTriangleMap.Add(vertexIndex, new List<Triangle> { triangle });
         }
     }
 
     Vector2[] ComputeCeilingUVArray()
     {
-        Vector2[] uv = new Vector2[baseVertices.Count];
+        Vector2[] uv = new Vector2[ceilingVertices.Count];
         float xMax = ceilingTextureDimensions.x;
         float yMax = ceilingTextureDimensions.y;
-        for (int i = 0; i < baseVertices.Count; i++)
+        for (int i = 0; i < ceilingVertices.Count; i++)
         {
-            float percentX = baseVertices[i].x / xMax;
-            float percentY = baseVertices[i].z / yMax;
+            float percentX = ceilingVertices[i].x / xMax;
+            float percentY = ceilingVertices[i].z / yMax;
             uv[i] = new Vector2(percentX, percentY);
         }
         return uv;
@@ -207,12 +211,12 @@ public class MeshGenerator
 
     void CalculateMeshOutlines()
     {
-        checkedVertices = new bool[baseVertices.Count];
-        for (int startVertexIndex = 0; startVertexIndex < baseVertices.Count; startVertexIndex++)
+        checkedOutlineVertices = new bool[ceilingVertices.Count];
+        for (int startVertexIndex = 0; startVertexIndex < ceilingVertices.Count; startVertexIndex++)
         {
-            if (!checkedVertices[startVertexIndex])
+            if (!checkedOutlineVertices[startVertexIndex])
             {
-                checkedVertices[startVertexIndex] = true;
+                checkedOutlineVertices[startVertexIndex] = true;
                 Outline outline = GenerateOutlineFromPoint(startVertexIndex);
                 if (outline != null)
                 {
@@ -239,20 +243,20 @@ public class MeshGenerator
         if (vertexIndex == -1)
             return;
         outline.Add(vertexIndex);
-        checkedVertices[vertexIndex] = true;
+        checkedOutlineVertices[vertexIndex] = true;
         int nextVertexIndex = GetConnectedOutlineVertex(vertexIndex, outline.size);
         FollowOutline(nextVertexIndex, outline);
     }
 
     int GetConnectedOutlineVertex(int currentIndex, int outlineSize)
     {
-        List<Triangle> trianglesContainingVertex = triangleMap[currentIndex];
+        List<Triangle> trianglesContainingVertex = vertexToTriangleMap[currentIndex];
         foreach (Triangle triangle in trianglesContainingVertex)
         {
             for (int j = 0; j < 3; j++)
             {
                 int nextIndex = triangle[j];
-                bool foundNewOutlineEdge = !checkedVertices[nextIndex] && IsOutlineEdge(currentIndex, nextIndex);
+                bool foundNewOutlineEdge = !checkedOutlineVertices[nextIndex] && IsOutlineEdge(currentIndex, nextIndex);
                 if (foundNewOutlineEdge)
                 {
                     if (outlineSize > 0 || IsCorrectOrientation(currentIndex, nextIndex, triangle))
@@ -267,7 +271,7 @@ public class MeshGenerator
 
     bool IsOutlineEdge(int vertexA, int vertexB)
     {
-        List<Triangle> trianglesContainingVertexA = triangleMap[vertexA];
+        List<Triangle> trianglesContainingVertexA = vertexToTriangleMap[vertexA];
         int sharedTriangleCount = 0;
 
         foreach (Triangle triangle in trianglesContainingVertexA)
@@ -293,7 +297,7 @@ public class MeshGenerator
     bool IsCorrectOrientation(int indexOne, int indexTwo, Triangle triangle)
     {
         int indexThree = triangle.GetThirdPoint(indexOne, indexTwo);
-        return IsRightOf(baseVertices[indexOne], baseVertices[indexTwo], baseVertices[indexThree]);
+        return IsRightOf(ceilingVertices[indexOne], ceilingVertices[indexTwo], ceilingVertices[indexThree]);
     }
 
     /// <summary>

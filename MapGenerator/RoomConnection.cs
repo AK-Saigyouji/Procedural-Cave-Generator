@@ -1,18 +1,17 @@
-﻿using System.Collections.Generic;
-
+﻿using System;
 namespace MapHelpers
 {
     /// <summary>
     /// Class representing a possible connection between two rooms. Keeps track of the rooms it's connecting and the pair
     /// of tiles corresponding to the shortest distance between them.
     /// </summary>
-    class RoomConnection : System.IComparable<RoomConnection>
+    class RoomConnection : IComparable<RoomConnection>
     {
         public Room roomA { get; private set; }
         public Room roomB { get; private set; }
         public Coord tileA { get; private set; }
         public Coord tileB { get; private set; }
-        public int squaredDistanceBetweenRooms { get; private set; }
+        public int distanceBetweenRooms { get; private set; }
         public int indexA { get; private set; }
         public int indexB { get; private set; }
 
@@ -22,11 +21,11 @@ namespace MapHelpers
             this.roomB = roomB;
             indexA = indexRoomA;
             indexB = indexRoomB;
-            squaredDistanceBetweenRooms = int.MaxValue;
-            FindShortestConnection();
+            distanceBetweenRooms = int.MaxValue;
+            FindShortConnection();
         }
 
-        void FindShortestConnection()
+        void FindShortConnection()
         {
             int thresholdToTerminateSearch = 3;
             TileRegion edgeTilesA = roomA.edgeTiles;
@@ -39,34 +38,29 @@ namespace MapHelpers
                 while (indexB < edgeTilesB.Count)
                 {
                     Coord tileB = edgeTilesB[indexB];
-                    int distance = tileA.SquaredDistance(tileB);
-                    if (distance < squaredDistanceBetweenRooms)
+                    int distance = tileA.SupNormDistance(tileB);
+                    if (distance < distanceBetweenRooms)
                     {
                         Update(tileA, tileB, distance);
                         if (distance < thresholdToTerminateSearch)
                             return;
                     }
-                    indexB += GetIncrementBasedOnDistance(distance);
+                    indexB += distance;
                 }
-                indexA += GetIncrementBasedOnDistance(squaredDistanceBetweenRooms);
+                indexA += distanceBetweenRooms;
             }
-        }
-
-        int GetIncrementBasedOnDistance(int distance)
-        {
-            return distance / 2;
         }
 
         public int CompareTo(RoomConnection other)
         {
-            return squaredDistanceBetweenRooms.CompareTo(other.squaredDistanceBetweenRooms);
+            return distanceBetweenRooms.CompareTo(other.distanceBetweenRooms);
         }
 
         void Update(Coord tileA, Coord tileB, int distance)
         {
             this.tileA = tileA;
             this.tileB = tileB;
-            squaredDistanceBetweenRooms = distance;
+            distanceBetweenRooms = distance;
         }
     } 
 }

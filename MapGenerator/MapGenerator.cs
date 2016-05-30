@@ -270,6 +270,24 @@ public class MapGenerator : IMapGenerator
         }
     }
 
+    /// <summary>
+    /// Helpful debug method for visualizing the created connections. Use in place of CreatePassage if you want to see
+    /// exactly what connections are being made. 
+    /// </summary>
+    void CreatePassageDebug(RoomConnection connection, int tunnelingRadius)
+    {
+        Coord A = connection.tileA;
+        Coord B = connection.tileB;
+        Vector3 start = new Vector3(A.x, 0f, A.y);
+        Vector3 end = new Vector3(B.x, 0f, B.y);
+        Debug.DrawLine(start, end, Color.cyan, 10000);
+        List<Coord> line = CreateLineBetween(connection.tileA, connection.tileB);
+        foreach (Coord coord in line)
+        {
+            ClearNeighbors(coord, tunnelingRadius);
+        }
+    }
+
     void ClearNeighbors(Coord coord, int neighborReach)
     {
         for (int x = coord.x - neighborReach; x <= coord.x + neighborReach; x++)
