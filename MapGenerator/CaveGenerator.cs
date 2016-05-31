@@ -19,16 +19,18 @@ public abstract class CaveGenerator : MonoBehaviour
     protected int borderSize = 0;
     [SerializeField]
     protected int squareSize = 1;
+    [SerializeField]
+    protected Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
 
     public GameObject cave { get; protected set; }
     public List<MapMeshes> generatedMeshes { get; protected set; }
 
-    public CaveGenerator(int length, int width, float mapDensity = 0.5f, string seed = "", bool useRandomSeed = true, 
-        int borderSize = 0, int squareSize = 1)
+    public CaveGenerator(int length, int width, float initialMapDensity = 0.5f, string seed = "", 
+        bool useRandomSeed = true, int borderSize = 0, int squareSize = 1)
     {
         this.length = length;
         this.width = width;
-        this.initialMapDensity = mapDensity;
+        this.initialMapDensity = initialMapDensity;
         this.seed = seed;
         this.useRandomSeed = useRandomSeed;
         this.borderSize = borderSize;
@@ -40,10 +42,17 @@ public abstract class CaveGenerator : MonoBehaviour
     /// </summary>
     public void GenerateCave()
     {
+        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+        sw.Start();
         DestroyChildren();
         IMapGenerator mapGenerator = GetMapGenerator();
         Map map = mapGenerator.GenerateMap();
+        double time = sw.Elapsed.TotalSeconds;
         GenerateMeshFromMap(map);
+        double timeTwo = sw.Elapsed.TotalSeconds - time;
+        sw.Stop();
+        Debug.Log(time);
+        Debug.Log(timeTwo);
     }
 
     virtual protected IMapGenerator GetMapGenerator()
@@ -61,20 +70,20 @@ public abstract class CaveGenerator : MonoBehaviour
 
     abstract protected void GenerateMeshFromMap(Map map);
 
-    protected MeshGenerator[] GetMeshGenerators(IList<Map> submaps)
+    protected MeshGenerator[] PrepareMeshGenerators(IList<Map> submaps)
     {
         MeshGenerator[] meshGenerators = InitializeMeshGenerators(submaps.Count);
         System.Action[] actions = new System.Action[meshGenerators.Length];
         for (int i = 0; i < meshGenerators.Length; i++)
         {
             int indexCopy = i;
-            actions[i] = (() => meshGenerators[indexCopy].Generate(submaps[indexCopy]));
+            actions[i] = (() => PrepareMeshGenerator(meshGenerators[indexCopy], submaps[indexCopy]));
         }
         Utility.Threading.ParallelExecute(actions);
         return meshGenerators;
     }
 
-    MeshGenerator[] InitializeMeshGenerators(int count)
+    protected MeshGenerator[] InitializeMeshGenerators(int count)
     {
         MeshGenerator[] meshGenerators = new MeshGenerator[count];
         for (int i = 0; i < count; i++)
@@ -82,6 +91,15 @@ public abstract class CaveGenerator : MonoBehaviour
             meshGenerators[i] = new MeshGenerator();
         }
         return meshGenerators;
+    }
+
+    /// <summary>
+    /// Generate all the data in the MeshGenerator in preparation for the creation of meshes. Each call
+    /// of this method will get distributed across threads, so override with care.
+    /// </summary>
+    virtual protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
+    {
+        meshGenerator.GenerateCeiling(map, ceilingTextureDimensions);
     }
 
     protected GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)

@@ -4,52 +4,89 @@ using System.Linq;
 using UnityEngine;
 
 /// <summary>
-/// Produces meshes and colliders for Map objects.
-/// The meshes are created using the marching squares algorithm. Break large maps (200x200 or bigger) into smaller maps
-/// before generating meshes out of them.
+/// Produces meshes and colliders for Map objects using the marching squares algorithm. 
+/// Break large maps (max of 100 by 100 recommended - beyond 200 by 200 likely to produde exceptions) into 
+/// smaller maps before generating meshes.
 /// </summary>
 public class MeshGenerator
 {
     List<Vector3> ceilingVertices = new List<Vector3>();
     List<int> ceilingTriangles = new List<int>();
+    Vector2[] ceilingUV;
 
-    List<Vector3> wallVertices = new List<Vector3>();
-    List<int> wallTriangles = new List<int>();
+    Vector3[] wallVertices;
+    int[] wallTriangles;
+    Vector2[] wallUV;
 
-    Dictionary<int, List<Triangle>> vertexToTriangleMap = new Dictionary<int, List<Triangle>>();
+    List<Triangle>[] vertexIndexToTriangleMap;
     List<Outline> outlines = new List<Outline>();
     bool[] checkedOutlineVertices;
 
     Map map;
 
-    [SerializeField]
-    Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
-    [SerializeField]
-    int wallsPerTextureTile = 5;
-
     /// <summary>
-    /// Generate the data necessary to produce meshes. Safe to run on background threads.
+    /// Generate the data necessary to produce the ceiling mesh. Safe to run on background threads.
     /// </summary>
-    /// <param name="map"></param>
-    public void Generate(Map map)
+    public void GenerateCeiling(Map map, Vector2 ceilingTextureDimensions)
     {
         this.map = map;
-        TriangulateSquares();
+        TriangulateMap();
         CalculateMeshOutlines();
+        ComputeCeilingUVArray(ceilingTextureDimensions);
     }
 
+    /// <summary>
+    /// Create and return the ceiling mesh. Must first run GenerateCeiling to populate the data.
+    /// </summary>
+    /// <returns></returns>
     public Mesh CreateCeilingMesh()
     {
         Mesh mesh = new Mesh();
         mesh.vertices = ceilingVertices.ToArray();
         mesh.triangles = ceilingTriangles.ToArray();
         mesh.RecalculateNormals();
-        mesh.uv = ComputeCeilingUVArray();
+        mesh.uv = ceilingUV;
         mesh.name = "Ceiling Mesh" + map.index;
         return mesh;
     }
 
-    public Mesh CreateWallMesh(int height)
+    /// <summary>
+    /// Create and return the wall 3D wall mesh. Must first run GenerateWalls.
+    /// </summary>
+    public Mesh CreateWallMesh()
+    {
+        Mesh wallMesh = new Mesh();
+        wallMesh.vertices = wallVertices;
+        wallMesh.triangles = wallTriangles;
+        wallMesh.RecalculateNormals();
+        wallMesh.uv = wallUV;
+        wallMesh.name = "Wall Mesh" + map.index;
+        return wallMesh;
+    }
+
+    /// <summary>
+    /// Generates a list of 2D points for the creation of edge colliders along 2D boundaries in the cave.
+    /// </summary>
+    /// <returns>Returns a list of Vector2 points indicating where edge colliders should be placed.</returns>
+    public List<Vector2[]> GenerateColliderEdges()
+    {
+        List<Vector2[]> edgePointLists = new List<Vector2[]>();
+        foreach (Outline outline in outlines)
+        {
+            Vector2[] edgePoints = new Vector2[outline.size];
+            for (int i = 0; i < outline.size; i++)
+            {
+                edgePoints[i] = new Vector2(ceilingVertices[outline[i]].x, ceilingVertices[outline[i]].z);
+            }
+            edgePointLists.Add(edgePoints);
+        }
+        return edgePointLists;
+    }
+
+    /// <summary>
+    /// Generate the data necessary to produce the wall mesh. Must first run GenerateCeiling. 
+    /// </summary>
+    public void GenerateWalls(int height, int wallsPerTextureTile)
     {
         int outlineParameter = outlines.Select(x => x.size - 1).Sum();
         Vector3[] wallVertices = new Vector3[4 * outlineParameter];
@@ -88,125 +125,37 @@ public class MeshGenerator
                 triangleCount += 6;
             }
         }
-
-        Mesh wallMesh = new Mesh();
-        wallMesh.vertices = wallVertices;
-        wallMesh.triangles = wallTriangles;
-        wallMesh.RecalculateNormals();
-        wallMesh.uv = uv;
-        wallMesh.name = "Wall Mesh" + map.index;
-        return wallMesh;
-    }
-
-    /// <summary>
-    /// Generates a list of 2D points for the creation of edge colliders along 2D boundaries in the cave.
-    /// </summary>
-    /// <returns>Returns a list of Vector2 points indicating where edge colliders should be placed.</returns>
-    public List<Vector2[]> GenerateColliderEdges()
-    {
-        List<Vector2[]> edgePointLists = new List<Vector2[]>();
-        foreach (Outline outline in outlines)
-        {
-            Vector2[] edgePoints = new Vector2[outline.size];
-            for (int i = 0; i < outline.size; i++)
-            {
-                edgePoints[i] = new Vector2(ceilingVertices[outline[i]].x, ceilingVertices[outline[i]].z);
-            }
-            edgePointLists.Add(edgePoints);
-        }
-        return edgePointLists;
+        this.wallVertices = wallVertices;
+        this.wallTriangles = wallTriangles;
+        this.wallUV = uv;
     }
 
     /// <summary>
     /// Triangulates the squares according to the marching squares algorithm.
     /// In the process, this method populates the baseVertices, triangleMap and and meshTriangles collections.
     /// </summary>
-    void TriangulateSquares()
+    void TriangulateMap()
     {
-        SquareGrid squareGrid = new SquareGrid(map);
-        {
-            for (int x = 0; x < squareGrid.GetLength(0); x++)
-            {
-                for (int y = 0; y < squareGrid.GetLength(1); y++)
-                {
-                    TriangulateSquare(squareGrid[x, y]);
-                }
-            }
-        }
+        MapTriangulator mapTriangulator = new MapTriangulator();
+        mapTriangulator.Triangulate(map);
+
+        ceilingVertices = mapTriangulator.vertices;
+        ceilingTriangles = mapTriangulator.triangles;
+        vertexIndexToTriangleMap = mapTriangulator.vertexIndexToTriangles;
     }
 
-    void TriangulateSquare(Square square)
-    {
-        Node[] points = square.GetPoints();
-        AssignVertices(points);
-        TrianglesFromPoints(points);
-    }
-
-    /// <summary>
-    /// Assigns each position an index. Rather than passing positions (Vector3s) around directly, each position is associated 
-    /// with an index used to track its position in the baseVertices array. 
-    /// </summary>
-    void AssignVertices(Node[] points)
-    {
-        for (int i = 0; i < points.Length; i++)
-        {
-            if (points[i].vertexIndex == -1)
-            {
-                points[i].vertexIndex = ceilingVertices.Count;
-                ceilingVertices.Add(points[i].position);
-            }
-        }
-    }
-
-    void TrianglesFromPoints(Node[] points)
-    {
-        if (points.Length >= 3)
-            CreateTriangle(points[0], points[1], points[2]);
-        if (points.Length >= 4)
-            CreateTriangle(points[0], points[2], points[3]);
-        if (points.Length >= 5)
-            CreateTriangle(points[0], points[3], points[4]);
-        if (points.Length >= 6)
-            CreateTriangle(points[0], points[4], points[5]);
-    }
-
-    /// <summary>
-    /// Adds the triangles to the mesh, and keeps a record of all triangles that each vertex belongs to.
-    /// </summary>
-    void CreateTriangle(Node a, Node b, Node c)
-    {
-        Triangle triangle = new Triangle(a.vertexIndex, b.vertexIndex, c.vertexIndex);
-        for (int i = 0; i < 3; i++)
-        {
-            ceilingTriangles.Add(triangle[i]);
-            AddTriangleToDictionary(triangle[i], triangle);
-        }
-    }
-
-    void AddTriangleToDictionary(int vertexIndex, Triangle triangle)
-    {
-        if (vertexToTriangleMap.ContainsKey(vertexIndex))
-        {
-            vertexToTriangleMap[vertexIndex].Add(triangle);
-        }
-        else
-        {
-            vertexToTriangleMap.Add(vertexIndex, new List<Triangle> { triangle });
-        }
-    }
-
-    Vector2[] ComputeCeilingUVArray()
+    void ComputeCeilingUVArray(Vector2 textureDimensions)
     {
         Vector2[] uv = new Vector2[ceilingVertices.Count];
-        float xMax = ceilingTextureDimensions.x;
-        float yMax = ceilingTextureDimensions.y;
+        float xMax = textureDimensions.x;
+        float yMax = textureDimensions.y;
         for (int i = 0; i < ceilingVertices.Count; i++)
         {
             float percentX = ceilingVertices[i].x / xMax;
             float percentY = ceilingVertices[i].z / yMax;
             uv[i] = new Vector2(percentX, percentY);
         }
-        return uv;
+        ceilingUV = uv;
     }
 
     void CalculateMeshOutlines()
@@ -250,7 +199,7 @@ public class MeshGenerator
 
     int GetConnectedOutlineVertex(int currentIndex, int outlineSize)
     {
-        List<Triangle> trianglesContainingVertex = vertexToTriangleMap[currentIndex];
+        List<Triangle> trianglesContainingVertex = vertexIndexToTriangleMap[currentIndex];
         foreach (Triangle triangle in trianglesContainingVertex)
         {
             for (int j = 0; j < 3; j++)
@@ -271,7 +220,7 @@ public class MeshGenerator
 
     bool IsOutlineEdge(int vertexA, int vertexB)
     {
-        List<Triangle> trianglesContainingVertexA = vertexToTriangleMap[vertexA];
+        List<Triangle> trianglesContainingVertexA = vertexIndexToTriangleMap[vertexA];
         int sharedTriangleCount = 0;
 
         foreach (Triangle triangle in trianglesContainingVertexA)

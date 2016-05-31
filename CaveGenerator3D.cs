@@ -14,6 +14,8 @@ public class CaveGenerator3D : CaveGenerator
     Material ceilingMaterial;
     [SerializeField]
     Material wallMaterial;
+    [SerializeField]
+    int wallsPerTextureTile = 5;
 
     public CaveGenerator3D(int length, int width, int wallHeight, Material ceilingMaterial, Material wallMaterial, 
         float mapDensity = 0.5f, string seed = "", bool useRandomSeed = true, int borderSize = 0, int squareSize = 1) 
@@ -26,9 +28,8 @@ public class CaveGenerator3D : CaveGenerator
 
     protected override void GenerateMeshFromMap(Map map)
     {
-        
         IList<Map> submaps = map.SubdivideMap();
-        MeshGenerator[] meshGenerators = GetMeshGenerators(submaps);
+        MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
         cave = CreateChild("Cave3D", transform);
         List<MapMeshes> meshes = new List<MapMeshes>();
         for (int i = 0; i < submaps.Count; i++)
@@ -41,6 +42,12 @@ public class CaveGenerator3D : CaveGenerator
         generatedMeshes = meshes;
     }
 
+    override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
+    {
+        meshGenerator.GenerateCeiling(map, ceilingTextureDimensions);
+        meshGenerator.GenerateWalls(wallHeight, wallsPerTextureTile);
+    }
+
     Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
     {
         Mesh ceilingMesh = meshGenerator.CreateCeilingMesh();
@@ -50,7 +57,7 @@ public class CaveGenerator3D : CaveGenerator
 
     Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
     {
-        Mesh wallMesh = meshGenerator.CreateWallMesh(wallHeight);
+        Mesh wallMesh = meshGenerator.CreateWallMesh();
         GameObject wall = CreateObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
         AddWallCollider(wall, wallMesh);
         return wallMesh;

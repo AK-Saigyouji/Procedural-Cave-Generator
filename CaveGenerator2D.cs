@@ -21,7 +21,7 @@ public class CaveGenerator2D : CaveGenerator {
     {
         cave = CreateChild("Cave2D", transform);
         IList<Map> submaps = map.SubdivideMap();
-        MeshGenerator[] meshGenerators = GetMeshGenerators(submaps);
+        MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
         List<MapMeshes> meshes = new List<MapMeshes>();
         for (int i = 0; i < submaps.Count; i++)
         {
@@ -37,6 +37,7 @@ public class CaveGenerator2D : CaveGenerator {
         Mesh ceilingMesh = meshGenerator.CreateCeilingMesh();
         GameObject wall = CreateObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial);
         OrientWall(wall);
+        RemoveExistingColliders(wall);
         AddColliders(wall, meshGenerator);
         return ceilingMesh;
     }
@@ -46,14 +47,17 @@ public class CaveGenerator2D : CaveGenerator {
         wall.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
     }
     
-    void AddColliders(GameObject wall, MeshGenerator meshGenerator)
+    void RemoveExistingColliders(GameObject wall)
     {
         EdgeCollider2D[] currentColliders = wall.GetComponents<EdgeCollider2D>();
         foreach (EdgeCollider2D collider in currentColliders)
         {
             Destroy(collider);
         }
+    }
 
+    void AddColliders(GameObject wall, MeshGenerator meshGenerator)
+    {
         List<Vector2[]> edgePointsList = meshGenerator.GenerateColliderEdges();
         foreach (Vector2[] edgePoints in edgePointsList)
         {
