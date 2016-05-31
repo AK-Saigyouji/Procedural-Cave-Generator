@@ -1,6 +1,6 @@
 # Procedural Cave Generator
 
-This is a set of scripts that allow the creation of both 2D and 3D cave meshes in Unity with collision detection. They can be created either on the fly during gameplay through code, or saved as prefabs and built upon in the editor without touching a line of code. This project heavily expands upon and optimizes on the [Procedural Cave Generator](https://unity3d.com/learn/tutorials/projects/procedural-cave-generation-tutorial) on the Unity website by Sebastian Lague.
+This is a set of scripts that allow the creation of both 2D and 3D cave meshes in Unity with collision detection. They can be created either on the fly during gameplay through code, or saved as prefabs and built upon in the editor without touching a line of code. This project heavily expands upon and optimizes the [Procedural Cave Generator](https://unity3d.com/learn/tutorials/projects/procedural-cave-generation-tutorial) on the Unity website by Sebastian Lague.
 
 [A few examples of what these maps look like can be found here.](http://imgur.com/a/jeZHR) 
 
@@ -12,7 +12,7 @@ The MapGenerator scripts have a number of variables in the inspector that can be
 
 * Initial Map Density 
 
-   Determines the initial proportion of walls. i.e. 0.45 will result in approximately 45% of the map being initialized as walls. Note that the final density will differ from the initial: deviation from 0.5 will be magnified. It is recommended to pick a density between .45 and .55 (experiment to get a map fitting your needs).
+   Determines the initial proportion of walls. i.e. 0.45 will result in approximately 45% of the map being initialized as walls. Note that the final density will differ from the initial: deviation from 0.5 will be magnified. It is recommended to pick a density between .45 and .55 (experiment to see what parameters fit your needs).
 
 * Seed and Use Random Seed
 
@@ -64,20 +64,12 @@ The following is a quick look under the hood of how the generator works.
 
 ## 3. Improvements to original project on Unity site
 
-* Allowed the creation of prefabs, so that maps can be used in the editor. This removes the need to generate all game content dynamically, a difficult task for more complicated games. This also makes it far easier to use Unity's lighting and navigation features. 
+* It is now possible to convert maps into prefabs with the press of a button, allowing content to be placed in the editor. This eliminates the need to generate all game content dynamically, a difficult task for more complicated games. This also makes it easier to use Unity's lighting and navigation features. 
 * The original project broke for maps much larger than 200 by 200, due to Unity's built in limitations on the number of vertices permitted in a single mesh. To fix this, the meshes are now generated in chunks, allowing for the creation of arbitrarily large maps. Additionally, the chunks can be dynamically toggled on/off during runtime to improve performance in large maps.
 * Assigned uvs to the wall mesh, allowing textures to be applied. 
 * Created a custom inspector permitting map creation with the press of a button in the inspector. 
 * Separated 2D and 3D functionality into separate attachable scripts.
 * Eliminated the need to attach the mesh generator script (in fact, it's no longer attachable at all).
-* Fixed a bug with the smoothing function. In the original project, smoothing was done in place. This means once a cell is changed, this change will affects its neighbors when it's their turn. By copying changes into a new map, this issue is avoided.
-* Massive reduction in run time and required memory. The entire process has a runtime that is now linear in the number of tiles in the map (i.e. linear in length * width).
-* Large-scale reorganization of the code, simplifying many complex algorithms. Those seeking to modify the project for their own purposes should find it easier. 
-
-## 4. Ideas for improvements and new features
-
-* Asynchronous implementation of the algorithm, in order to allow large maps to be generated in the background while playing. 
-* Better support for applying textures. Depending on the type of texture one applies, one can get strange results that might not be obvious how to diagnose. 
-* Currently the map one receives at the end of the algorithm does not reflect the more detailed triangulation constructed during mesh creation. 
-* The room and connection information processed during map creation can be use to produce a more optimized path-finding algorithm than a direct A* search over the entire map. 
-* The map object could be enriched to support more tile-based features, such as holding information about what enemies or items are occupying a given tile. 
+* Fixed a bug with the smoothing function. In the original project, smoothing was done in place. This meant once a cell is changed, this change affected its neighbors when it's their turn. By copying changes into a new map, this issue is avoided.
+* Massive reduction in run time and required memory. The entire process has a runtime that is now approximately linear in the number of tiles in the map (i.e. linear in length * width), and enormous maps as large as 1000 by 1000 can be generated in seconds. 
+* Large-scale reorganization of the code, simplifying many complex algorithms and splitting functionality across numerous classes. Those seeking to modify the project for their own purposes should find it easier. 
