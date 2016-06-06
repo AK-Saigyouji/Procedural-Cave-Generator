@@ -2,18 +2,23 @@
 using System.Collections.Generic;
 
 /// <summary>
-/// A 2D map generator, intended to be used in 2D mode. Generates flat cavernous regions and edge colliders that run along
+/// A 2D map generator, intended to be used in 2D mode. Generates flat cavernous regions with edge colliders that run along
 /// the outlines of these regions.
 /// </summary>
 public class CaveGenerator2D : CaveGenerator {
 
-    [SerializeField]
-    Material wallMaterial;
+    public Material wallMaterial;
 
-    public CaveGenerator2D(int length, int width, Material wallMaterial, float mapDensity = 0.5f, string seed = "", 
+    public void SetParameters(int length, int width, Material wallMaterial, float initialMapDensity = 0.5f, string seed = "", 
         bool useRandomSeed = true, int borderSize = 0, int squareSize = 1)
-        : base(length, width, mapDensity, seed, useRandomSeed, borderSize, squareSize)
     {
+        this.length = length;
+        this.width = width;
+        this.initialMapDensity = initialMapDensity;
+        this.seed = seed;
+        this.useRandomSeed = useRandomSeed;
+        this.borderSize = borderSize;
+        this.squareSize = squareSize;
         this.wallMaterial = wallMaterial;
     }
 

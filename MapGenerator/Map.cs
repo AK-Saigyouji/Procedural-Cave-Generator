@@ -123,7 +123,7 @@ public class Map
     /// <summary>
     /// Are the coordinates valid for this map?
     /// </summary>
-    public bool IsInMap(int x, int y)
+    public bool Contains(int x, int y)
     {
         return 0 <= x && x < length && 0 <= y && y < width;
     }
@@ -131,9 +131,9 @@ public class Map
     /// <summary>
     /// Is the Coord valid for this map?
     /// </summary>
-    public bool IsInMap(Coord coord)
+    public bool Contains(Coord coord)
     {
-        return IsInMap(coord.x, coord.y);
+        return Contains(coord.x, coord.y);
     }
 
     /// <summary>

@@ -8,19 +8,21 @@ using System.Threading;
 /// </summary>
 public class CaveGenerator3D : CaveGenerator
 {
-    [SerializeField]
-    int wallHeight = 3;
-    [SerializeField]
-    Material ceilingMaterial;
-    [SerializeField]
-    Material wallMaterial;
-    [SerializeField]
-    int wallsPerTextureTile = 5;
+    public int wallHeight = 3;
+    public Material ceilingMaterial;
+    public Material wallMaterial;
+    public int wallsPerTextureTile = 5;
 
-    public CaveGenerator3D(int length, int width, int wallHeight, Material ceilingMaterial, Material wallMaterial, 
-        float mapDensity = 0.5f, string seed = "", bool useRandomSeed = true, int borderSize = 0, int squareSize = 1) 
-        : base(length, width, mapDensity, seed, useRandomSeed, borderSize, squareSize)
+    public void SetParameters(int length, int width, int wallHeight, Material ceilingMaterial, Material wallMaterial, 
+        float initialMapDensity = 0.5f, string seed = "", bool useRandomSeed = true, int borderSize = 0, int squareSize = 1) 
     {
+        this.length = length;
+        this.width = width;
+        this.initialMapDensity = initialMapDensity;
+        this.seed = seed;
+        this.useRandomSeed = useRandomSeed;
+        this.borderSize = borderSize;
+        this.squareSize = squareSize;
         this.wallHeight = wallHeight;
         this.ceilingMaterial = ceilingMaterial;
         this.wallMaterial = wallMaterial;

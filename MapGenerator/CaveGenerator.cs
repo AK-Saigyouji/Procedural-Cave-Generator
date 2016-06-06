@@ -1,58 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using UnityEngine;
 
 public abstract class CaveGenerator : MonoBehaviour
 {
-    [SerializeField]
-    protected int length = 50;
-    [SerializeField]
-    protected int width = 50;
-    [SerializeField]
+    public int length = 50;
+    public int width = 50;
     [Range(0.4f, 0.6f)]
-    protected float initialMapDensity = 0.5f;
-    [SerializeField]
-    protected string seed;
-    [SerializeField]
-    protected bool useRandomSeed = true;
-    [SerializeField]
-    protected int borderSize = 0;
-    [SerializeField]
-    protected int squareSize = 1;
-    [SerializeField]
-    protected Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
+    public float initialMapDensity = 0.5f;
+    public string seed;
+    public bool useRandomSeed = true;
+    public int borderSize = 0;
+    public int squareSize = 1;
+    public Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
 
     public GameObject cave { get; protected set; }
     public List<MapMeshes> generatedMeshes { get; protected set; }
-
-    public CaveGenerator(int length, int width, float initialMapDensity = 0.5f, string seed = "", 
-        bool useRandomSeed = true, int borderSize = 0, int squareSize = 1)
-    {
-        this.length = length;
-        this.width = width;
-        this.initialMapDensity = initialMapDensity;
-        this.seed = seed;
-        this.useRandomSeed = useRandomSeed;
-        this.borderSize = borderSize;
-        this.squareSize = squareSize;
-    }
 
     /// <summary>
     /// Generates cavernous terrain and stores it in a child game object. 
     /// </summary>
     public void GenerateCave()
     {
-        System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-        sw.Start();
         DestroyChildren();
         IMapGenerator mapGenerator = GetMapGenerator();
         Map map = mapGenerator.GenerateMap();
-        double time = sw.Elapsed.TotalSeconds;
         GenerateMeshFromMap(map);
-        double timeTwo = sw.Elapsed.TotalSeconds - time;
-        sw.Stop();
-        Debug.Log(time);
-        Debug.Log(timeTwo);
     }
 
     virtual protected IMapGenerator GetMapGenerator()
@@ -73,7 +47,7 @@ public abstract class CaveGenerator : MonoBehaviour
     protected MeshGenerator[] PrepareMeshGenerators(IList<Map> submaps)
     {
         MeshGenerator[] meshGenerators = InitializeMeshGenerators(submaps.Count);
-        System.Action[] actions = new System.Action[meshGenerators.Length];
+        Action[] actions = new Action[meshGenerators.Length];
         for (int i = 0; i < meshGenerators.Length; i++)
         {
             int indexCopy = i;

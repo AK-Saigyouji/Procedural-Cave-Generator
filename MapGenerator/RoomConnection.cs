@@ -2,8 +2,8 @@
 namespace MapHelpers
 {
     /// <summary>
-    /// Class representing a possible connection between two rooms. Keeps track of the rooms it's connecting and the pair
-    /// of tiles corresponding to the shortest distance between them.
+    /// Computes a possible connection between two rooms. Keeps track of the rooms it's connecting, the pair
+    /// of tiles corresponding to the shortest distance between them, and the corresponding distance.
     /// </summary>
     class RoomConnection : IComparable<RoomConnection>
     {
@@ -12,6 +12,7 @@ namespace MapHelpers
         public Coord tileA { get; private set; }
         public Coord tileB { get; private set; }
         public int distanceBetweenRooms { get; private set; }
+
         public int indexA { get; private set; }
         public int indexB { get; private set; }
 
@@ -24,6 +25,21 @@ namespace MapHelpers
             distanceBetweenRooms = int.MaxValue;
             FindShortConnection();
         }
+
+        /* Ensuring room connectivity is the most computationally involved part of the  of the map generator and this 
+         * algorithm constitutes the majority of the work for this purpoes. The original idea was to consider every pair 
+         * of edge tiles, settling on the pair with the lowest distance (ensuring optimality). This single method was 
+         * responsible for over half the run time of the original cave generator. 
+         * 
+         * In order to optimize it, it was necessary either to lose the guarantee of connecting all rooms, or to give up 
+         * optimality. The latter was chosen, using the following insight in order to dramatically improve performance in 
+         * large maps: the larger the distance between the rooms, the more slack can be given in terms of finding a 
+         * suboptimal connection. e.g.finding a 300 tile connection versus a 280 tile connection isn't an issue, but finding 
+         * a 2 tile connection versus a 22 tile connection is problematic. So each time we compute a distance, we skip a 
+         * number of tiles comparable to the computed distance. This ensures that we don't waste time at large distances but 
+         * are more careful as the tiles get closer (even if we compute a large initial distance, it is possible that the 
+         * rooms are very close elsewhere else). 
+         */
 
         void FindShortConnection()
         {
@@ -41,7 +57,7 @@ namespace MapHelpers
                     int distance = tileA.SupNormDistance(tileB);
                     if (distance < distanceBetweenRooms)
                     {
-                        Update(tileA, tileB, distance);
+                        UpdateOptimalConnection(tileA, tileB, distance);
                         if (distance < thresholdToTerminateSearch)
                             return;
                     }
@@ -56,7 +72,7 @@ namespace MapHelpers
             return distanceBetweenRooms.CompareTo(other.distanceBetweenRooms);
         }
 
-        void Update(Coord tileA, Coord tileB, int distance)
+        void UpdateOptimalConnection(Coord tileA, Coord tileB, int distance)
         {
             this.tileA = tileA;
             this.tileB = tileB;

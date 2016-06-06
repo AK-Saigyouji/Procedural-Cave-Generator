@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 
 namespace MeshHelpers
 {
@@ -9,7 +10,7 @@ namespace MeshHelpers
     class Outline
     {
         List<int> indices = new List<int>();
-        public int size { get { return indices.Count; } }
+        public int Size { get { return indices.Count; } }
 
         public Outline(int vertexIndex)
         {

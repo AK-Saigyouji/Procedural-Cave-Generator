@@ -12,7 +12,7 @@ namespace MapHelpers
         /// <param name="connections">A list of RoomConnection objects.</param>
         /// <param name="numRooms">Total number of Rooms (vertices).</param>
         /// <returns>Returns a minimum list of RoomConnection objects needed to connect rooms together.</returns>
-        static public List<RoomConnection> GetPrunedConnections(List<RoomConnection> connections, int numRooms)
+        static public List<RoomConnection> GetMinimalConnections(List<RoomConnection> connections, int numRooms)
         {
             DisjointSet components = new DisjointSet();
             connections.Sort();

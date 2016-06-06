@@ -7,8 +7,8 @@ namespace MeshHelpers
     {
         /// <summary>
         /// The lookup table for the marching squares algorithm. The eight points in the square are enumerated from 0 to 7, 
-        /// starting in the top left corner and going clockwise (see visual below). Based on the sixteen possible configurations for a square,
-        /// where each corner can be active or inactive, this table returns the points needed to triangulate that configuration.
+        /// starting in the top left corner and going clockwise (see visual below). Based on the sixteen possible configurations 
+        /// for a square, this table returns the points needed to triangulate that square.
         /// 0 1 2
         /// 7 - 3
         /// 6 5 4
@@ -54,7 +54,7 @@ namespace MeshHelpers
 
         public List<Vector3> vertices { get; private set; }
         public List<int> triangles { get; private set; }
-        public List<Triangle>[] vertexIndexToTriangles { get; private set; }
+        public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
 
         public void Triangulate(Map map)
         {
@@ -75,7 +75,7 @@ namespace MeshHelpers
             this.map = map;
             vertices = new List<Vector3>();
             triangles = new List<int>();
-            vertexIndexToTriangles = new List<Triangle>[map.length * map.width];
+            vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
             positionToVertexIndex = new Dictionary<Vector3, int>();
         }
 
@@ -84,38 +84,7 @@ namespace MeshHelpers
             int configuration = ComputeConfiguration(map[x, y + 1], map[x + 1, y + 1], map[x + 1, y], map[x, y]);
             int[] points = configurationTable[configuration];
             int[] vertexIndices = AddVertices(points, x, y);
-            AddTriangles(vertexIndices);
-        }
-
-        void AddTriangles(int[] indices)
-        {
-            int numTrianglesToCreate = indices.Length - 2;
-            for (int i = 0; i < numTrianglesToCreate; i++)
-            {
-                AddTriangle(indices[0], indices[i + 1], indices[i + 2]);
-            }
-        }
-
-        void AddTriangle(int a, int b, int c)
-        {
-            Triangle triangle = new Triangle(a, b, c);
-            for (int i = 0; i < 3; i++)
-            {
-                triangles.Add(triangle[i]);
-                AddTriangleToMap(triangle[i], triangle);
-            }
-        }
-
-        void AddTriangleToMap(int index, Triangle triangle)
-        {
-            if (vertexIndexToTriangles[index] == null)
-            {
-                vertexIndexToTriangles[index] = new List<Triangle> { triangle };
-            }
-            else
-            {
-                vertexIndexToTriangles[index].Add(triangle);
-            }
+            CreateTriangles(vertexIndices);
         }
 
         int[] AddVertices(int[] points, int x, int y)
@@ -125,7 +94,8 @@ namespace MeshHelpers
             {
                 int index;
                 Vector3 position = GetPosition(points[i], x, y);
-                if (!positionToVertexIndex.TryGetValue(position, out index))
+                bool newPosition = !positionToVertexIndex.TryGetValue(position, out index);
+                if (newPosition)
                 {
                     index = vertices.Count;
                     vertices.Add(position);
@@ -134,6 +104,40 @@ namespace MeshHelpers
                 indices[i] = index;
             }
             return indices;
+        }
+
+        void CreateTriangles(int[] indices)
+        {
+            int numTrianglesToCreate = indices.Length - 2;
+            for (int i = 0; i < numTrianglesToCreate; i++)
+            {
+                CreateTriangle(indices[0], indices[i + 1], indices[i + 2]);
+            }
+        }
+
+        void CreateTriangle(int a, int b, int c)
+        {
+            Triangle triangle = new Triangle(a, b, c);
+
+            triangles.Add(a);
+            triangles.Add(b);
+            triangles.Add(c);
+
+            AddTriangleToTable(a, triangle);
+            AddTriangleToTable(b, triangle);
+            AddTriangleToTable(c, triangle);
+        }
+
+        void AddTriangleToTable(int index, Triangle triangle)
+        {
+            if (vertexIndexToTriangles.ContainsKey(index))
+            {
+                vertexIndexToTriangles[index].Add(triangle);
+            }
+            else
+            {
+                vertexIndexToTriangles[index] = new List<Triangle> { triangle };
+            }
         }
 
         Vector3 GetPosition(int squarePoint, int x, int y)

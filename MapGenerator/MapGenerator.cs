@@ -45,7 +45,7 @@ public class MapGenerator : IMapGenerator
     public Map GenerateMap()
     {
         map = new Map(length, width, squareSize);
-        RandomFillMap();
+        RandomFillMap(mapDensity);
         SmoothMap(SMOOTHING_ITERATIONS);
         List<Room> rooms = RemoveSmallRegions(MINIMUM_WALL_REGION_SIZE, MINIMUM_OPEN_REGION_SIZE);
         ConnectRooms(rooms);
@@ -54,11 +54,11 @@ public class MapGenerator : IMapGenerator
     }
 
     /// <summary>
-    /// Fills the map with 1s and 0s uniformly at random, based on the map density.
+    /// Randomly fills the map with a proportion of wall tiles based on map density. The rest is filled with floor tiles.
     /// </summary>
-    void RandomFillMap()
+    void RandomFillMap(float mapDensity)
     {
-        Random.seed = DetermineSeed();
+        Random.seed = GetSeed();
 
         for (int x = 0; x < length; x++)
         {
@@ -70,7 +70,7 @@ public class MapGenerator : IMapGenerator
         }
     }
 
-    int DetermineSeed()
+    int GetSeed()
     {
         return useRandomSeed ? System.Environment.TickCount : seed.GetHashCode();
     }
@@ -90,14 +90,28 @@ public class MapGenerator : IMapGenerator
             {
                 for (int y = 1; y < width - 1; y++)
                 {
-                    int neighborCount = GetSurroundingWallCount(x, y);
-                    if (neighborCount != CELLULAR_THRESHOLD)
-                    {
-                        newMap[x, y] = (neighborCount > CELLULAR_THRESHOLD) ? Tile.Wall : Tile.Floor;
-                    }
+                    newMap[x, y] = GetNewTileBasedOnNeighbors(x, y);
                 }
             }
+
             map = newMap;
+        }
+    }
+
+    Tile GetNewTileBasedOnNeighbors(int x, int y)
+    {
+        int neighborCount = GetSurroundingWallCount(x, y);
+        if (neighborCount > CELLULAR_THRESHOLD)
+        {
+            return Tile.Wall;
+        }
+        else if (neighborCount < CELLULAR_THRESHOLD)
+        {
+            return Tile.Floor;
+        }
+        else
+        {
+            return map[x, y];
         }
     }
 
@@ -108,7 +122,7 @@ public class MapGenerator : IMapGenerator
     List<Room> RemoveSmallRegions(int minWallRegionSize, int minOpenRegionSize)
     {
         RemoveSmallRegionsOfType(minWallRegionSize, Tile.Wall);
-        List<Room> rooms = RemoveSmallRegionsOfType(minOpenRegionSize, 0);
+        List<Room> rooms = RemoveSmallRegionsOfType(minOpenRegionSize, Tile.Floor);
         return rooms;
     }
 
@@ -116,7 +130,7 @@ public class MapGenerator : IMapGenerator
     /// The number of walls beside the given point. Both horizontal and diagonal tiles count, but the tile itself does not.
     /// Note that the tile passed in must not be on the edge of the Map.
     /// </summary>
-    /// <returns>Number of walls surrounding the given tile.</returns>
+    /// <returns>Number of walls surrounding the given tile, between 0 and 8 inclusive.</returns>
     int GetSurroundingWallCount(int gridX, int gridY)
     {
         int wallCount = 0;
@@ -167,7 +181,7 @@ public class MapGenerator : IMapGenerator
         {
             for (int y = 0; y < width; y++)
             {
-                if (IsNewTileOfGivenType(x, y, visited, tileType))
+                if (!visited[x,y] && map[x,y] == tileType)
                 {
                     TileRegion newRegion = GetRegion(x, y, visited);
                     regions.Add(newRegion);
@@ -193,14 +207,16 @@ public class MapGenerator : IMapGenerator
         visited[xStart, yStart] = true;
         while (queue.Count > 0)
         {
-            Coord tile = queue.Dequeue();
-            tiles.Add(tile);
+            Coord currentTile = queue.Dequeue();
+            tiles.Add(currentTile);
 
-            foreach (Coord newTile in map.GetAdjacentTiles(tile.x, tile.y))
+            foreach (Coord newTile in map.GetAdjacentTiles(currentTile.x, currentTile.y))
             {
-                if (IsNewTileOfGivenType(newTile.x, newTile.y, visited, tileType))
+                int x = newTile.x;
+                int y = newTile.y;
+                if (!visited[x, y] && map[x, y] == tileType)
                 {
-                    visited[newTile.x, newTile.y] = true;
+                    visited[x, y] = true;
                     queue.Enqueue(newTile);
                 }
             }
@@ -217,14 +233,13 @@ public class MapGenerator : IMapGenerator
     }
 
     /// <summary>
-    /// Ensure that there is a path between every two open spots in the map (i.e. every pair of 0s), creating passages
-    /// if necessary.
+    /// Ensure that there is a path between every two floor tiles in the map, creating passages where necessary.
     /// </summary>
     /// <param name="rooms">A list of all the rooms in the Map.</param>
     void ConnectRooms(List<Room> rooms)
     {
-        List<RoomConnection> roomConnections = ComputeRoomConnections(rooms);
-        List<RoomConnection> finalConnections = Kruskal.GetPrunedConnections(roomConnections, rooms.Count);
+        List<RoomConnection> allRoomConnections = ComputeRoomConnections(rooms);
+        List<RoomConnection> finalConnections = Kruskal.GetMinimalConnections(allRoomConnections, rooms.Count);
         foreach (RoomConnection connection in finalConnections)
         {
             CreatePassage(connection, TUNNELING_RADIUS);
@@ -263,7 +278,7 @@ public class MapGenerator : IMapGenerator
     /// <param name="tunnelingRadius">Width of the created passage.</param>
     void CreatePassage(RoomConnection connection, int tunnelingRadius)
     {
-        List<Coord> line = CreateLineBetween(connection.tileA, connection.tileB);
+        List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
         foreach (Coord coord in line)
         {
             ClearNeighbors(coord, tunnelingRadius);
@@ -271,7 +286,7 @@ public class MapGenerator : IMapGenerator
     }
 
     /// <summary>
-    /// Helpful debug method for visualizing the created connections. Use in place of CreatePassage if you want to see
+    /// Debug method for visualizing the created connections. Use in place of CreatePassage if you want to see
     /// exactly what connections are being made. 
     /// </summary>
     void CreatePassageDebug(RoomConnection connection, int tunnelingRadius)
@@ -281,48 +296,29 @@ public class MapGenerator : IMapGenerator
         Vector3 start = new Vector3(A.x, 0f, A.y);
         Vector3 end = new Vector3(B.x, 0f, B.y);
         Debug.DrawLine(start, end, Color.cyan, 10000);
-        List<Coord> line = CreateLineBetween(connection.tileA, connection.tileB);
+        List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
         foreach (Coord coord in line)
         {
             ClearNeighbors(coord, tunnelingRadius);
         }
     }
 
+    /// <summary>
+    /// Replace nearby tiles with floors.
+    /// </summary>
+    /// <param name="neighborReach">The radius of replacement: e.g. if 1, will replace the 8 adjacent tiles.</param>
     void ClearNeighbors(Coord coord, int neighborReach)
     {
         for (int x = coord.x - neighborReach; x <= coord.x + neighborReach; x++)
         {
             for (int y = coord.y - neighborReach; y <= coord.y + neighborReach; y++)
             {
-                if (map.IsInMap(x, y))
+                if (map.Contains(x, y))
                 {
                     map[x, y] = Tile.Floor;
                 }
             }
         }
-    }
-
-    /// <summary>
-    /// Generate a list of coordinates representing a thin path beween the given coordinates (inclusive).
-    /// </summary>
-    /// <returns>List of Coords between start and end (inclusive).</returns>
-    List<Coord> CreateLineBetween(Coord start, Coord end)
-    {
-        Vector2 startVector = new Vector2(start.x, start.y);
-        List<Coord> line = new List<Coord>();
-
-        int xDelta = end.x - start.x;
-        int yDelta = end.y - start.y;
-        int numIterations = Mathf.Max(System.Math.Abs(xDelta), System.Math.Abs(yDelta));
-        Vector2 incrementor = new Vector2(xDelta, yDelta) / numIterations;
-
-        for (int i = 0; i <= numIterations; i++)
-        {
-            Vector2 nextVector = startVector + i * incrementor;
-            line.Add(new Coord((int)nextVector.x, (int)nextVector.y));
-        }
-
-        return line;
     }
 
     /// <summary>
@@ -332,7 +328,7 @@ public class MapGenerator : IMapGenerator
     /// <param name="borderSize">How thick the border should be.</param>
     void ApplyBorder(int borderSize)
     {
-        Map borderedMap = new Map(length + borderSize * 2, width + borderSize * 2, map.squareSize);
+        Map borderedMap = new Map(map.length + borderSize * 2, map.width + borderSize * 2, map.squareSize);
         for (int x = 0; x < borderedMap.length; x++)
         {
             int xShifted = x - borderSize;
@@ -344,10 +340,5 @@ public class MapGenerator : IMapGenerator
             }
         }
         map = borderedMap;
-    }
-
-    bool IsNewTileOfGivenType(int x, int y, bool[,] visited, Tile tileType)
-    {
-        return (!visited[x, y]) && (map[x, y] == tileType);
     }
 }

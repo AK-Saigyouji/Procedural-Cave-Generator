@@ -1,9 +1,12 @@
 ﻿using System;
+using System.Collections.Generic;
+using UnityEngine;
 
 namespace MapHelpers
 {
     /// <summary>
-    /// Coord is an integer equivalent of Vector2. 
+    /// Coord is an integer equivalent of Vector2 designed with coordinate grids in mind, with methods geared towards this
+    /// purpose.
     /// </summary>
     public struct Coord
     {
@@ -27,7 +30,6 @@ namespace MapHelpers
             return xDelta * xDelta + yDelta * yDelta;
         }
 
-
         /// <summary>
         /// Get the distance between this coordinate and given one as given by the supremum norm. Examples:
         /// (2,3).SupNormDistance(5,105) -> 102
@@ -37,6 +39,29 @@ namespace MapHelpers
         public int SupNormDistance(Coord otherTile)
         {
             return Math.Max(Math.Abs(x - otherTile.x), Math.Abs(y - otherTile.y));
+        }
+
+        /// <summary>
+        /// Generate a list of coordinates representing a path beween the given coordinates (inclusive).
+        /// </summary>
+        /// <returns>List of Coords between start and end (inclusive).</returns>
+        public List<Coord> CreateLineTo(Coord other)
+        {
+            Vector2 startVector = new Vector2(x, y);
+            List<Coord> line = new List<Coord>();
+
+            int xDelta = other.x - x;
+            int yDelta = other.y - y;
+            int numIterations = Mathf.Max(Math.Abs(xDelta), Math.Abs(yDelta));
+            Vector2 incrementor = new Vector2(xDelta, yDelta) / numIterations;
+
+            for (int i = 0; i <= numIterations; i++)
+            {
+                Vector2 nextVector = startVector + i * incrementor;
+                line.Add(new Coord((int)nextVector.x, (int)nextVector.y));
+            }
+
+            return line;
         }
 
         public static bool operator ==(Coord tileA, Coord tileB)
