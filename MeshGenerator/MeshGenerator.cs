@@ -10,14 +10,17 @@ using UnityEngine;
 /// </summary>
 public class MeshGenerator
 {
-    List<Vector3> ceilingVertices = new List<Vector3>();
-    List<int> ceilingTriangles = new List<int>();
+    // Ceiling Mesh Data:
+    Vector3[] ceilingVertices;
+    int[] ceilingTriangles;
     Vector2[] ceilingUV;
 
+    // Wall mesh data:
     Vector3[] wallVertices;
     int[] wallTriangles;
     Vector2[] wallUV;
-
+    
+    // Outline data: 
     IDictionary<int, List<Triangle>> vertexIndexToContainingTriangles;
     List<Outline> outlines;
 
@@ -38,11 +41,11 @@ public class MeshGenerator
     /// Create and return the ceiling mesh. Must first run GenerateCeiling to populate the data.
     /// </summary>
     /// <returns></returns>
-    public Mesh CreateCeilingMesh()
+    public Mesh GetCeilingMesh()
     {
         Mesh mesh = new Mesh();
-        mesh.vertices = ceilingVertices.ToArray();
-        mesh.triangles = ceilingTriangles.ToArray();
+        mesh.vertices = ceilingVertices;
+        mesh.triangles = ceilingTriangles;
         mesh.RecalculateNormals();
         mesh.uv = ceilingUV;
         mesh.name = "Ceiling Mesh" + map.index;
@@ -52,7 +55,7 @@ public class MeshGenerator
     /// <summary>
     /// Create and return the wall 3D wall mesh. Must first run GenerateWalls.
     /// </summary>
-    public Mesh CreateWallMesh()
+    public Mesh GetWallMesh()
     {
         Mesh wallMesh = new Mesh();
         wallMesh.vertices = wallVertices;
@@ -145,10 +148,10 @@ public class MeshGenerator
 
     void ComputeCeilingUVArray(Vector2 textureDimensions)
     {
-        Vector2[] uv = new Vector2[ceilingVertices.Count];
+        Vector2[] uv = new Vector2[ceilingVertices.Length];
         float xMax = textureDimensions.x;
         float yMax = textureDimensions.y;
-        for (int i = 0; i < ceilingVertices.Count; i++)
+        for (int i = 0; i < ceilingVertices.Length; i++)
         {
             float percentX = ceilingVertices[i].x / xMax;
             float percentY = ceilingVertices[i].z / yMax;

@@ -52,14 +52,14 @@ public class CaveGenerator3D : CaveGenerator
 
     Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
     {
-        Mesh ceilingMesh = meshGenerator.CreateCeilingMesh();
+        Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
         CreateObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial);
         return ceilingMesh;
     }
 
     Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
     {
-        Mesh wallMesh = meshGenerator.CreateWallMesh();
+        Mesh wallMesh = meshGenerator.GetWallMesh();
         GameObject wall = CreateObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
         AddWallCollider(wall, wallMesh);
         return wallMesh;

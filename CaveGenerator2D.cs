@@ -39,7 +39,7 @@ public class CaveGenerator2D : CaveGenerator {
 
     Mesh CreateWall(MeshGenerator meshGenerator, GameObject parent)
     {
-        Mesh ceilingMesh = meshGenerator.CreateCeilingMesh();
+        Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
         GameObject wall = CreateObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial);
         OrientWall(wall);
         RemoveExistingColliders(wall);

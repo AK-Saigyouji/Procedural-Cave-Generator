@@ -5,14 +5,12 @@ namespace MeshHelpers
 {
     class MapTriangulator
     {
-        /// <summary>
-        /// The lookup table for the marching squares algorithm. The eight points in the square are enumerated from 0 to 7, 
-        /// starting in the top left corner and going clockwise (see visual below). Based on the sixteen possible configurations 
-        /// for a square, this table returns the points needed to triangulate that square.
-        /// 0 1 2
-        /// 7 - 3
-        /// 6 5 4
-        /// </summary>
+        // The lookup table for the marching squares algorithm. The eight points in the square are enumerated from 0 to 7, 
+        // starting in the top left corner and going clockwise (see visual below). Based on the sixteen possible configurations 
+        // for a square, this table returns the points needed to triangulate that square.
+        // 0 1 2
+        // 7 - 3
+        // 6 5 4
         static readonly int[][] configurationTable = new int[][]
         {
             new int[] { },
@@ -33,10 +31,8 @@ namespace MeshHelpers
             new int[] {0, 2, 4, 6}
         };
 
-        /// <summary>
-        /// Lookup table for determining the position of the 8 points in the square relative to the bottom-left corner,
-        /// not taking into account scaling associated with the map's square size.
-        /// </summary>
+        // Lookup table for determining the position of the 8 points in the square relative to the bottom-left corner,
+        // not taking into account scaling associated with the map's square size.
         static readonly Vector3[] positionOffsets = new Vector3[]
         {
             new Vector3(0f, 0f, 1f),
@@ -52,9 +48,19 @@ namespace MeshHelpers
         Map map;
         Dictionary<Vector3, int> positionToVertexIndex;
 
-        public List<Vector3> vertices { get; private set; }
-        public List<int> triangles { get; private set; }
+        List<Vector3> _vertices;
+        List<int> _triangles;
         public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
+
+        public Vector3[] vertices
+        {
+            get{ return _vertices.ToArray(); }
+        }
+
+        public int[] triangles
+        {
+            get{ return _triangles.ToArray(); }
+        }
 
         public void Triangulate(Map map)
         {
@@ -73,8 +79,8 @@ namespace MeshHelpers
         void Initialize(Map map)
         {
             this.map = map;
-            vertices = new List<Vector3>();
-            triangles = new List<int>();
+            _vertices = new List<Vector3>();
+            _triangles = new List<int>();
             vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
             positionToVertexIndex = new Dictionary<Vector3, int>();
         }
@@ -97,8 +103,8 @@ namespace MeshHelpers
                 bool newPosition = !positionToVertexIndex.TryGetValue(position, out index);
                 if (newPosition)
                 {
-                    index = vertices.Count;
-                    vertices.Add(position);
+                    index = _vertices.Count;
+                    _vertices.Add(position);
                     positionToVertexIndex[position] = index;
                 }
                 indices[i] = index;
@@ -119,9 +125,9 @@ namespace MeshHelpers
         {
             Triangle triangle = new Triangle(a, b, c);
 
-            triangles.Add(a);
-            triangles.Add(b);
-            triangles.Add(c);
+            _triangles.Add(a);
+            _triangles.Add(b);
+            _triangles.Add(c);
 
             AddTriangleToTable(a, triangle);
             AddTriangleToTable(b, triangle);
