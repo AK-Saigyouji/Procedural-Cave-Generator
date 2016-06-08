@@ -24,6 +24,11 @@ public class MapGeneratorEditor : Editor {
 
     public void CreatePrefab(CaveGenerator caveGenerator)
     {
+        if (caveGenerator.cave == null)
+        {
+            Debug.Log("Cavegenerator: no cave object found!");
+            return;
+        }
         string guid = AssetDatabase.CreateFolder("Assets", "GeneratedCave");
         string path = AssetDatabase.GUIDToAssetPath(guid) + "/";
         foreach (MapMeshes meshes in caveGenerator.generatedMeshes)

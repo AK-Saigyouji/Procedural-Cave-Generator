@@ -5,8 +5,7 @@ using UnityEngine;
 namespace MapHelpers
 {
     /// <summary>
-    /// Coord is an integer equivalent of Vector2 designed with coordinate grids in mind, with methods geared towards this
-    /// purpose.
+    /// Coord is an integer equivalent of Vector2 designed with coordinate grids in mind.
     /// </summary>
     public struct Coord
     {
@@ -20,9 +19,16 @@ namespace MapHelpers
         }
 
         /// <summary>
+        /// Get the distance between this coordinate and the given one.
+        /// </summary>
+        public double Distance(Coord otherTile)
+        {
+            return Math.Sqrt(SquaredDistance(otherTile));
+        }
+
+        /// <summary>
         /// Get the squared distance between this coordinate and the given one. Faster than computing the actual distance.
         /// </summary>
-        /// <returns>Returns the squared distance between Coords.</returns>
         public int SquaredDistance(Coord otherTile)
         {
             int xDelta = x - otherTile.x;

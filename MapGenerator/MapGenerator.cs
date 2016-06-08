@@ -38,8 +38,8 @@ public class MapGenerator : IMapGenerator
     }
 
     /// <summary>
-    /// Generates a randomized Map object based on the map generator's properties. May take prohibitively long for very 
-    /// large maps (width * length > 10^6).
+    /// Generates a randomized Map object based on the map generator's properties. May take a significant amount of time
+    /// for large maps (particularly for width * length > 10e6). 
     /// </summary>
     /// <returns>Returns the generated Map object</returns>
     public Map GenerateMap()
@@ -174,6 +174,7 @@ public class MapGenerator : IMapGenerator
                 }
             }
         }
+
         return regions;
     }
 
@@ -289,10 +290,6 @@ public class MapGenerator : IMapGenerator
         }
     }
 
-    /// <summary>
-    /// Ensure that there is a path between every two floor tiles in the map, creating passages where necessary.
-    /// </summary>
-    /// <param name="rooms">A list of all the rooms in the Map.</param>
     void ConnectRooms(List<Room> rooms)
     {
         List<RoomConnection> allRoomConnections = ComputeRoomConnections(rooms);
@@ -328,11 +325,6 @@ public class MapGenerator : IMapGenerator
         return connections.Where(x => x != null).ToList();
     }
 
-    /// <summary>
-    /// Create a passage along the path represented by the given connection.
-    /// </summary>
-    /// <param name="connection">RoomConnection object giving the two tiles that should be connected.</param>
-    /// <param name="tunnelingRadius">Width of the created passage.</param>
     void CreatePassage(RoomConnection connection, int tunnelingRadius)
     {
         List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);

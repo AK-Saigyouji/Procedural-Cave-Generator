@@ -3,6 +3,10 @@ using System.Collections.Generic;
 
 namespace MeshHelpers
 {
+    /// <summary>
+    /// Triangulates a Map according to the Marching Squares algorithm. Resulting data can be accessed through exposed
+    /// properties in a form that is ready to be used in a Unity Mesh. 
+    /// </summary>
     class MapTriangulator
     {
         // The lookup table for the marching squares algorithm. The eight points in the square are enumerated from 0 to 7, 
@@ -32,35 +36,36 @@ namespace MeshHelpers
         };
 
         // Lookup table for determining the position of the 8 points in the square relative to the bottom-left corner,
-        // not taking into account scaling associated with the map's square size.
-        static readonly Vector3[] positionOffsets = new Vector3[]
+        // not taking into account scaling associated with the map's square size. Stored as Vector2s representing x and z.
+        static readonly Vector2[] positionOffsets = new Vector2[]
         {
-            new Vector3(0f, 0f, 1f),
-            new Vector3(0.5f, 0f, 1f),
-            new Vector3(1f, 0f, 1f),
-            new Vector3(1f, 0f, 0.5f),
-            new Vector3(1f, 0f, 0f),
-            new Vector3(0.5f, 0f, 0f),
-            new Vector3(0f, 0f, 0f),
-            new Vector3(0f, 0f, 0.5f)
+            new Vector2(0f, 1f),
+            new Vector2(0.5f, 1f),
+            new Vector2(1f, 1f),
+            new Vector2(1f, 0.5f),
+            new Vector2(1f, 0f),
+            new Vector2(0.5f, 0f),
+            new Vector2(0f, 0f),
+            new Vector2(0f, 0.5f)
         };
 
         Map map;
-        Dictionary<Vector3, int> positionToVertexIndex;
+        Dictionary<Vector2, int> positionToVertexIndex;
 
-        List<Vector3> vertices;
+        List<Vector2> localPositions;
         List<int> triangles;
 
         public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
 
         public Vector3[] meshVertices
         {
-            get{ return vertices.ToArray(); }
+            get { return LocalToGlobalPositions(localPositions); }
+
         }
 
         public int[] meshTriangles
         {
-            get{ return triangles.ToArray(); }
+            get { return triangles.ToArray(); }
         }
 
         public void Triangulate(Map map)
@@ -72,7 +77,7 @@ namespace MeshHelpers
             {
                 for (int y = 0; y < numSquaresDeep; y++)
                 {
-                    TriangulateSquare(x, y);
+                    TriangulateSquare(map, x, y);
                 }
             }
         }
@@ -80,13 +85,13 @@ namespace MeshHelpers
         void Initialize(Map map)
         {
             this.map = map;
-            vertices = new List<Vector3>();
+            localPositions = new List<Vector2>();
             triangles = new List<int>();
             vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
-            positionToVertexIndex = new Dictionary<Vector3, int>();
+            positionToVertexIndex = new Dictionary<Vector2, int>();
         }
 
-        void TriangulateSquare(int x, int y)
+        void TriangulateSquare(Map map, int x, int y)
         {
             int configuration = ComputeConfiguration(map[x, y + 1], map[x + 1, y + 1], map[x + 1, y], map[x, y]);
             int[] points = configurationTable[configuration];
@@ -100,12 +105,12 @@ namespace MeshHelpers
             for (int i = 0; i < points.Length; i++)
             {
                 int index;
-                Vector3 position = GetPosition(points[i], x, y);
-                bool newPosition = !positionToVertexIndex.TryGetValue(position, out index);
-                if (newPosition)
+                Vector2 position = GetLocalPosition(points[i], x, y);
+                bool isNewPosition = !positionToVertexIndex.TryGetValue(position, out index);
+                if (isNewPosition)
                 {
-                    index = vertices.Count;
-                    vertices.Add(position);
+                    index = localPositions.Count;
+                    localPositions.Add(position);
                     positionToVertexIndex[position] = index;
                 }
                 indices[i] = index;
@@ -137,24 +142,41 @@ namespace MeshHelpers
 
         void AddTriangleToTable(int index, Triangle triangle)
         {
-            if (vertexIndexToTriangles.ContainsKey(index))
+            List<Triangle> triangles;
+            if (vertexIndexToTriangles.TryGetValue(index, out triangles))
             {
-                vertexIndexToTriangles[index].Add(triangle);
+                triangles.Add(triangle);
             }
             else
             {
-                vertexIndexToTriangles[index] = new List<Triangle> { triangle };
+                triangles = new List<Triangle> { triangle };
+                vertexIndexToTriangles[index] = triangles;
             }
         }
 
-        Vector3 GetPosition(int squarePoint, int x, int y)
+        Vector3[] LocalToGlobalPositions(List<Vector2> localPositions)
         {
-            return map.position + (positionOffsets[squarePoint] + new Vector3(x, 0f, y)) * map.squareSize;
+            Vector3 basePosition = map.position;
+            int stretchFactor = map.squareSize;
+
+            Vector3[] globalPositions = new Vector3[localPositions.Count];
+            for (int i = 0; i < globalPositions.Length; i++)
+            {
+                Vector2 localPos = localPositions[i];
+                globalPositions[i] = (basePosition + new Vector3(localPos.x, 0f, localPos.y)) * stretchFactor;
+            }
+
+            return globalPositions;
+        }
+
+        Vector2 GetLocalPosition(int squarePoint, int x, int y)
+        {
+            return (positionOffsets[squarePoint] + new Vector2(x, y));
         }
 
         int ComputeConfiguration(Tile topLeft, Tile topRight, Tile bottomRight, Tile bottomLeft)
         {
-            return 8 * (int)topLeft + 4 * (int)topRight + 2 * (int)bottomRight + (int)bottomLeft;
+            return (int)bottomLeft + ((int)bottomRight * 2) + ((int)topRight * 4) + ((int)topLeft * 8);
         }
     }
 }
