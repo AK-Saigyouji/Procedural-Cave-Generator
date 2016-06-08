@@ -137,6 +137,28 @@ public class Map
     }
 
     /// <summary>
+    /// The number of walls beside the given point. Both horizontal and diagonal tiles count, but the tile itself does not.
+    /// Note that the tile passed in must not be on the edge of the Map.
+    /// </summary>
+    /// <returns>Number of walls surrounding the given tile, between 0 and 8 inclusive.</returns>
+    public int GetSurroundingWallCount(int x, int y)
+    {
+        return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]
+            + (int)grid[x - 1, y]                           + (int)grid[x + 1, y]
+            + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1];
+    }
+
+    public bool IsBoundaryTile(int x, int y)
+    {
+        return x == 0 || x == length - 1 || y == 0 || y == width - 1;
+    }
+
+    public bool IsBoundaryTile(Coord coord)
+    {
+        return IsBoundaryTile(coord.x, coord.y);
+    }
+
+    /// <summary>
     /// Gets the horizontally adjacent tiles. Examples:
     /// (1,3) -> (0,3), (2,3), (1,4), (1,2) (assumes map is at least 3 by 5)
     /// (0,0) -> (0,1), (1,0) (assumes map is at least 2 by 2)

@@ -7,7 +7,7 @@ namespace MeshHelpers
     {
         // The lookup table for the marching squares algorithm. The eight points in the square are enumerated from 0 to 7, 
         // starting in the top left corner and going clockwise (see visual below). Based on the sixteen possible configurations 
-        // for a square, this table returns the points needed to triangulate that square.
+        // for the corners of a square, this table returns the points needed to triangulate that square.
         // 0 1 2
         // 7 - 3
         // 6 5 4
@@ -48,18 +48,19 @@ namespace MeshHelpers
         Map map;
         Dictionary<Vector3, int> positionToVertexIndex;
 
-        List<Vector3> _vertices;
-        List<int> _triangles;
+        List<Vector3> vertices;
+        List<int> triangles;
+
         public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
 
-        public Vector3[] vertices
+        public Vector3[] meshVertices
         {
-            get{ return _vertices.ToArray(); }
+            get{ return vertices.ToArray(); }
         }
 
-        public int[] triangles
+        public int[] meshTriangles
         {
-            get{ return _triangles.ToArray(); }
+            get{ return triangles.ToArray(); }
         }
 
         public void Triangulate(Map map)
@@ -79,8 +80,8 @@ namespace MeshHelpers
         void Initialize(Map map)
         {
             this.map = map;
-            _vertices = new List<Vector3>();
-            _triangles = new List<int>();
+            vertices = new List<Vector3>();
+            triangles = new List<int>();
             vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
             positionToVertexIndex = new Dictionary<Vector3, int>();
         }
@@ -103,8 +104,8 @@ namespace MeshHelpers
                 bool newPosition = !positionToVertexIndex.TryGetValue(position, out index);
                 if (newPosition)
                 {
-                    index = _vertices.Count;
-                    _vertices.Add(position);
+                    index = vertices.Count;
+                    vertices.Add(position);
                     positionToVertexIndex[position] = index;
                 }
                 indices[i] = index;
@@ -125,9 +126,9 @@ namespace MeshHelpers
         {
             Triangle triangle = new Triangle(a, b, c);
 
-            _triangles.Add(a);
-            _triangles.Add(b);
-            _triangles.Add(c);
+            triangles.Add(a);
+            triangles.Add(b);
+            triangles.Add(c);
 
             AddTriangleToTable(a, triangle);
             AddTriangleToTable(b, triangle);

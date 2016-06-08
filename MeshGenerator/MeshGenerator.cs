@@ -141,8 +141,8 @@ public class MeshGenerator
         MapTriangulator mapTriangulator = new MapTriangulator();
         mapTriangulator.Triangulate(map);
 
-        ceilingVertices = mapTriangulator.vertices;
-        ceilingTriangles = mapTriangulator.triangles;
+        ceilingVertices = mapTriangulator.meshVertices;
+        ceilingTriangles = mapTriangulator.meshTriangles;
         vertexIndexToContainingTriangles = mapTriangulator.vertexIndexToTriangles;
     }
 

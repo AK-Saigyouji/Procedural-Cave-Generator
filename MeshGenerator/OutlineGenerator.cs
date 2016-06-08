@@ -7,10 +7,8 @@ namespace MeshHelpers
 {
     /// <summary>
     /// Generates a list of outlines for a triangulated map, based on the vertices and the triangles containing each vertex.
-    /// Note that it may skip extremely small outlines. As an example, it will skip the case
-    /// 1 1 1
-    /// 1 0 1
-    /// 1 1 1
+    /// Note that it may skip extremely small outlines. As an example, it will skip the case of a single floor tile surrounded
+    /// by walls. As such, it is recommended that very small rooms are pruned (filled in) before generating outlines.
     /// </summary>
     class OutlineGenerator
     {
@@ -43,7 +41,6 @@ namespace MeshHelpers
             {
                 if (!checkedVertices[vertexIndex] && MustBeOutlineVertex(vertexIndex))
                 {
-                    checkedVertices[vertexIndex] = true;
                     GenerateOutlineFromPoint(vertexIndex);
                 }
             }
@@ -51,7 +48,7 @@ namespace MeshHelpers
         }
 
         /// <summary>
-        /// Sufficient (but not necessary) test for the vertex index to be on the outline. For each outline, at least one
+        /// Sufficient (but not necessary) test for the vertex index to be on an outline. For each outline, at least one
         /// vertex will have an index that returns true according to this method. As such, indices failing this test
         /// can be ignored while still ensuring every outline is discovered.
         /// </summary>
@@ -63,10 +60,13 @@ namespace MeshHelpers
 
         void GenerateOutlineFromPoint(int startVertexIndex)
         {
+            checkedVertices[startVertexIndex] = true;
             Outline outline = new Outline(startVertexIndex);
+
             int nextVertexIndex = GetInitialConnectedOutlineVertex(startVertexIndex);
             FollowOutline(nextVertexIndex, outline);
             outline.Add(startVertexIndex);
+
             outlines.Add(outline);
         }
 
@@ -92,7 +92,7 @@ namespace MeshHelpers
                     }
                 }
             }
-            throw new Exception("Failed to initiate outline during mesh generation.");
+            throw new Exception("Failed to initialize outline during mesh generation.");
         }
 
         int GetConnectedOutlineVertex(int currentIndex, int outlineSize)
@@ -137,12 +137,13 @@ namespace MeshHelpers
 
         /// <summary>
         /// Will these indices produce an Outline going in the right direction? The direction of the Outline will determine
-        /// whether the walls are visible.
+        /// whether the walls are visible. 
         /// </summary>
         /// <param name="startIndex">The starting index.</param>
         /// <param name="otherIndex">The discovered index in question.</param>
         /// <param name="triangle">A triangle containing both indices.</param>
-        /// <returns>Returns whether using the second index will result in a correctly oriented Outline.</returns>
+        /// <returns>Returns whether going from the start index to the discovered index will result in a correctly 
+        /// oriented Outline.</returns>
         bool IsCorrectOrientation(int startIndex, int otherIndex, Triangle triangle)
         {
             int indexThree = triangle.GetThirdPoint(startIndex, otherIndex);

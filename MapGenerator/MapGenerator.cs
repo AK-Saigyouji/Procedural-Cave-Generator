@@ -64,8 +64,7 @@ public class MapGenerator : IMapGenerator
         {
             for (int y = 0; y < width; y++)
             {
-                bool isOnMapEdge = (x == 0 || x == length - 1 || y == 0 || y == width - 1);
-                map[x, y] = (isOnMapEdge || Random.value < mapDensity) ? Tile.Wall : Tile.Floor;
+                map[x, y] = (Random.value < mapDensity || map.IsBoundaryTile(x, y)) ? Tile.Wall : Tile.Floor;
             }
         }
     }
@@ -77,18 +76,19 @@ public class MapGenerator : IMapGenerator
 
     /// <summary>
     /// Uses synchronous cellular automata to smooth out the map. Each cell becomes more like its neighbors,
-    /// resulting in a more regular map.
+    /// turning noise into smoother map consisting of regions.
     /// </summary>
     /// <param name="iterations">The number of smoothing passes.</param>
     void SmoothMap(int iterations)
     {
+        int interiorLength = length - 1;
+        int interiorWidth = width - 1;
         for (int i = 0; i < iterations; i++)
         {
             Map newMap = new Map(map);
-
-            for (int x = 1; x < length - 1; x++)
+            for (int x = 1; x < interiorLength; x++)
             {
-                for (int y = 1; y < width - 1; y++)
+                for (int y = 1; y < interiorWidth; y++)
                 {
                     newMap[x, y] = GetNewTileBasedOnNeighbors(x, y);
                 }
@@ -100,7 +100,7 @@ public class MapGenerator : IMapGenerator
 
     Tile GetNewTileBasedOnNeighbors(int x, int y)
     {
-        int neighborCount = GetSurroundingWallCount(x, y);
+        int neighborCount = map.GetSurroundingWallCount(x, y);
         if (neighborCount > CELLULAR_THRESHOLD)
         {
             return Tile.Wall;
@@ -116,7 +116,7 @@ public class MapGenerator : IMapGenerator
     }
 
     /// <summary>
-    /// Removes contiguous sections of the map that are too small. 
+    /// Removes connected sections of the map that are too small. 
     /// </summary>
     /// <returns>List of Room objects corresponding to open regions that were not removed.</returns>
     List<Room> RemoveSmallRegions(int minWallRegionSize, int minOpenRegionSize)
@@ -127,27 +127,6 @@ public class MapGenerator : IMapGenerator
     }
 
     /// <summary>
-    /// The number of walls beside the given point. Both horizontal and diagonal tiles count, but the tile itself does not.
-    /// Note that the tile passed in must not be on the edge of the Map.
-    /// </summary>
-    /// <returns>Number of walls surrounding the given tile, between 0 and 8 inclusive.</returns>
-    int GetSurroundingWallCount(int gridX, int gridY)
-    {
-        int wallCount = 0;
-        for (int x = gridX - 1; x <= gridX + 1; x++)
-        {
-            for (int y = gridY - 1; y <= gridY + 1; y++)
-            {
-                if (x != gridX || y != gridY)
-                {
-                    wallCount += (int)map[x, y];
-                }
-            }
-        }
-        return wallCount;
-    }
-
-    /// <summary>
     /// Remove small regions of the given type and return the rest.
     /// </summary>
     /// <param name="removalThreshold">Number of tiles a region must have to not be removed.</param>
@@ -155,14 +134,14 @@ public class MapGenerator : IMapGenerator
     /// <returns>List of Rooms at least as large as the removal threshold.</returns>
     List<Room> RemoveSmallRegionsOfType(int removalThreshold, Tile tileType)
     {
-        Tile otherType = (tileType == Tile.Wall) ? Tile.Floor : Tile.Wall;
+        Tile otherTileType = (tileType == Tile.Wall) ? Tile.Floor : Tile.Wall;
         List<TileRegion> regions = GetRegions(tileType);
         List<Room> remainingRegions = new List<Room>();
         foreach (TileRegion region in regions)
         {
             if (region.Count < removalThreshold)
             {
-                FillRegion(region, otherType);
+                FillRegion(region, otherTileType);
             }
             else
             {
@@ -172,10 +151,17 @@ public class MapGenerator : IMapGenerator
         return remainingRegions;
     }
 
+    /// <summary>
+    /// Gets all the regions of the corresponding tile type, with the exception of the outer region containing the map's
+    /// boundary.
+    /// </summary>
     List<TileRegion> GetRegions(Tile tileType)
     {
         List<TileRegion> regions = new List<TileRegion>();
         bool[,] visited = new bool[length, width];
+
+        if (tileType == Tile.Wall)
+            VisitBoundaryRegion(visited);
 
         for (int x = 0; x < length; x++)
         {
@@ -192,36 +178,107 @@ public class MapGenerator : IMapGenerator
     }
 
     /// <summary>
+    /// Visits all tiles corresponding to walls connected to the outermost boundary of the map. By doing this, we can ensure
+    /// that every remaining point in the map has four neighbors, removing the need for four boundary checks every time we
+    /// visit a new tile. 
+    /// </summary>
+    void VisitBoundaryRegion(bool[,] visited)
+    {
+        VisitColumns(visited, 0, 1, length - 2, length - 1);
+        VisitRows(visited, 0, 1, width - 2, width - 1);
+        Queue<Coord> queue = InitializeBoundaryQueue();
+        GetTilesReachableFromQueue(queue, visited);
+    }
+
+    void VisitColumns(bool[,] visited, params int[] columns)
+    {
+        foreach (int columnNumber in columns)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                visited[columnNumber, y] = true;
+            }
+        }
+    }
+
+    void VisitRows(bool[,] visited, params int[] rows)
+    {
+        foreach (int rowNumber in rows)
+        {
+            for (int x = 0; x < length; x++)
+            {
+                visited[x, rowNumber] = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Prepares a queue of coordinates corresponding to all the wall tiles exactly 1 unit away from the boundary. A BFS
+    /// from this queue will find all the wall tiles connected to the boundary. 
+    /// </summary>
+    Queue<Coord> InitializeBoundaryQueue()
+    {
+        Queue<Coord> queue = new Queue<Coord>();
+        for (int x = 1; x < length - 1; x++)
+        {
+            if (map[x, 1] == Tile.Wall)
+                queue.Enqueue(new Coord(x, 1));
+            if (map[x, width - 2] == Tile.Wall)
+                queue.Enqueue(new Coord(x, width - 2));
+        }
+        for (int y = 1; y < width - 1; y++)
+        {
+            if (map[1, y] == Tile.Wall)
+                queue.Enqueue(new Coord(1, y));
+            if (map[length - 2, y] == Tile.Wall)
+                queue.Enqueue(new Coord(length - 2, y));
+        }
+        return queue;
+    }
+
+    /// <summary>
     /// Get the region containing the start point. Two tiles are considered to be in the same region if there is a sequence
     /// of horizontal steps from one to the other (inclusive) passing through only the same tile type.
     /// </summary>
-    /// <param name="visited">A 2D int array tracking visited nodes to reduce work.</param>
     /// <returns>The region of tiles containing the start point.</returns>
     TileRegion GetRegion(int xStart, int yStart, bool[,] visited)
     {
-        TileRegion tiles = new TileRegion();
-        Tile tileType = map[xStart, yStart];
-
         Queue<Coord> queue = new Queue<Coord>();
         queue.Enqueue(new Coord(xStart, yStart));
         visited[xStart, yStart] = true;
+        return GetTilesReachableFromQueue(queue, visited);
+    }
+
+    TileRegion GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
+    {
+        TileRegion tiles = new TileRegion();
+        Tile tileType = map[queue.Peek()];
         while (queue.Count > 0)
         {
             Coord currentTile = queue.Dequeue();
             tiles.Add(currentTile);
+            int x = currentTile.x;
+            int y = currentTile.y;
 
-            foreach (Coord newTile in map.GetAdjacentTiles(currentTile.x, currentTile.y))
-            {
-                int x = newTile.x;
-                int y = newTile.y;
-                if (!visited[x, y] && map[x, y] == tileType)
-                {
-                    visited[x, y] = true;
-                    queue.Enqueue(newTile);
-                }
-            }
+            if (IsNewTileOfType(visited, x + 1, y, tileType))
+                queue.Enqueue(new Coord(x + 1, y));
+            if (IsNewTileOfType(visited, x - 1, y, tileType))
+                queue.Enqueue(new Coord(x - 1, y));
+            if (IsNewTileOfType(visited, x, y + 1, tileType))
+                queue.Enqueue(new Coord(x, y + 1));
+            if (IsNewTileOfType(visited, x, y - 1, tileType))
+                queue.Enqueue(new Coord(x, y - 1));
         }
         return tiles;
+    }
+
+    bool IsNewTileOfType(bool[,] visited, int x, int y, Tile tileType)
+    {
+        if (visited[x, y])
+            return false;
+
+        visited[x, y] = true;
+        return map[x, y] == tileType;
     }
 
     void FillRegion(TileRegion region, Tile tileType)
@@ -287,7 +344,8 @@ public class MapGenerator : IMapGenerator
 
     /// <summary>
     /// Debug method for visualizing the created connections. Use in place of CreatePassage if you want to see
-    /// exactly what connections are being made. 
+    /// exactly what connections are being made. Do not use in actual build, as Debug functionality is slow and will run
+    /// during gameplay. 
     /// </summary>
     void CreatePassageDebug(RoomConnection connection, int tunnelingRadius)
     {

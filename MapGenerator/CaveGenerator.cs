@@ -24,9 +24,21 @@ public abstract class CaveGenerator : MonoBehaviour
     public void GenerateCave()
     {
         DestroyChildren();
+        Stopwatch sw = new Stopwatch();
         IMapGenerator mapGenerator = GetMapGenerator();
+        sw.Start();
         Map map = mapGenerator.GenerateMap();
+        PrintTime(sw, "Map");
         GenerateMeshFromMap(map);
+        PrintTime(sw, "Mesh");
+        sw.Stop();
+    }
+
+    void PrintTime(Stopwatch sw, string statement)
+    {
+        UnityEngine.Debug.Log(statement + " took: " + sw.Elapsed.TotalSeconds);
+        sw.Reset();
+        sw.Start();
     }
 
     virtual protected IMapGenerator GetMapGenerator()

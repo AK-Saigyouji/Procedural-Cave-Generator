@@ -51,19 +51,26 @@ namespace MapHelpers
             {
                 Coord tileA = edgeTilesA[indexA];
                 int indexB = 0;
+                int bestDistanceThisLoop = int.MaxValue;
+                Coord bestTileBThisLoop = tileA;
                 while (indexB < edgeTilesB.Count)
                 {
                     Coord tileB = edgeTilesB[indexB];
                     int distance = tileA.SupNormDistance(tileB);
-                    if (distance < distanceBetweenRooms)
+                    if (distance < bestDistanceThisLoop)
                     {
-                        UpdateOptimalConnection(tileA, tileB, distance);
-                        if (distance < thresholdToTerminateSearch)
-                            return;
+                        bestDistanceThisLoop = distance;
+                        bestTileBThisLoop = tileB;
                     }
                     indexB += distance;
                 }
-                indexA += distanceBetweenRooms;
+                if (bestDistanceThisLoop < distanceBetweenRooms)
+                {
+                    UpdateOptimalConnection(tileA, bestTileBThisLoop, bestDistanceThisLoop);
+                    if (bestDistanceThisLoop < thresholdToTerminateSearch)
+                        return;
+                }
+                indexA += bestDistanceThisLoop;
             }
         }
 
