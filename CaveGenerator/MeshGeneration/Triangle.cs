@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System;
 
-namespace MeshHelpers
+namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
     /// A simple container for three distinct integers. 

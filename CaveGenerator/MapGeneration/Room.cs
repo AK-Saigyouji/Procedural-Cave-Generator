@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace MapHelpers
+namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// A connected, open space in the map, keeping track of which of its tiles are adjacent to walls.

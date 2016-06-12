@@ -1,5 +1,6 @@
 ﻿using System;
-namespace MapHelpers
+
+namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// Computes a possible connection between two rooms. Keeps track of the rooms it's connecting, the pair

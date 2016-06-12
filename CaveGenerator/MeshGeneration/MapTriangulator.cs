@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 
-namespace MeshHelpers
+namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
     /// Triangulates a Map according to the Marching Squares algorithm. Resulting data can be accessed through exposed
@@ -77,7 +77,11 @@ namespace MeshHelpers
             {
                 for (int y = 0; y < numSquaresDeep; y++)
                 {
-                    TriangulateSquare(map, x, y);
+                    int configuration = ComputeConfiguration(map[x, y + 1], map[x + 1, y + 1], map[x + 1, y], map[x, y]);
+                    if (configuration != 0)
+                    {
+                        TriangulateSquare(configuration, x, y);
+                    }
                 }
             }
         }
@@ -91,9 +95,8 @@ namespace MeshHelpers
             positionToVertexIndex = new Dictionary<Vector2, int>();
         }
 
-        void TriangulateSquare(Map map, int x, int y)
+        void TriangulateSquare(int configuration, int x, int y)
         {
-            int configuration = ComputeConfiguration(map[x, y + 1], map[x + 1, y + 1], map[x + 1, y], map[x, y]);
             int[] points = configurationTable[configuration];
             int[] vertexIndices = AddVertices(points, x, y);
             CreateTriangles(vertexIndices);
@@ -101,21 +104,21 @@ namespace MeshHelpers
 
         int[] AddVertices(int[] points, int x, int y)
         {
-            int[] indices = new int[points.Length];
+            int[] vertexIndices = new int[points.Length];
             for (int i = 0; i < points.Length; i++)
             {
-                int index;
+                int vertexIndex;
                 Vector2 position = GetLocalPosition(points[i], x, y);
-                bool isNewPosition = !positionToVertexIndex.TryGetValue(position, out index);
+                bool isNewPosition = !positionToVertexIndex.TryGetValue(position, out vertexIndex);
                 if (isNewPosition)
                 {
-                    index = localPositions.Count;
+                    vertexIndex = localPositions.Count;
                     localPositions.Add(position);
-                    positionToVertexIndex[position] = index;
+                    positionToVertexIndex[position] = vertexIndex;
                 }
-                indices[i] = index;
+                vertexIndices[i] = vertexIndex;
             }
-            return indices;
+            return vertexIndices;
         }
 
         void CreateTriangles(int[] indices)
@@ -163,7 +166,7 @@ namespace MeshHelpers
             for (int i = 0; i < globalPositions.Length; i++)
             {
                 Vector2 localPos = localPositions[i];
-                globalPositions[i] = (basePosition + new Vector3(localPos.x, 0f, localPos.y)) * stretchFactor;
+                globalPositions[i] = basePosition + (new Vector3(localPos.x, 0f, localPos.y) * stretchFactor);
             }
 
             return globalPositions;

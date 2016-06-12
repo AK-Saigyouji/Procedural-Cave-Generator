@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace MapHelpers
+namespace CaveGeneration.MapGeneration
 {
     static class Kruskal
     {

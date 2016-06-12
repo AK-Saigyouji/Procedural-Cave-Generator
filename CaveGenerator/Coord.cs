@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace MapHelpers
+namespace CaveGeneration
 {
     /// <summary>
     /// Coord is an integer equivalent of Vector2 designed with coordinate grids in mind.

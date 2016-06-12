@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace MeshHelpers
+namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
     /// Outline represents a collection of indices corresponding to points that separate a region of walls from a 

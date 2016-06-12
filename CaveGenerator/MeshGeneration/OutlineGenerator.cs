@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
-namespace MeshHelpers
+namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
     /// Generates a list of outlines for a triangulated map, based on the vertices and the triangles containing each vertex.

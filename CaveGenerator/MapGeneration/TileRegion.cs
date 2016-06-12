@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace MapHelpers
+namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// A simple class corresponding to a collection of tiles in the map.

@@ -1,5 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
+using CaveGeneration;
+using CaveGeneration.MeshGeneration;
 
 [CustomEditor(typeof(CaveGenerator), true)]
 public class MapGeneratorEditor : Editor {
@@ -12,7 +14,7 @@ public class MapGeneratorEditor : Editor {
         {
             if (GUILayout.Button("Generate New Map"))
             {
-                caveGenerator.GenerateCave();
+                caveGenerator.GenerateCaveUsingInspectorValues();
             }
 
             if (GUILayout.Button("Create Prefab"))
