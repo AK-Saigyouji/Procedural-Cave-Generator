@@ -11,6 +11,7 @@ namespace CaveGeneration
     public class CaveGenerator2D : CaveGenerator
     {
         public Material wallMaterial;
+        readonly Quaternion ORIENTATION_2D = Quaternion.Euler(270f, 0f, 0f);
 
         public void GenerateCave(MapParameters mapParameters, Material walls)
         {
@@ -45,7 +46,7 @@ namespace CaveGeneration
 
         void OrientWall(GameObject wall)
         {
-            wall.transform.localRotation = Quaternion.Euler(270f, 0f, 0f);
+            wall.transform.localRotation = ORIENTATION_2D;
         }
 
         void RemoveExistingColliders(GameObject wall)

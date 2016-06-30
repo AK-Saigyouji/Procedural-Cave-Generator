@@ -323,8 +323,12 @@ namespace CaveGeneration.MapGeneration
 
         void ConnectRooms(List<Room> rooms)
         {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
             List<RoomConnection> allRoomConnections = ComputeRoomConnections(rooms);
-            List<RoomConnection> finalConnections = Kruskal.GetMinimalConnections(allRoomConnections, rooms.Count);
+            List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
+            sw.Stop();
+            Debug.Log(sw.Elapsed.TotalSeconds);
             foreach (RoomConnection connection in finalConnections)
             {
                 CreatePassage(connection, TUNNELING_RADIUS);
