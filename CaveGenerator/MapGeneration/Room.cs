@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Linq;
+using System.Collections.Generic;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -18,19 +20,55 @@ namespace CaveGeneration.MapGeneration
         {
             allTiles = region;
             Count = region.Count;
-            DetermineEdgeTiles(map);
+            var edgeTiles = GetEdgeTiles(map);
+            this.edgeTiles = SortEdgeTiles(edgeTiles);
         }
 
-        void DetermineEdgeTiles(Map map)
+        IEnumerable<Coord> GetEdgeTiles(Map map)
         {
-            edgeTiles = new TileRegion();
-            foreach (Coord tile in allTiles)
+            return allTiles.Where(tile => map.IsEdgeTile(tile));
+        }
+
+        TileRegion SortEdgeTiles(IEnumerable<Coord> edgeTiles)
+        {
+            var visited = edgeTiles.ToDictionary(tile => tile, tile => false);
+            TileRegion sortedEdges = new TileRegion();
+            Stack<Coord> stack = new Stack<Coord>();
+
+            Coord firstTile = edgeTiles.First();
+            stack.Push(firstTile);
+            sortedEdges.Add(firstTile);
+            visited[firstTile] = true;
+
+            while (stack.Count > 0)
             {
-                if (map.IsEdgeTile(tile))
+                Coord tile = stack.Pop();
+                foreach (Coord adjacentTile in GetAdjacentCoords(tile))
                 {
-                    edgeTiles.Add(tile);
+                    if (visited.ContainsKey(adjacentTile) && !visited[adjacentTile])
+                    {
+                        visited[adjacentTile] = true;
+                        stack.Push(adjacentTile);
+                        sortedEdges.Add(adjacentTile);
+                    }
                 }
             }
+            return sortedEdges;
+        }
+
+        IEnumerable<Coord> GetAdjacentCoords(Coord tile)
+        {
+            Coord left = tile.left;
+            Coord right = tile.right;
+
+            yield return tile.up;
+            yield return tile.down;
+            yield return right;
+            yield return left;
+            yield return left.up;
+            yield return left.down;
+            yield return right.up;
+            yield return right.down;
         }
 
         public int CompareTo(Room otherRoom)
@@ -40,7 +78,7 @@ namespace CaveGeneration.MapGeneration
 
         public override string ToString()
         {
-            return String.Format("Room with {0} tiles, {1} on the edge.", allTiles.Count, edgeTiles.Count);
+            return string.Format("Room with {0} tiles, {1} on the edge.", allTiles.Count, edgeTiles.Count);
         }
-    } 
+    }
 }

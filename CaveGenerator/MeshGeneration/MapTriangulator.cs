@@ -56,17 +56,8 @@ namespace CaveGeneration.MeshGeneration
         List<int> triangles;
 
         public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
-
-        public Vector3[] meshVertices
-        {
-            get { return LocalToGlobalPositions(localPositions); }
-
-        }
-
-        public int[] meshTriangles
-        {
-            get { return triangles.ToArray(); }
-        }
+        public Vector3[] meshVertices { get { return LocalToGlobalPositions(localPositions); } }
+        public int[] meshTriangles { get { return triangles.ToArray(); } }
 
         public void Triangulate(Map map)
         {
@@ -166,7 +157,8 @@ namespace CaveGeneration.MeshGeneration
             for (int i = 0; i < globalPositions.Length; i++)
             {
                 Vector2 localPos = localPositions[i];
-                globalPositions[i] = basePosition + (new Vector3(localPos.x, 0f, localPos.y) * stretchFactor);
+                globalPositions[i] = basePosition + 
+                    (new Vector3(localPos.x, 0f, localPos.y) * stretchFactor);
             }
 
             return globalPositions;

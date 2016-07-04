@@ -19,6 +19,26 @@ namespace CaveGeneration
         }
 
         /// <summary>
+        /// Get the coord one unit to the left of this one.
+        /// </summary>
+        public Coord left { get { return new Coord(x - 1, y); } }
+
+        /// <summary>
+        /// Get the coord one unit to the right of this one.
+        /// </summary>
+        public Coord right { get { return new Coord(x + 1, y); } }
+
+        /// <summary>
+        /// Get the coord one unit above this one.
+        /// </summary>
+        public Coord up { get { return new Coord(x, y + 1); } }
+
+        /// <summary>
+        /// Get the coord one unit below this one.
+        /// </summary>
+        public Coord down { get { return new Coord(x, y - 1); } }
+
+        /// <summary>
         /// Get the distance between this coordinate and the given one.
         /// </summary>
         public double Distance(Coord otherTile)
@@ -87,7 +107,7 @@ namespace CaveGeneration
                 return false;
             }
             Coord p = (Coord)obj;
-            return (x == p.x) && (y == p.y);
+            return Equals(p);
         }
 
         public bool Equals(Coord p)

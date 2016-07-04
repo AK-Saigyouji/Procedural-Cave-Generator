@@ -289,28 +289,31 @@ namespace CaveGeneration.MapGeneration
             {
                 Coord currentTile = queue.Dequeue();
                 tiles.Add(currentTile);
-                int x = currentTile.x;
-                int y = currentTile.y;
 
-                if (IsNewTileOfType(visited, x + 1, y, tileType))
-                    queue.Enqueue(new Coord(x + 1, y));
-                if (IsNewTileOfType(visited, x - 1, y, tileType))
-                    queue.Enqueue(new Coord(x - 1, y));
-                if (IsNewTileOfType(visited, x, y + 1, tileType))
-                    queue.Enqueue(new Coord(x, y + 1));
-                if (IsNewTileOfType(visited, x, y - 1, tileType))
-                    queue.Enqueue(new Coord(x, y - 1));
+                Coord left = currentTile.left;
+                Coord right = currentTile.right;
+                Coord up = currentTile.up;
+                Coord down = currentTile.down;
+
+                if (IsNewTileOfType(visited, left, tileType))
+                    queue.Enqueue(left);
+                if (IsNewTileOfType(visited, right, tileType))
+                    queue.Enqueue(right);
+                if (IsNewTileOfType(visited, up, tileType))
+                    queue.Enqueue(up);
+                if (IsNewTileOfType(visited, down, tileType))
+                    queue.Enqueue(down);
             }
             return tiles;
         }
 
-        bool IsNewTileOfType(bool[,] visited, int x, int y, Tile tileType)
+        bool IsNewTileOfType(bool[,] visited, Coord tile, Tile tileType)
         {
-            if (visited[x, y])
+            if (visited[tile.x, tile.y])
                 return false;
 
-            visited[x, y] = true;
-            return map[x, y] == tileType;
+            visited[tile.x, tile.y] = true;
+            return map[tile] == tileType;
         }
 
         void FillRegion(TileRegion region, Tile tileType)
@@ -323,12 +326,8 @@ namespace CaveGeneration.MapGeneration
 
         void ConnectRooms(List<Room> rooms)
         {
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-            sw.Start();
             List<RoomConnection> allRoomConnections = ComputeRoomConnections(rooms);
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
-            sw.Stop();
-            Debug.Log(sw.Elapsed.TotalSeconds);
             foreach (RoomConnection connection in finalConnections)
             {
                 CreatePassage(connection, TUNNELING_RADIUS);
@@ -343,21 +342,19 @@ namespace CaveGeneration.MapGeneration
         /// <returns>A list of every connection between rooms in the map.</returns>
         List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
         {
-            RoomConnection[] connections = new RoomConnection[rooms.Count * rooms.Count];
+            List<RoomConnection> connections = new List<RoomConnection>();
             var actions = new List<System.Action>();
             for (int j = 0; j < rooms.Count; j++)
             {
                 for (int k = j + 1; k < rooms.Count; k++)
                 {
-                    int jCopy = j;
-                    int kCopy = k;
-                    actions.Add(() =>
-                        connections[jCopy * rooms.Count + kCopy] = new RoomConnection(rooms[jCopy], rooms[kCopy], jCopy, kCopy)
-                    );
+                    RoomConnection connection = new RoomConnection(rooms[j], rooms[k], j, k);
+                    connections.Add(connection);
+                    actions.Add(() => connection.FindShortConnection());
                 }
             }
             Utility.Threading.ParallelExecute(actions.ToArray());
-            return connections.Where(x => x != null).ToList();
+            return connections;
         }
 
         void CreatePassage(RoomConnection connection, int tunnelingRadius)

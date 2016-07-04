@@ -15,11 +15,13 @@ namespace CaveGeneration.MeshGeneration
         Vector3[] ceilingVertices;
         int[] ceilingTriangles;
         Vector2[] ceilingUV;
+        const string ceilingName = "Ceiling Mesh";
 
         // Wall mesh data:
         Vector3[] wallVertices;
         int[] wallTriangles;
         Vector2[] wallUV;
+        const string wallName = "Wall Mesh";
 
         // Outline data: 
         IDictionary<int, List<Triangle>> vertexIndexToContainingTriangles;
@@ -44,13 +46,7 @@ namespace CaveGeneration.MeshGeneration
         /// <returns></returns>
         public Mesh GetCeilingMesh()
         {
-            Mesh mesh = new Mesh();
-            mesh.vertices = ceilingVertices;
-            mesh.triangles = ceilingTriangles;
-            mesh.RecalculateNormals();
-            mesh.uv = ceilingUV;
-            mesh.name = "Ceiling Mesh" + map.index;
-            return mesh;
+            return GetMesh(ceilingVertices, ceilingTriangles, ceilingUV, ceilingName);
         }
 
         /// <summary>
@@ -58,13 +54,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetWallMesh()
         {
-            Mesh wallMesh = new Mesh();
-            wallMesh.vertices = wallVertices;
-            wallMesh.triangles = wallTriangles;
-            wallMesh.RecalculateNormals();
-            wallMesh.uv = wallUV;
-            wallMesh.name = "Wall Mesh" + map.index;
-            return wallMesh;
+            return GetMesh(wallVertices, wallTriangles, wallUV, wallName);
         }
 
         /// <summary>
@@ -133,6 +123,17 @@ namespace CaveGeneration.MeshGeneration
             this.wallUV = wallUV;
         }
 
+        Mesh GetMesh(Vector3[] vertices, int[] triangles, Vector2[] uv, string name)
+        {
+            Mesh mesh = new Mesh();
+            mesh.vertices = vertices;
+            mesh.triangles = triangles;
+            mesh.RecalculateNormals();
+            mesh.uv = uv;
+            mesh.name = name + map.index;
+            return mesh;
+        }
+
         /// <summary>
         /// Triangulates the squares according to the marching squares algorithm.
         /// In the process, this method populates the baseVertices, triangleMap and and meshTriangles collections.
@@ -149,9 +150,10 @@ namespace CaveGeneration.MeshGeneration
 
         void ComputeCeilingUVArray(Vector2 textureDimensions)
         {
+            float MIN_TEXTURE_DIMENSION = 0.001f;
             Vector2[] uv = new Vector2[ceilingVertices.Length];
-            float xMax = textureDimensions.x;
-            float yMax = textureDimensions.y;
+            float xMax = Mathf.Max(textureDimensions.x, MIN_TEXTURE_DIMENSION);
+            float yMax = Mathf.Max(textureDimensions.y, MIN_TEXTURE_DIMENSION);
             for (int i = 0; i < ceilingVertices.Length; i++)
             {
                 float percentX = ceilingVertices[i].x / xMax;

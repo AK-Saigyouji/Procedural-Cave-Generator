@@ -24,17 +24,17 @@ namespace CaveGeneration.MapGeneration
             indexA = indexRoomA;
             indexB = indexRoomB;
             distanceBetweenRooms = int.MaxValue;
-            FindShortConnection();
         }
 
-        /* Ensuring room connectivity is the most computationally involved part of the  of the map generator and this 
+        /* Ensuring room connectivity is the most computationally involved part of the of the map generator and this 
          * algorithm constitutes the majority of the work for this purpoes. The original idea was to consider every pair 
          * of edge tiles, settling on the pair with the lowest distance (ensuring optimality). This single method was 
-         * responsible for over half the run time of the original cave generator. 
+         * responsible for over half the run time of the original cave generator for smaller maps, and completely 
+         * dominated for larger maps. The current version is over 1000 times faster (8ms versus 18000ms) than the
+         * original method.
          * 
-         * In order to optimize it, it was necessary either to lose the guarantee of connecting all rooms, or to give up 
-         * optimality. The latter was chosen, using the following insight in order to dramatically improve performance in 
-         * large maps: the larger the distance between the rooms, the more slack can be given in terms of finding a 
+         * To optimize, a small amount of error was accepted. The following observation was used:
+         * the larger the distance between the rooms, the more slack can be given in terms of finding a 
          * suboptimal connection. e.g.finding a 300 tile connection versus a 280 tile connection isn't an issue, but finding 
          * a 2 tile connection versus a 22 tile connection is problematic. So each time we compute a distance, we skip a 
          * number of tiles comparable to the computed distance. This ensures that we don't waste time at large distances but 
@@ -42,7 +42,7 @@ namespace CaveGeneration.MapGeneration
          * rooms are very close elsewhere else). 
          */
 
-        void FindShortConnection()
+        public void FindShortConnection()
         {
             int thresholdToTerminateSearch = 3;
             TileRegion edgeTilesA = roomA.edgeTiles;
@@ -57,7 +57,7 @@ namespace CaveGeneration.MapGeneration
                 while (indexB < edgeTilesB.Count)
                 {
                     Coord tileB = edgeTilesB[indexB];
-                    int distance = tileA.SupNormDistance(tileB);
+                    int distance = (int)tileA.Distance(tileB);
                     if (distance < bestDistanceThisLoop)
                     {
                         bestDistanceThisLoop = distance;
