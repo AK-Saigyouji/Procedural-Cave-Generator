@@ -157,8 +157,7 @@ namespace CaveGeneration.MeshGeneration
             for (int i = 0; i < globalPositions.Length; i++)
             {
                 Vector2 localPos = localPositions[i];
-                globalPositions[i] = basePosition + 
-                    (new Vector3(localPos.x, 0f, localPos.y) * stretchFactor);
+                globalPositions[i] = basePosition + (new Vector3(localPos.x, 0f, localPos.y) * stretchFactor);
             }
 
             return globalPositions;

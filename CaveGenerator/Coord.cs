@@ -12,6 +12,8 @@ namespace CaveGeneration
         public int x;
         public int y;
 
+        const int hashFactor = 65536;
+
         public Coord(int x, int y)
         {
             this.x = x;
@@ -78,7 +80,7 @@ namespace CaveGeneration
 
             int xDelta = other.x - x;
             int yDelta = other.y - y;
-            int numIterations = Mathf.Max(Math.Abs(xDelta), Math.Abs(yDelta));
+            int numIterations = Mathf.Max(Mathf.Abs(xDelta), Mathf.Abs(yDelta));
             Vector2 incrementor = new Vector2(xDelta, yDelta) / numIterations;
 
             for (int i = 0; i <= numIterations; i++)
@@ -117,7 +119,7 @@ namespace CaveGeneration
 
         public override int GetHashCode()
         {
-            return x ^ y;
+            return 65536 * x + y;
         }
 
         public override string ToString()

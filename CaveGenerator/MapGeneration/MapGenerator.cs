@@ -19,11 +19,12 @@ namespace CaveGeneration.MapGeneration
         int squareSize;
 
         public Map map { get; private set; }
+        List<Room> rooms;
 
         readonly int SMOOTHING_ITERATIONS = 5;
         readonly int CELLULAR_THRESHOLD = 4;
         readonly int MINIMUM_WALL_REGION_SIZE = 50;
-        readonly int MINIMUM_OPEN_REGION_SIZE = 50;
+        readonly int MINIMUM_FLOOR_REGION_SIZE = 50;
         readonly int TUNNELING_RADIUS = 1;
 
         public MapGenerator(MapParameters parameters)
@@ -53,9 +54,17 @@ namespace CaveGeneration.MapGeneration
         {
             map = new Map(length, width, squareSize);
             RandomFillMap(mapDensity);
+
             SmoothMap(SMOOTHING_ITERATIONS);
-            List<Room> rooms = RemoveSmallRegions(MINIMUM_WALL_REGION_SIZE, MINIMUM_OPEN_REGION_SIZE);
-            ConnectRooms(rooms);
+
+            var floorRegions = GetRegions(Tile.Floor);
+            List<TileRegion> remainingFloorRegions = RemoveSmallRegions(floorRegions, MINIMUM_FLOOR_REGION_SIZE);
+
+            ConnectRegions(remainingFloorRegions);
+
+            var wallRegions = GetRegions(Tile.Wall);
+            RemoveSmallRegions(wallRegions, MINIMUM_WALL_REGION_SIZE);
+
             ApplyBorder(borderSize);
             return map;
         }
@@ -147,27 +156,16 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Removes connected sections of the map that are too small. 
-        /// </summary>
-        /// <returns>List of Room objects corresponding to open regions that were not removed.</returns>
-        List<Room> RemoveSmallRegions(int minWallRegionSize, int minOpenRegionSize)
-        {
-            RemoveSmallRegionsOfType(minWallRegionSize, Tile.Wall);
-            List<Room> rooms = RemoveSmallRegionsOfType(minOpenRegionSize, Tile.Floor);
-            return rooms;
-        }
-
-        /// <summary>
         /// Remove small regions of the given type and return the rest.
         /// </summary>
         /// <param name="removalThreshold">Number of tiles a region must have to not be removed.</param>
         /// <param name="tileType">Tile corresponding to which type of regions should be removed.</param>
-        /// <returns>List of Rooms at least as large as the removal threshold.</returns>
-        List<Room> RemoveSmallRegionsOfType(int removalThreshold, Tile tileType)
+        /// <returns>List of Regions at least as large as the removal threshold.</returns>
+        List<TileRegion> RemoveSmallRegions(List<TileRegion> regions, int removalThreshold)
         {
+            Tile tileType = map[regions[0][0]];
             Tile otherTileType = (tileType == Tile.Wall) ? Tile.Floor : Tile.Wall;
-            List<TileRegion> regions = GetRegions(tileType);
-            List<Room> remainingRegions = new List<Room>();
+            List<TileRegion> remainingRegions = new List<TileRegion>();
             foreach (TileRegion region in regions)
             {
                 if (region.Count < removalThreshold)
@@ -176,7 +174,7 @@ namespace CaveGeneration.MapGeneration
                 }
                 else
                 {
-                    remainingRegions.Add(new Room(region, map));
+                    remainingRegions.Add(region);
                 }
             }
             return remainingRegions;
@@ -318,14 +316,15 @@ namespace CaveGeneration.MapGeneration
 
         void FillRegion(TileRegion region, Tile tileType)
         {
-            foreach (Coord coord in region)
+            for (int i = 0; i < region.Count; i++)
             {
-                map[coord] = tileType;
+                map[region[i]] = tileType;
             }
         }
 
-        void ConnectRooms(List<Room> rooms)
+        void ConnectRegions(List<TileRegion> regions)
         {
+            List<Room> rooms = regions.Select(region => new Room(region, map)).ToList();
             List<RoomConnection> allRoomConnections = ComputeRoomConnections(rooms);
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
             foreach (RoomConnection connection in finalConnections)

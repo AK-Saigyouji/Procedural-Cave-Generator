@@ -8,12 +8,13 @@ namespace Utility
 {
     static class Threading
     {
-        // Max number of work items to send to threadpool. Must not exceed 64.
+        // Max number of work items to send to threadpool. Exceeding 64 will throw an exception due to limitation
+        // on number of reset handles.
         static readonly int threadCount = 8;
 
         /// <summary>
         /// .NET 3.5 implementation of a parallel foreach. Distributes the actions across multiple threads for faster 
-        /// computation. Actions must not touch the Unity API. 
+        /// computation. Actions must not touch the Unity API, or else Unity will lock up.
         /// </summary>
         static public void ParallelExecute(params Action[] actions)
         {
@@ -33,6 +34,20 @@ namespace Utility
                 }), i);
             }
             WaitHandle.WaitAll(resetEvents);
+        }
+    }
+
+    static class Stopwatch
+    {
+        /// <summary>
+        /// Prints the current time on the stopwatch along with the provided message, then resets it. Convenience
+        /// method for repeatedly querying and resetting a stopwatch to profile a set of methods.
+        /// </summary>
+        static public void Query(System.Diagnostics.Stopwatch sw, string message)
+        {
+            UnityEngine.Debug.Log(message + sw.Elapsed.TotalSeconds);
+            sw.Reset();
+            sw.Start();
         }
     }
 }

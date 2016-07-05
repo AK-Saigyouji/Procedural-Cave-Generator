@@ -14,30 +14,32 @@ namespace CaveGeneration.MapGeneration
         /// All floor tiles in this room that have an adjacent wall tile. 
         /// </summary>
         public TileRegion edgeTiles { get; private set; }
-        public int Count { get; private set; }
+        public int Count { get { return allTiles.Count; } }
 
         public Room(TileRegion region, Map map)
         {
             allTiles = region;
-            Count = region.Count;
-            var edgeTiles = GetEdgeTiles(map);
-            this.edgeTiles = SortEdgeTiles(edgeTiles);
+            edgeTiles = GetEdgeTiles(map);
         }
 
-        IEnumerable<Coord> GetEdgeTiles(Map map)
+        /// <summary>
+        /// Gets the floor tiles that are on the boundary between floors and walls. The floor tiles should be returned
+        /// in roughly 'sorted' order: iterating through the tile region should trace out a continuous path around the 
+        /// room.
+        /// </summary>
+        TileRegion GetEdgeTiles(Map map)
         {
-            return allTiles.Where(tile => map.IsEdgeTile(tile));
-        }
-
-        TileRegion SortEdgeTiles(IEnumerable<Coord> edgeTiles)
-        {
-            var visited = edgeTiles.ToDictionary(tile => tile, tile => false);
-            TileRegion sortedEdges = new TileRegion();
+            Dictionary<Coord, bool> visited = new Dictionary<Coord, bool>();
+            for (int i = 0; i < allTiles.Count; i++)
+            {
+                visited[allTiles[i]] = false;
+            }
+            TileRegion edgeTiles = new TileRegion();
             Stack<Coord> stack = new Stack<Coord>();
 
-            Coord firstTile = edgeTiles.First();
+            Coord firstTile = allTiles[0];
             stack.Push(firstTile);
-            sortedEdges.Add(firstTile);
+            edgeTiles.Add(firstTile);
             visited[firstTile] = true;
 
             while (stack.Count > 0)
@@ -45,15 +47,18 @@ namespace CaveGeneration.MapGeneration
                 Coord tile = stack.Pop();
                 foreach (Coord adjacentTile in GetAdjacentCoords(tile))
                 {
-                    if (visited.ContainsKey(adjacentTile) && !visited[adjacentTile])
+                    if (visited.ContainsKey(adjacentTile) 
+                        && map.IsAdjacentToWallFast(adjacentTile) 
+                        && !visited[adjacentTile])
                     {
                         visited[adjacentTile] = true;
                         stack.Push(adjacentTile);
-                        sortedEdges.Add(adjacentTile);
+                        edgeTiles.Add(adjacentTile);
+                        break;
                     }
                 }
             }
-            return sortedEdges;
+            return edgeTiles;
         }
 
         IEnumerable<Coord> GetAdjacentCoords(Coord tile)

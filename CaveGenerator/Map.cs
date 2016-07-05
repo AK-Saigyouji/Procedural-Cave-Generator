@@ -107,19 +107,40 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Is the tile adjacent to a wall tile?
+        /// Is the tile adjacent to a wall tile? Assumes tile is a valid map tile (use Contains method to check if 
+        /// not sure).
         /// </summary>
-        public bool IsEdgeTile(int x, int y)
+        public bool IsAdjacentToWall(int x, int y)
         {
             return GetAdjacentTiles(x, y).Any(adjTile => this[x, y] == Tile.Wall);
         }
 
         /// <summary>
-        /// Is the tile adjacent to a wall tile?
+        /// Is the tile adjacent to a wall tile? Assumes tile is a valid map tile (use Contains method to check if 
+        /// not sure).
         /// </summary>
-        public bool IsEdgeTile(Coord tile)
+        public bool IsAdjacentToWall(Coord tile)
         {
             return GetAdjacentTiles(tile).Any(adjTile => this[adjTile] == Tile.Wall);
+        }
+
+        /// <summary>
+        /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
+        /// so use only if this tile is in the interior of the map.
+        /// </summary>
+        public bool IsAdjacentToWallFast(int x, int y)
+        {
+            return this[x - 1, y] == Tile.Wall || this[x + 1, y] == Tile.Wall 
+                || this[x, y + 1] == Tile.Wall || this[x, y - 1] == Tile.Wall;
+        }
+
+        /// <summary>
+        /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
+        /// so use only if this tile is in the interior of the map.
+        /// </summary>
+        public bool IsAdjacentToWallFast(Coord tile)
+        {
+            return IsAdjacentToWallFast(tile.x, tile.y);
         }
 
         /// <summary>

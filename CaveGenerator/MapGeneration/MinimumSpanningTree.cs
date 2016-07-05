@@ -5,8 +5,6 @@ namespace CaveGeneration.MapGeneration
 {
     static class MinimumSpanningTree
     {
-        static readonly int MAX_DISCRETE_DISTANCE = 50000;
-
         /// <summary>
         /// Kruskal's minimum spanning tree algorithm, treating each RoomConnection as a weighted edge and each Room as 
         /// a vertex. Given a list of connections, this will find a connected subset of connections with the shortest 
@@ -39,8 +37,7 @@ namespace CaveGeneration.MapGeneration
         /// total distance between rooms. Uses assumptions on distances to compute more quickly than the non-discrete
         /// version.
         /// </summary>
-        /// <param name="connections">List of RoomConnection objects where each distance is a nonnegative integer
-        /// that should not exceed the constant MAX_DISCRETE_DISTANCE</param>
+        /// <param name="connections">List of RoomConnection objects where each distance is a nonnegative integer.</param>
         /// /// <returns>Minimum spanning tree of RoomConnections with respect to distance.</returns>
         static public List<RoomConnection> GetMinimalConnectionsDiscrete(List<RoomConnection> connections, int numRooms)
         {
