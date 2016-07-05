@@ -36,7 +36,7 @@ namespace CaveGeneration.MeshGeneration
         };
 
         // Lookup table for determining the position of the 8 points in the square relative to the bottom-left corner,
-        // not taking into account scaling associated with the map's square size. Stored as Vector2s representing x and z.
+        // not taking into account scaling associated with the map's square size. 
         static readonly Vector2[] positionOffsets = new Vector2[]
         {
             new Vector2(0f, 1f),
@@ -50,13 +50,13 @@ namespace CaveGeneration.MeshGeneration
         };
 
         Map map;
-        Dictionary<Vector2, int> positionToVertexIndex;
+        Dictionary<int, int> positionToVertexIndex;
 
-        List<Vector2> localPositions;
+        List<Vector2> localVertices;
         List<int> triangles;
 
         public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
-        public Vector3[] meshVertices { get { return LocalToGlobalPositions(localPositions); } }
+        public Vector3[] meshVertices { get { return LocalToGlobalPositions(localVertices); } }
         public int[] meshTriangles { get { return triangles.ToArray(); } }
 
         public void Triangulate(Map map)
@@ -80,10 +80,10 @@ namespace CaveGeneration.MeshGeneration
         void Initialize(Map map)
         {
             this.map = map;
-            localPositions = new List<Vector2>();
+            localVertices = new List<Vector2>();
             triangles = new List<int>();
             vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
-            positionToVertexIndex = new Dictionary<Vector2, int>();
+            positionToVertexIndex = new Dictionary<int, int>();
         }
 
         void TriangulateSquare(int configuration, int x, int y)
@@ -99,13 +99,14 @@ namespace CaveGeneration.MeshGeneration
             for (int i = 0; i < points.Length; i++)
             {
                 int vertexIndex;
-                Vector2 position = GetLocalPosition(points[i], x, y);
-                bool isNewPosition = !positionToVertexIndex.TryGetValue(position, out vertexIndex);
+                Vector2 localPosition = GetLocalPosition(points[i], x, y);
+                int positionId = ComputePositionId(localPosition);
+                bool isNewPosition = !positionToVertexIndex.TryGetValue(positionId, out vertexIndex);
                 if (isNewPosition)
                 {
-                    vertexIndex = localPositions.Count;
-                    localPositions.Add(position);
-                    positionToVertexIndex[position] = vertexIndex;
+                    vertexIndex = localVertices.Count;
+                    localVertices.Add(localPosition);
+                    positionToVertexIndex[positionId] = vertexIndex;
                 }
                 vertexIndices[i] = vertexIndex;
             }
@@ -150,22 +151,26 @@ namespace CaveGeneration.MeshGeneration
 
         Vector3[] LocalToGlobalPositions(List<Vector2> localPositions)
         {
+            int stretch = map.squareSize;
             Vector3 basePosition = map.position;
-            int stretchFactor = map.squareSize;
 
             Vector3[] globalPositions = new Vector3[localPositions.Count];
             for (int i = 0; i < globalPositions.Length; i++)
             {
-                Vector2 localPos = localPositions[i];
-                globalPositions[i] = basePosition + (new Vector3(localPos.x, 0f, localPos.y) * stretchFactor);
+                globalPositions[i] = basePosition + new Vector3(localPositions[i].x, 0f, localPositions[i].y) * stretch;
             }
-
             return globalPositions;
         }
 
         Vector2 GetLocalPosition(int squarePoint, int x, int y)
         {
-            return (positionOffsets[squarePoint] + new Vector2(x, y));
+            Vector2 offset = positionOffsets[squarePoint];
+            return new Vector3(x + offset.x, y + offset.y);
+        }
+
+        int ComputePositionId(Vector2 position)
+        {
+            return (int)(position.x * 10000 + position.y * 10);
         }
 
         int ComputeConfiguration(Tile topLeft, Tile topRight, Tile bottomRight, Tile bottomLeft)
