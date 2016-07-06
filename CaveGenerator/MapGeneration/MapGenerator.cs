@@ -19,7 +19,6 @@ namespace CaveGeneration.MapGeneration
         int squareSize;
 
         public Map map { get; private set; }
-        List<Room> rooms;
 
         readonly int SMOOTHING_ITERATIONS = 5;
         readonly int CELLULAR_THRESHOLD = 4;
@@ -57,12 +56,12 @@ namespace CaveGeneration.MapGeneration
 
             SmoothMap(SMOOTHING_ITERATIONS);
 
-            var floorRegions = GetRegions(Tile.Floor);
+            List<TileRegion> floorRegions = GetRegions(Tile.Floor);
             List<TileRegion> remainingFloorRegions = RemoveSmallRegions(floorRegions, MINIMUM_FLOOR_REGION_SIZE);
 
             ConnectRegions(remainingFloorRegions);
 
-            var wallRegions = GetRegions(Tile.Wall);
+            List<TileRegion> wallRegions = GetRegions(Tile.Wall);
             RemoveSmallRegions(wallRegions, MINIMUM_WALL_REGION_SIZE);
 
             ApplyBorder(borderSize);
@@ -124,9 +123,10 @@ namespace CaveGeneration.MapGeneration
         {
             int interiorLength = length - 1;
             int interiorWidth = width - 1;
+            Map oldMap = map;
+            Map newMap = new Map(oldMap);
             for (int i = 0; i < iterations; i++)
             {
-                Map newMap = new Map(map);
                 for (int x = 1; x < interiorLength; x++)
                 {
                     for (int y = 1; y < interiorWidth; y++)
@@ -135,6 +135,10 @@ namespace CaveGeneration.MapGeneration
                     }
                 }
                 map = newMap;
+                // This method requires copying the values at each step into a new map. By reusing the old one
+                // instead of creating a new one each time, we save (iteration - 1) * length * width bytes worth
+                // of memory from going to the garbage collector. 
+                Swap(ref oldMap, ref newMap);
             }
         }
 
@@ -329,7 +333,7 @@ namespace CaveGeneration.MapGeneration
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
             foreach (RoomConnection connection in finalConnections)
             {
-                CreatePassage(connection, TUNNELING_RADIUS);
+                CreatePassageDebug(connection, TUNNELING_RADIUS);
             }
         }
 
@@ -421,6 +425,13 @@ namespace CaveGeneration.MapGeneration
                 }
             }
             map = borderedMap;
+        }
+
+        void Swap(ref Map a, ref Map b)
+        {
+            Map temp = a;
+            a = b;
+            b = temp;
         }
     } 
 }

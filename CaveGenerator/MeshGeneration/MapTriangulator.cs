@@ -15,7 +15,7 @@ namespace CaveGeneration.MeshGeneration
         // 0 1 2
         // 7 - 3
         // 6 5 4
-        static readonly int[][] configurationTable = new int[][]
+        static int[][] configurationTable = new int[][]
         {
             new int[] { },
             new int[] {5, 6, 7 },
@@ -37,7 +37,7 @@ namespace CaveGeneration.MeshGeneration
 
         // Lookup table for determining the position of the 8 points in the square relative to the bottom-left corner,
         // not taking into account scaling associated with the map's square size. 
-        static readonly Vector2[] positionOffsets = new Vector2[]
+        static Vector2[] positionOffsets = new Vector2[]
         {
             new Vector2(0f, 1f),
             new Vector2(0.5f, 1f),

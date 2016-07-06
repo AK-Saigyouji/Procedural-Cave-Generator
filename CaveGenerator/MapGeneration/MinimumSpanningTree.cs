@@ -7,45 +7,36 @@ namespace CaveGeneration.MapGeneration
     {
         /// <summary>
         /// Kruskal's minimum spanning tree algorithm, treating each RoomConnection as a weighted edge and each Room as 
-        /// a vertex. Given a list of connections, this will find a connected subset of connections with the shortest 
-        /// total distance between rooms.
+        /// a vertex. Given a list of connections, returns the connections necessary to produce a connected subgraph
+        /// with minimum total distance.
         /// </summary>
         /// <returns>Minimum spanning tree of RoomConnections with respect to distance.</returns>
         static public List<RoomConnection> GetMinimalConnections(List<RoomConnection> connections, int numRooms)
         {
-            DisjointSet components = new DisjointSet(numRooms);
             connections.Sort();
-            List<RoomConnection> prunedConnections = new List<RoomConnection>();
-
-            foreach (RoomConnection connection in connections)
-            {
-                int indexA = connection.indexA;
-                int indexB = connection.indexB;
-                if (components.Find(indexA) != components.Find(indexB))
-                {
-                    prunedConnections.Add(connection);
-                    components.Union(indexA, indexB);
-                }
-            }
-
-            return prunedConnections;
+            return KruskalMinimumSpanningTree(connections, numRooms);
         }
 
         /// <summary>
         /// Kruskal's minimum spanning tree algorithm, treating each RoomConnection as a weighted edge and each Room as 
         /// a vertex. Given a list of connections, this will find a connected subset of connections with the shortest 
-        /// total distance between rooms. Uses assumptions on distances to compute more quickly than the non-discrete
-        /// version.
+        /// total distance between rooms. Assumes distances are nonnegative integers with a reasonable upper bound 
+        /// (if significantly larger than 10000, consider using the non-discrete method).
         /// </summary>
         /// <param name="connections">List of RoomConnection objects where each distance is a nonnegative integer.</param>
         /// /// <returns>Minimum spanning tree of RoomConnections with respect to distance.</returns>
         static public List<RoomConnection> GetMinimalConnectionsDiscrete(List<RoomConnection> connections, int numRooms)
         {
-            DisjointSet components = new DisjointSet(numRooms);
             connections = BucketSort(connections);
+            return KruskalMinimumSpanningTree(connections, numRooms);
+        }
+
+        static List<RoomConnection> KruskalMinimumSpanningTree(List<RoomConnection> sortedConnections, int numRooms)
+        {
+            DisjointSet components = new DisjointSet(numRooms);
             List<RoomConnection> prunedConnections = new List<RoomConnection>();
 
-            foreach (RoomConnection connection in connections)
+            foreach (RoomConnection connection in sortedConnections)
             {
                 int indexA = connection.indexA;
                 int indexB = connection.indexB;

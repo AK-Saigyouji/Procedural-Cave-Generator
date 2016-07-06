@@ -54,7 +54,6 @@ namespace CaveGeneration.MapGeneration
                         visited[adjacentTile] = true;
                         stack.Push(adjacentTile);
                         edgeTiles.Add(adjacentTile);
-                        break;
                     }
                 }
             }

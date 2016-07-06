@@ -63,7 +63,7 @@ namespace CaveGeneration.MapGeneration
                         bestDistanceThisLoop = distance;
                         bestTileBThisLoop = tileB;
                     }
-                    indexB += distance + 1;
+                    indexB += distance;
                 }
                 if (bestDistanceThisLoop < distanceBetweenRooms)
                 {
@@ -71,7 +71,7 @@ namespace CaveGeneration.MapGeneration
                     if (bestDistanceThisLoop < thresholdToTerminateSearch)
                         return;
                 }
-                indexA += bestDistanceThisLoop + 1;
+                indexA += bestDistanceThisLoop;
             }
         }
 

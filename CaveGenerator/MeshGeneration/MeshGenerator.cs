@@ -6,7 +6,7 @@ namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
     /// Produces meshes and colliders for Map objects using the marching squares algorithm. 
-    /// Break large maps (max of 100 by 100 recommended - beyond 200 by 200 likely to produde exceptions) into 
+    /// Break large maps (max of 100 by 100 recommended - beyond 200 by 200 is likely to produde exceptions) into 
     /// smaller maps before generating meshes. 
     /// </summary>
     public class MeshGenerator
@@ -30,7 +30,8 @@ namespace CaveGeneration.MeshGeneration
         Map map;
 
         /// <summary>
-        /// Generate the data necessary to produce the ceiling mesh. Safe to run on background threads.
+        /// Generate the data necessary to produce the ceiling mesh. Safe to run on background threads, as it does
+        /// not touch the Unity API.
         /// </summary>
         public void GenerateCeiling(Map map, Vector2 ceilingTextureDimensions)
         {
@@ -41,9 +42,8 @@ namespace CaveGeneration.MeshGeneration
         }
 
         /// <summary>
-        /// Create and return the ceiling mesh. Must first run GenerateCeiling to populate the data.
+        /// Get the mesh for the ceiling/base component. Must first run GenerateCeiling to populate the data.
         /// </summary>
-        /// <returns></returns>
         public Mesh GetCeilingMesh()
         {
             return GetMesh(ceilingVertices, ceilingTriangles, ceilingUV, ceilingName);
