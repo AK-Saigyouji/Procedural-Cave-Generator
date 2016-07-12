@@ -24,6 +24,8 @@ namespace CaveGeneration
         public Vector3 position { get; private set; }
         public int index { get; private set; }
 
+        static public readonly int maxSubmapSize = 100;
+
         public Map(int length, int width, int squareSize)
         {
             grid = new Tile[length, width];
@@ -63,16 +65,16 @@ namespace CaveGeneration
         /// </summary>
         /// <param name="submapSize">Maximum length and width for each submap.</param>
         /// <returns>Returns a list of smaller Map objects.</returns>
-        public IList<Map> SubdivideMap(int submapSize = 100)
+        public IList<Map> Subdivide()
         {
             IList<Map> maps = new List<Map>();
-            int xNumComponents = Mathf.CeilToInt(length / (float)submapSize);
-            int yNumComponents = Mathf.CeilToInt(width / (float)submapSize);
+            int xNumComponents = Mathf.CeilToInt(length / (float)maxSubmapSize);
+            int yNumComponents = Mathf.CeilToInt(width / (float)maxSubmapSize);
             for (int x = 0; x < xNumComponents; x++)
             {
                 for (int y = 0; y < yNumComponents; y++)
                 {
-                    Map subMap = GenerateSubMap(x * submapSize, y * submapSize, submapSize);
+                    Map subMap = GenerateSubMap(x * maxSubmapSize, y * maxSubmapSize, maxSubmapSize);
                     subMap.index = x * yNumComponents + y;
                     maps.Add(subMap);
                 }

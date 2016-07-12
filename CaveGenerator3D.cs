@@ -10,15 +10,16 @@ namespace CaveGeneration
     /// </summary>
     public class CaveGenerator3D : CaveGenerator
     {
+        public int wallsPerTextureTile = 5;
         public int wallHeight = 3;
         public Material ceilingMaterial;
         public Material wallMaterial;
 
-        int WALLS_PER_TEXTURE_TILE = 5;
-
-        public void GenerateCave(MapParameters mapParameters, Material ceiling, Material walls, int wallHeight = 3)
+        public void GenerateCave(MapParameters mapParameters, Material ceiling, Material walls, int wallHeight = 3, 
+            int wallsPerTextureTile = 5)
         {
             this.wallHeight = wallHeight;
+            this.wallsPerTextureTile = wallsPerTextureTile;
             ceilingMaterial = ceiling;
             wallMaterial = walls;
             GenerateCave(mapParameters);
@@ -26,7 +27,7 @@ namespace CaveGeneration
 
         protected override void GenerateMeshFromMap(Map map)
         {
-            IList<Map> submaps = map.SubdivideMap();
+            IList<Map> submaps = map.Subdivide();
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
             cave = CreateChild("Cave3D", transform);
             List<MapMeshes> meshes = new List<MapMeshes>();
@@ -43,7 +44,7 @@ namespace CaveGeneration
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
             meshGenerator.GenerateCeiling(map, ceilingTextureDimensions);
-            meshGenerator.GenerateWalls(wallHeight, WALLS_PER_TEXTURE_TILE);
+            meshGenerator.GenerateWalls(wallsPerTextureTile, wallHeight);
         }
 
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
@@ -63,7 +64,7 @@ namespace CaveGeneration
 
         void AddWallCollider(GameObject walls, Mesh wallMesh)
         {
-            MeshCollider wallCollider = walls.gameObject.AddComponent<MeshCollider>();
+            MeshCollider wallCollider = walls.AddComponent<MeshCollider>();
             wallCollider.sharedMesh = wallMesh;
         }
     } 

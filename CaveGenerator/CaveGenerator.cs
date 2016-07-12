@@ -16,6 +16,8 @@ namespace CaveGeneration
         public bool useRandomSeed = true;
         public int borderSize = 0;
         public int squareSize = 1;
+        public int minWallSize = 50;
+        public int minFloorSize = 50;
         public Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
 
         public GameObject cave { get; protected set; }
@@ -24,7 +26,8 @@ namespace CaveGeneration
         public void GenerateCaveUsingInspectorValues()
         {
             MapParameters parameters = new MapParameters(length: length, width: width, mapDensity: initialMapDensity, 
-                seed: seed, useRandomSeed: useRandomSeed, squareSize: squareSize, borderSize: borderSize);
+                seed: seed, useRandomSeed: useRandomSeed, squareSize: squareSize, borderSize: borderSize,
+                minFloorSize: minFloorSize, minWallSize: minWallSize);
 
             GenerateCave(parameters);
         }
@@ -32,9 +35,13 @@ namespace CaveGeneration
         protected void GenerateCave(MapParameters parameters)
         {
             DestroyChildren();
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
             IMapGenerator mapGenerator = GetMapGenerator(parameters);
             Map map = mapGenerator.GenerateMap();
+            Utility.Stopwatch.Query(sw, "Map: ");
             GenerateMeshFromMap(map);
+            Utility.Stopwatch.Query(sw, "Mesh: ");
         }
 
         virtual protected IMapGenerator GetMapGenerator(MapParameters parameters)

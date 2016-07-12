@@ -12,11 +12,13 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     class OutlineGenerator
     {
-        readonly IList<Vector3> vertices;
-        readonly IDictionary<int, List<Triangle>> vertexIndexToContainingTriangles;
+        IList<Vector3> vertices;
+        IDictionary<int, List<Triangle>> vertexIndexToContainingTriangles;
 
         List<Outline> outlines;
         bool[] checkedVertices;
+
+        const int MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX = 3;
 
         /// <summary>
         /// Initialize the generator using the output of an appropriate triangulator. 
@@ -33,7 +35,6 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// Generate and return the outlines based on the data passed in during instantiation.
         /// </summary>
-        /// <returns></returns>
         public List<Outline> GenerateOutlines()
         {
             checkedVertices = new bool[vertices.Count];
@@ -54,15 +55,15 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         bool MustBeOutlineVertex(int vertexIndex)
         {
-            int MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX = 3;
             return vertexIndexToContainingTriangles[vertexIndex].Count <= MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX;
         }
 
         void GenerateOutlineFromPoint(int startVertexIndex)
         {
             checkedVertices[startVertexIndex] = true;
-            Outline outline = new Outline(startVertexIndex);
+            Outline outline = new Outline();
 
+            outline.Add(startVertexIndex);
             int nextVertexIndex = GetInitialConnectedOutlineVertex(startVertexIndex);
             FollowOutline(nextVertexIndex, outline);
             outline.Add(startVertexIndex);
@@ -76,7 +77,7 @@ namespace CaveGeneration.MeshGeneration
                 return;
             outline.Add(vertexIndex);
             checkedVertices[vertexIndex] = true;
-            int nextVertexIndex = GetConnectedOutlineVertex(vertexIndex, outline.Size);
+            int nextVertexIndex = GetConnectedOutlineVertex(vertexIndex, outline.Count);
             FollowOutline(nextVertexIndex, outline);
         }
 

@@ -22,7 +22,7 @@ namespace CaveGeneration
         protected override void GenerateMeshFromMap(Map map)
         {
             cave = CreateChild("Cave2D", transform);
-            IList<Map> submaps = map.SubdivideMap();
+            IList<Map> submaps = map.Subdivide();
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
             List<MapMeshes> meshes = new List<MapMeshes>();
             for (int i = 0; i < submaps.Count; i++)
@@ -60,7 +60,7 @@ namespace CaveGeneration
 
         void AddColliders(GameObject wall, MeshGenerator meshGenerator)
         {
-            List<Vector2[]> edgePointsList = meshGenerator.GenerateColliderEdges();
+            List<Vector2[]> edgePointsList = meshGenerator.GetOutlines();
             foreach (Vector2[] edgePoints in edgePointsList)
             {
                 EdgeCollider2D edgeCollider = wall.AddComponent<EdgeCollider2D>();

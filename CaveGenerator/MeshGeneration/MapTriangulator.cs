@@ -165,7 +165,7 @@ namespace CaveGeneration.MeshGeneration
         Vector2 GetLocalPosition(int squarePoint, int x, int y)
         {
             Vector2 offset = positionOffsets[squarePoint];
-            return new Vector3(x + offset.x, y + offset.y);
+            return new Vector2(x + offset.x, y + offset.y);
         }
 
         int ComputePositionId(Vector2 position)

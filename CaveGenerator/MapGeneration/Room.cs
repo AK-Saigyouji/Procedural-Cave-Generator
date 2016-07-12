@@ -24,8 +24,8 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// Gets the floor tiles that are on the boundary between floors and walls. The floor tiles should be returned
-        /// in roughly 'sorted' order: iterating through the tile region should trace out a continuous path around the 
-        /// room.
+        /// in roughly 'sorted' order: iterating through the tile region should trace out a roughly continuous path 
+        /// around the room.
         /// </summary>
         TileRegion GetEdgeTiles(Map map)
         {

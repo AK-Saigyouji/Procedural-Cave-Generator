@@ -6,7 +6,7 @@ namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// Generates a randomized cave-like Map object with the property that every floor tile is reachable from every other
-    /// floor tile. The outermost boundary of the map is will consist of wall tiles.
+    /// floor tile. The outermost boundary of the map consists of wall tiles.
     /// </summary>
     public class MapGenerator : IMapGenerator
     {
@@ -17,14 +17,14 @@ namespace CaveGeneration.MapGeneration
         bool useRandomSeed;
         int borderSize;
         int squareSize;
+        int minimumWallRegionSize;
+        int MinimumFloorRegionSize;
 
         public Map map { get; private set; }
 
-        readonly int SMOOTHING_ITERATIONS = 5;
-        readonly int CELLULAR_THRESHOLD = 4;
-        readonly int MINIMUM_WALL_REGION_SIZE = 50;
-        readonly int MINIMUM_FLOOR_REGION_SIZE = 50;
-        readonly int TUNNELING_RADIUS = 1;
+        const int SMOOTHING_ITERATIONS = 5;
+        const int CELLULAR_THRESHOLD = 4;
+        const int TUNNELING_RADIUS = 1;
 
         public MapGenerator(MapParameters parameters)
         {
@@ -42,6 +42,8 @@ namespace CaveGeneration.MapGeneration
             useRandomSeed = parameters.useRandomSeed;
             borderSize = parameters.borderSize;
             squareSize = parameters.squareSize;
+            minimumWallRegionSize = parameters.minWallSize;
+            MinimumFloorRegionSize = parameters.minFloorSize;
         }
 
         /// <summary>
@@ -57,12 +59,12 @@ namespace CaveGeneration.MapGeneration
             SmoothMap(SMOOTHING_ITERATIONS);
 
             List<TileRegion> floorRegions = GetRegions(Tile.Floor);
-            List<TileRegion> remainingFloorRegions = RemoveSmallRegions(floorRegions, MINIMUM_FLOOR_REGION_SIZE);
+            List<TileRegion> remainingFloorRegions = RemoveSmallRegions(floorRegions, MinimumFloorRegionSize);
 
             ConnectRegions(remainingFloorRegions);
 
             List<TileRegion> wallRegions = GetRegions(Tile.Wall);
-            RemoveSmallRegions(wallRegions, MINIMUM_WALL_REGION_SIZE);
+            RemoveSmallRegions(wallRegions, minimumWallRegionSize);
 
             ApplyBorder(borderSize);
             return map;
@@ -167,9 +169,12 @@ namespace CaveGeneration.MapGeneration
         /// <returns>List of Regions at least as large as the removal threshold.</returns>
         List<TileRegion> RemoveSmallRegions(List<TileRegion> regions, int removalThreshold)
         {
+            List<TileRegion> remainingRegions = new List<TileRegion>();
+            if (regions.Count == 0)
+                return remainingRegions;
+
             Tile tileType = map[regions[0][0]];
             Tile otherTileType = (tileType == Tile.Wall) ? Tile.Floor : Tile.Wall;
-            List<TileRegion> remainingRegions = new List<TileRegion>();
             foreach (TileRegion region in regions)
             {
                 if (region.Count < removalThreshold)
@@ -333,7 +338,7 @@ namespace CaveGeneration.MapGeneration
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
             foreach (RoomConnection connection in finalConnections)
             {
-                CreatePassageDebug(connection, TUNNELING_RADIUS);
+                CreatePassage(connection, TUNNELING_RADIUS);
             }
         }
 
@@ -346,17 +351,15 @@ namespace CaveGeneration.MapGeneration
         List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
         {
             List<RoomConnection> connections = new List<RoomConnection>();
-            var actions = new List<System.Action>();
             for (int j = 0; j < rooms.Count; j++)
             {
                 for (int k = j + 1; k < rooms.Count; k++)
                 {
                     RoomConnection connection = new RoomConnection(rooms[j], rooms[k], j, k);
                     connections.Add(connection);
-                    actions.Add(() => connection.FindShortConnection());
+                    connection.FindShortConnection();
                 }
             }
-            Utility.Threading.ParallelExecute(actions.ToArray());
             return connections;
         }
 
