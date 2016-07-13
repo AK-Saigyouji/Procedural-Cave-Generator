@@ -35,13 +35,9 @@ namespace CaveGeneration
         protected void GenerateCave(MapParameters parameters)
         {
             DestroyChildren();
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-            sw.Start();
             IMapGenerator mapGenerator = GetMapGenerator(parameters);
             Map map = mapGenerator.GenerateMap();
-            Utility.Stopwatch.Query(sw, "Map: ");
-            GenerateMeshFromMap(map);
-            Utility.Stopwatch.Query(sw, "Mesh: ");
+            //GenerateMeshFromMap(map);
         }
 
         virtual protected IMapGenerator GetMapGenerator(MapParameters parameters)

@@ -42,7 +42,7 @@ namespace CaveGeneration.MeshGeneration
         {
             for (int i = 0; i < ceilingVertices.Length; i++)
             {
-                ceilingVertices[i] += height * Vector3.up;
+                ceilingVertices[i].y += height;
             }
         }
 

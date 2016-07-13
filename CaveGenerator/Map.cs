@@ -17,7 +17,7 @@ namespace CaveGeneration
     /// </summary>
     public class Map
     {
-        public Tile[,] grid { get; private set; }
+        Tile[,] grid;
         public int squareSize { get; private set; }
         public int length { get { return grid.GetLength(0); } }
         public int width { get { return grid.GetLength(1); } }

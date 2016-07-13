@@ -15,6 +15,9 @@ namespace CaveGeneration
         public Material ceilingMaterial;
         public Material wallMaterial;
 
+        /// <summary>
+        /// Call this method to generate a cave through code. Will override any fields set through the inspector. 
+        /// </summary>
         public void GenerateCave(MapParameters mapParameters, Material ceiling, Material walls, int wallHeight = 3, 
             int wallsPerTextureTile = 5)
         {

@@ -61,10 +61,10 @@ namespace CaveGeneration.MapGeneration
             List<TileRegion> floorRegions = GetRegions(Tile.Floor);
             List<TileRegion> remainingFloorRegions = RemoveSmallRegions(floorRegions, MinimumFloorRegionSize);
 
-            ConnectRegions(remainingFloorRegions);
-
             List<TileRegion> wallRegions = GetRegions(Tile.Wall);
             RemoveSmallRegions(wallRegions, minimumWallRegionSize);
+
+            ConnectRegions(remainingFloorRegions);
 
             ApplyBorder(borderSize);
             return map;
@@ -262,6 +262,7 @@ namespace CaveGeneration.MapGeneration
             {
                 if (map[x, 1] == Tile.Wall)
                     queue.Enqueue(new Coord(x, 1));
+
                 if (map[x, width - 2] == Tile.Wall)
                     queue.Enqueue(new Coord(x, width - 2));
             }
@@ -269,6 +270,7 @@ namespace CaveGeneration.MapGeneration
             {
                 if (map[1, y] == Tile.Wall)
                     queue.Enqueue(new Coord(1, y));
+
                 if (map[length - 2, y] == Tile.Wall)
                     queue.Enqueue(new Coord(length - 2, y));
             }
