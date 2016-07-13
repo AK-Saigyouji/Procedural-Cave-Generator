@@ -37,7 +37,7 @@ namespace CaveGeneration
             DestroyChildren();
             IMapGenerator mapGenerator = GetMapGenerator(parameters);
             Map map = mapGenerator.GenerateMap();
-            //GenerateMeshFromMap(map);
+            GenerateMeshFromMap(map);
         }
 
         virtual protected IMapGenerator GetMapGenerator(MapParameters parameters)

@@ -170,8 +170,8 @@ namespace CaveGeneration.MapGeneration
         List<TileRegion> RemoveSmallRegions(List<TileRegion> regions, int removalThreshold)
         {
             List<TileRegion> remainingRegions = new List<TileRegion>();
-            if (regions.Count == 0)
-                return remainingRegions;
+            if (regions.Count == 0) // Degenerate map has nothing but walls
+                return remainingRegions; 
 
             Tile tileType = map[regions[0][0]];
             Tile otherTileType = (tileType == Tile.Wall) ? Tile.Floor : Tile.Wall;
@@ -299,6 +299,7 @@ namespace CaveGeneration.MapGeneration
                 Coord currentTile = queue.Dequeue();
                 tiles.Add(currentTile);
 
+                // Packing the following into a foreach loop would be cleaner, but results in a noticeable performance hit
                 Coord left = currentTile.left;
                 Coord right = currentTile.right;
                 Coord up = currentTile.up;
