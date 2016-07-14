@@ -4,6 +4,10 @@ using System.Collections.Generic;
 
 namespace CaveGeneration.MeshGeneration
 {
+    /// <summary>
+    /// Responsible for generating all the data related to the ceiling / base of the map, namely its outline and all
+    /// data required to construct the mesh. 
+    /// </summary>
     class CeilingBuilder
     {
         Map map;
@@ -13,7 +17,7 @@ namespace CaveGeneration.MeshGeneration
         public MeshData mesh { get; private set; }
         public List<Outline> outlines { get; private set; }
 
-        float MIN_TEXTURE_DIMENSION = 0.001f;
+        float MIN_TEXTURE_DIMENSION = 0.001f; // protects against division by 0
 
         public CeilingBuilder(Map map, Vector2 textureDimensions)
         {

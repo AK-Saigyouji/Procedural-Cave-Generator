@@ -18,26 +18,29 @@ namespace CaveGeneration
         public int squareSize = 1;
         public int minWallSize = 50;
         public int minFloorSize = 50;
-        public Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
 
         public GameObject cave { get; protected set; }
         public List<MapMeshes> generatedMeshes { get; protected set; }
 
-        public void GenerateCaveUsingInspectorValues()
+        /// <summary>
+        /// Main method for creating cave objects. By default, the cave will be a child of the object holding the cave 
+        /// generate script. 
+        /// </summary>
+        public GameObject GenerateCaveUsingInspectorValues()
         {
             MapParameters parameters = new MapParameters(length: length, width: width, mapDensity: initialMapDensity, 
                 seed: seed, useRandomSeed: useRandomSeed, squareSize: squareSize, borderSize: borderSize,
                 minFloorSize: minFloorSize, minWallSize: minWallSize);
 
-            GenerateCave(parameters);
+            return GenerateCave(parameters);
         }
 
-        protected void GenerateCave(MapParameters parameters)
+        protected GameObject GenerateCave(MapParameters parameters)
         {
             DestroyChildren();
             IMapGenerator mapGenerator = GetMapGenerator(parameters);
             Map map = mapGenerator.GenerateMap();
-            GenerateMeshFromMap(map);
+            return GenerateCaveFromMap(map);
         }
 
         virtual protected IMapGenerator GetMapGenerator(MapParameters parameters)
@@ -45,7 +48,11 @@ namespace CaveGeneration
             return new MapGenerator(parameters);
         }
 
-        abstract protected void GenerateMeshFromMap(Map map);
+        /// <summary>
+        /// Produces the actual game object from the map.
+        /// </summary>
+        /// <returns>A game object holding the final result of the generator.</returns>
+        abstract protected GameObject GenerateCaveFromMap(Map map);
 
         /// <summary>
         /// Creates a mesh generator for each submap and populates the data in each generator necessary to produce meshes.
@@ -74,14 +81,9 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Generate all the data in the MeshGenerator in preparation for the creation of meshes. Each call
-        /// of this method will get distributed across threads, so override with care: work done in this method
-        /// must not touch the Unity API and any shared data must be accessed in a threadsafe way.
+        /// Generate all the data in the MeshGenerator in preparation for the creation of meshes.
         /// </summary>
-        virtual protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
-        {
-            meshGenerator.GenerateCeiling(map, ceilingTextureDimensions);
-        }
+        abstract protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map);
 
         protected GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
         {

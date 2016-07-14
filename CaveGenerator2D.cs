@@ -11,15 +11,11 @@ namespace CaveGeneration
     public class CaveGenerator2D : CaveGenerator
     {
         public Material wallMaterial;
-        readonly Quaternion ORIENTATION_2D = Quaternion.Euler(270f, 0f, 0f);
+        public Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
 
-        public void GenerateCave(MapParameters mapParameters, Material walls)
-        {
-            wallMaterial = walls;
-            GenerateCave(mapParameters);
-        }
+        Quaternion ORIENTATION_2D = Quaternion.Euler(270f, 0f, 0f);
 
-        protected override void GenerateMeshFromMap(Map map)
+        protected override GameObject GenerateCaveFromMap(Map map)
         {
             cave = CreateChild("Cave2D", transform);
             IList<Map> submaps = map.Subdivide();
@@ -32,6 +28,12 @@ namespace CaveGeneration
                 meshes.Add(new MapMeshes(ceilingMesh: mesh));
             }
             generatedMeshes = meshes;
+            return cave;
+        }
+
+        override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
+        {
+            meshGenerator.GenerateCeiling(map, ceilingTextureDimensions);
         }
 
         Mesh CreateWall(MeshGenerator meshGenerator, GameObject parent)

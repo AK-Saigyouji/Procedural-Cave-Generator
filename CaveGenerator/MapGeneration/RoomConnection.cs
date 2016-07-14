@@ -67,7 +67,7 @@ namespace CaveGeneration.MapGeneration
             while (indexB < otherTiles.Count)
             {
                 Coord tileB = otherTiles[indexB];
-                int distance = (int)tileA.Distance(tileB);
+                int distance = (int)tile.Distance(tileB);
                 if (distance < bestDistanceThisLoop)
                 {
                     bestDistanceThisLoop = distance;

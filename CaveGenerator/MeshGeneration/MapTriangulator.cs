@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Triangulates a Map according to the Marching Squares algorithm. Resulting data can be accessed through exposed
-    /// properties in a form that is ready to be used in a Unity Mesh. 
+    /// Triangulates a Map according to the Marching Squares algorithm, yielding core mesh data (triangles and vertices)
+    /// along with a lookup table of the triangles containing each vertex.
     /// </summary>
     class MapTriangulator
     {

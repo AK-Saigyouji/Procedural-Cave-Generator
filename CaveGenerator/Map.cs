@@ -175,12 +175,23 @@ namespace CaveGeneration
 
         public bool IsBoundaryTile(int x, int y)
         {
-            return x == 0 || x == length - 1 || y == 0 || y == width - 1;
+            return (x == 0 || x == length - 1) && (0 <= y && y <= width - 1) // vertical boundary
+                || (y == 0 || y == width - 1) && (0 <= x && x <= length - 1); // horizontal boundary
         }
 
         public bool IsBoundaryTile(Coord coord)
         {
             return IsBoundaryTile(coord.x, coord.y);
+        }
+
+        public bool IsInteriorTile(int x, int y)
+        {
+            return 0 < x && x < length - 1 && 0 < y && y < width - 1;
+        }
+
+        public bool IsInteriorTile(Coord tile)
+        {
+            return IsInteriorTile(tile.x, tile.y);
         }
 
         /// <summary>

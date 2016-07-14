@@ -10,25 +10,13 @@ namespace CaveGeneration
     /// </summary>
     public class CaveGenerator3D : CaveGenerator
     {
-        public int wallsPerTextureTile = 5;
         public int wallHeight = 3;
         public Material ceilingMaterial;
         public Material wallMaterial;
+        public Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
+        public int wallsPerTextureTile = 5;
 
-        /// <summary>
-        /// Call this method to generate a cave through code. Will override any fields set through the inspector. 
-        /// </summary>
-        public void GenerateCave(MapParameters mapParameters, Material ceiling, Material walls, int wallHeight = 3, 
-            int wallsPerTextureTile = 5)
-        {
-            this.wallHeight = wallHeight;
-            this.wallsPerTextureTile = wallsPerTextureTile;
-            ceilingMaterial = ceiling;
-            wallMaterial = walls;
-            GenerateCave(mapParameters);
-        }
-
-        protected override void GenerateMeshFromMap(Map map)
+        protected override GameObject GenerateCaveFromMap(Map map)
         {
             IList<Map> submaps = map.Subdivide();
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
@@ -42,6 +30,7 @@ namespace CaveGeneration
                 meshes.Add(new MapMeshes(ceilingMesh, wallMesh));
             }
             generatedMeshes = meshes;
+            return cave;
         }
 
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)

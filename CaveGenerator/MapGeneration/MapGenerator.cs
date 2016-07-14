@@ -341,7 +341,7 @@ namespace CaveGeneration.MapGeneration
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
             foreach (RoomConnection connection in finalConnections)
             {
-                CreatePassage(connection, TUNNELING_RADIUS);
+                CreatePassageDebug(connection, TUNNELING_RADIUS);
             }
         }
 
@@ -404,7 +404,7 @@ namespace CaveGeneration.MapGeneration
             {
                 for (int y = coord.y - neighborReach; y <= coord.y + neighborReach; y++)
                 {
-                    if (map.Contains(x, y))
+                    if (map.IsInteriorTile(x, y))
                     {
                         map[x, y] = Tile.Floor;
                     }
