@@ -49,11 +49,15 @@ namespace CaveGeneration.MeshGeneration
             new Vector2(0f, 0.5f)
         };
 
+        int[] vertexIndices;
+
         Map map;
         Dictionary<int, int> positionToVertexIndex;
 
         List<Vector2> localVertices;
         List<int> triangles;
+
+        const int MAX_VERTICES_IN_TRIANGULATION = 6;
 
         public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
         public Vector3[] meshVertices { get { return LocalToGlobalPositions(localVertices); } }
@@ -80,6 +84,7 @@ namespace CaveGeneration.MeshGeneration
         void Initialize(Map map)
         {
             this.map = map;
+            vertexIndices = new int[MAX_VERTICES_IN_TRIANGULATION];
             localVertices = new List<Vector2>();
             triangles = new List<int>();
             vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
@@ -89,36 +94,44 @@ namespace CaveGeneration.MeshGeneration
         void TriangulateSquare(int configuration, int x, int y)
         {
             int[] points = configurationTable[configuration];
-            int[] vertexIndices = AddVertices(points, x, y);
-            CreateTriangles(vertexIndices);
+            SetVertexIndices(points, x, y);
+            CreateTriangles(points.Length);
         }
 
-        int[] AddVertices(int[] points, int x, int y)
+        void SetVertexIndices(int[] points, int x, int y)
         {
-            int[] vertexIndices = new int[points.Length];
             for (int i = 0; i < points.Length; i++)
             {
-                int vertexIndex;
-                Vector2 localPosition = GetLocalPosition(points[i], x, y);
-                int positionId = ComputePositionId(localPosition);
-                bool isNewPosition = !positionToVertexIndex.TryGetValue(positionId, out vertexIndex);
-                if (isNewPosition)
-                {
-                    vertexIndex = localVertices.Count;
-                    localVertices.Add(localPosition);
-                    positionToVertexIndex[positionId] = vertexIndex;
-                }
-                vertexIndices[i] = vertexIndex;
+                vertexIndices[i] = GetVertexIndex(points[i], x, y);
             }
-            return vertexIndices;
         }
 
-        void CreateTriangles(int[] indices)
+        int GetVertexIndex(int point, int x, int y)
         {
-            int numTrianglesToCreate = indices.Length - 2;
-            for (int i = 0; i < numTrianglesToCreate; i++)
+            Vector2 localPosition = GetLocalPosition(point, x, y);
+            return PositionToIndex(localPosition);
+        }
+
+        int PositionToIndex(Vector2 position)
+        {
+            int vertexIndex;
+            int positionId = ComputePositionId(position);
+            bool isNewPosition = !positionToVertexIndex.TryGetValue(positionId, out vertexIndex);
+            if (isNewPosition)
             {
-                CreateTriangle(indices[0], indices[i + 1], indices[i + 2]);
+                vertexIndex = localVertices.Count;
+                localVertices.Add(position);
+                positionToVertexIndex[positionId] = vertexIndex;
+            }
+            return vertexIndex;
+        }
+
+        void CreateTriangles(int numVertices)
+        {
+            int numTriangles = numVertices - 2;
+            for (int i = 0; i < numTriangles; i++)
+            {
+                CreateTriangle(vertexIndices[0], vertexIndices[i + 1], vertexIndices[i + 2]);
             }
         }
 
@@ -151,13 +164,13 @@ namespace CaveGeneration.MeshGeneration
 
         Vector3[] LocalToGlobalPositions(List<Vector2> localPositions)
         {
-            int stretch = map.squareSize;
+            int scale = map.squareSize;
             Vector3 basePosition = map.position;
 
             Vector3[] globalPositions = new Vector3[localPositions.Count];
             for (int i = 0; i < globalPositions.Length; i++)
             {
-                globalPositions[i] = basePosition + new Vector3(localPositions[i].x, 0f, localPositions[i].y) * stretch;
+                globalPositions[i] = basePosition + new Vector3(localPositions[i].x, 0f, localPositions[i].y) * scale;
             }
             return globalPositions;
         }

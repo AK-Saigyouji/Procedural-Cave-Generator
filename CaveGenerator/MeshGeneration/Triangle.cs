@@ -40,7 +40,7 @@ namespace CaveGeneration.MeshGeneration
 
         /// <summary>
         /// Get the first vertex not equal to the arguments. Does not check that the vertices passed in are actually in the 
-        /// triangle. Contains method can be used to check.
+        /// triangle. Can use the Contains method to check.
         /// </summary>  
         /// <param name="vertexOne">An index already in the triangle.</param>
         /// <param name="vertexTwo">Another distinct index already in the triangle.</param>

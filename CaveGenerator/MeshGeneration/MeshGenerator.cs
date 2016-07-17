@@ -51,7 +51,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetCeilingMesh()
         {
-            return GetMesh(ceilingMesh, ceilingName);
+            return BuildMesh(ceilingMesh, ceilingName);
         }
 
         /// <summary>
@@ -59,7 +59,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetWallMesh()
         {
-            return GetMesh(wallMesh, wallName);
+            return BuildMesh(wallMesh, wallName);
         }
 
         /// <summary>
@@ -81,14 +81,14 @@ namespace CaveGeneration.MeshGeneration
             return outlines2D;
         }
 
-        Mesh GetMesh(MeshData meshData, string name)
+        Mesh BuildMesh(MeshData meshData, string name)
         {
             Mesh mesh = new Mesh();
             mesh.vertices = meshData.vertices;
             mesh.triangles = meshData.triangles;
             mesh.RecalculateNormals();
             mesh.uv = meshData.uv;
-            mesh.name = name + mapIndex;
+            mesh.name = name + " " + mapIndex;
             return mesh;
         }
     } 

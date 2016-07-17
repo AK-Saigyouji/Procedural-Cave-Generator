@@ -118,7 +118,7 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// Uses synchronous cellular automata to smooth out the map. Each cell becomes more like its neighbors,
-        /// turning noise into smoother map consisting of regions.
+        /// turning noise into a smoother map consisting of regions.
         /// </summary>
         /// <param name="iterations">The number of smoothing passes.</param>
         void SmoothMap(int iterations)
@@ -144,6 +144,11 @@ namespace CaveGeneration.MapGeneration
             }
         }
 
+        /// <summary>
+        /// Get a tile that sides with the majority of its neigbors. Specifically, count the number of walls in its
+        /// 8 neighbors. If the majority are walls, get a wall. If the majority are floors, get a floor. If 
+        /// it's a tie, get the existing tile at that spot.
+        /// </summary>
         Tile GetNewTileBasedOnNeighbors(int x, int y)
         {
             int neighborCount = map.GetSurroundingWallCount(x, y);
@@ -341,7 +346,7 @@ namespace CaveGeneration.MapGeneration
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
             foreach (RoomConnection connection in finalConnections)
             {
-                CreatePassageDebug(connection, TUNNELING_RADIUS);
+                CreatePassage(connection, TUNNELING_RADIUS);
             }
         }
 
@@ -354,11 +359,11 @@ namespace CaveGeneration.MapGeneration
         List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
         {
             List<RoomConnection> connections = new List<RoomConnection>();
-            for (int j = 0; j < rooms.Count; j++)
+            for (int i = 0; i < rooms.Count; i++)
             {
-                for (int k = j + 1; k < rooms.Count; k++)
+                for (int j = i + 1; j < rooms.Count; j++)
                 {
-                    RoomConnection connection = new RoomConnection(rooms[j], rooms[k], j, k);
+                    RoomConnection connection = new RoomConnection(rooms[i], rooms[j], i, j);
                     connections.Add(connection);
                     connection.FindShortConnection();
                 }
@@ -395,7 +400,7 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Replace nearby tiles with floors.
+        /// Replace nearby tiles with floors. Does not affect boundary tiles.
         /// </summary>
         /// <param name="neighborReach">The radius of replacement: e.g. if 1, will replace the 8 adjacent tiles.</param>
         void ClearNeighbors(Coord coord, int neighborReach)
@@ -416,7 +421,7 @@ namespace CaveGeneration.MapGeneration
         /// Add walls around the map of given thickness. Note that a border of thickness n will result in 2n being added to both
         /// width and length.
         /// </summary>
-        /// <param name="borderSize">How thick the border should be.</param>
+        /// <param name="borderSize">How thick the border should be on each side.</param>
         void ApplyBorder(int borderSize)
         {
             Map borderedMap = new Map(map.length + borderSize * 2, map.width + borderSize * 2, map.squareSize);

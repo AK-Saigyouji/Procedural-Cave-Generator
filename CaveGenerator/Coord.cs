@@ -12,8 +12,6 @@ namespace CaveGeneration
         public int x;
         public int y;
 
-        const int hashFactor = 65536;
-
         public Coord(int x, int y)
         {
             this.x = x;
@@ -119,7 +117,10 @@ namespace CaveGeneration
 
         public override int GetHashCode()
         {
-            return 65536 * x + y;
+            // The idea is to use the first 16 bits to hold x, and the other 16 bits to hold y. 
+            // Since this struct is usually used to hold map coordinates (much smaller than 65536), this results in 
+            // an injective hash code in practice.
+            return (x << 16) ^ y;
         }
 
         public override string ToString()
