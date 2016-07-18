@@ -13,30 +13,23 @@ namespace CaveGeneration
         public int wallHeight = 3;
         public Material ceilingMaterial;
         public Material wallMaterial;
-        public Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
+        public Material floorMaterial;
         public int wallsPerTextureTile = 5;
-
-        protected override GameObject GenerateCaveFromMap(Map map)
-        {
-            IList<Map> submaps = map.Subdivide();
-            MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
-            cave = CreateChild("Cave3D", transform);
-            List<MapMeshes> meshes = new List<MapMeshes>();
-            for (int i = 0; i < submaps.Count; i++)
-            {
-                GameObject sector = CreateSector(submaps[i].index);
-                Mesh ceilingMesh = CreateCeiling(meshGenerators[i], sector);
-                Mesh wallMesh = CreateWall(meshGenerators[i], sector);
-                meshes.Add(new MapMeshes(ceilingMesh, wallMesh));
-            }
-            generatedMeshes = meshes;
-            return cave;
-        }
 
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            meshGenerator.GenerateCeiling(map, ceilingTextureDimensions);
+            meshGenerator.GenerateCeiling(map);
             meshGenerator.GenerateWalls(wallsPerTextureTile, wallHeight);
+            meshGenerator.GenerateFloor(map);
+        }
+
+        protected override MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index)
+        {
+            GameObject sector = CreateSector(index);
+            Mesh ceilingMesh = CreateCeiling(meshGenerator, sector);
+            Mesh wallMesh = CreateWall(meshGenerator, sector);
+            Mesh floorMesh = CreateFloor(meshGenerator, sector);
+            return new MapMeshes(ceilingMesh: ceilingMesh, wallMesh: wallMesh, floorMesh: floorMesh);
         }
 
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
@@ -50,14 +43,22 @@ namespace CaveGeneration
         {
             Mesh wallMesh = meshGenerator.GetWallMesh();
             GameObject wall = CreateObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
-            AddWallCollider(wall, wallMesh);
+            AddMeshCollider(wall, wallMesh);
             return wallMesh;
         }
 
-        void AddWallCollider(GameObject walls, Mesh wallMesh)
+        Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
         {
-            MeshCollider wallCollider = walls.AddComponent<MeshCollider>();
-            wallCollider.sharedMesh = wallMesh;
+            Mesh floorMesh = meshGenerator.GetFloorMesh();
+            GameObject floor = CreateObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
+            AddMeshCollider(floor, floorMesh);
+            return floorMesh;
+        }
+
+        void AddMeshCollider(GameObject gameObject, Mesh mesh)
+        {
+            MeshCollider collider = gameObject.AddComponent<MeshCollider>();
+            collider.sharedMesh = mesh;
         }
     } 
 }

@@ -33,7 +33,11 @@ namespace CaveGeneration
             position = Vector3.zero;
         }
 
-        public Map(Map map) : this(map.grid, map.squareSize) { }
+        public Map(Map map) : this(map.grid, map.squareSize)
+        {
+            index = map.index;
+            position = map.position;
+        }
 
         public Map(Tile[,] grid, int squareSize) : this(grid.GetLength(0), grid.GetLength(1), squareSize)
         {
@@ -221,6 +225,17 @@ namespace CaveGeneration
         public IEnumerable<Coord> GetAdjacentTiles(Coord tile)
         {
             return GetAdjacentTiles(tile.x, tile.y);
+        }
+
+        public void Invert()
+        {
+            for (int x = 0; x < length; x++)
+            {
+                for (int y = 0; y < width; y++)
+                {
+                    grid[x, y] = grid[x, y] == Tile.Wall ? Tile.Floor : Tile.Wall;
+                }
+            }
         }
     }
 }

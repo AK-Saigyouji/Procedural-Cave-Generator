@@ -42,13 +42,9 @@ public class MapGeneratorEditor : Editor {
 
     void CreateMeshAssets(MapMeshes meshes, string path)
     {
-        if (meshes.ceilingMesh != null)
+        foreach (Mesh mesh in meshes.ExtractMeshes())
         {
-            AssetDatabase.CreateAsset(meshes.ceilingMesh, path + meshes.ceilingMesh.name + ".mesh");
-        }
-        if (meshes.wallMesh != null)
-        {
-            AssetDatabase.CreateAsset(meshes.wallMesh, path + meshes.wallMesh.name + ".mesh");
+            AssetDatabase.CreateAsset(mesh, path + mesh.name + ".mesh");
         }
     }
 

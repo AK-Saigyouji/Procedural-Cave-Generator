@@ -11,18 +11,14 @@ namespace CaveGeneration.MeshGeneration
     class CeilingBuilder
     {
         Map map;
-        Vector2 textureDimensions;
         IDictionary<int, List<Triangle>> triangleMap;
 
         public MeshData mesh { get; private set; }
         public List<Outline> outlines { get; private set; }
 
-        float MIN_TEXTURE_DIMENSION = 0.001f; // protects against division by 0
-
-        public CeilingBuilder(Map map, Vector2 textureDimensions)
+        public CeilingBuilder(Map map)
         {
             this.map = map;
-            this.textureDimensions = textureDimensions;
         }
 
         /// <summary>
@@ -38,8 +34,8 @@ namespace CaveGeneration.MeshGeneration
 
         void TriangulateMap()
         {
-            MapTriangulator mapTriangulator = new MapTriangulator();
-            mapTriangulator.Triangulate(map);
+            MapTriangulator mapTriangulator = new MapTriangulator(map);
+            mapTriangulator.Triangulate();
 
             mesh = new MeshData();
             mesh.vertices = mapTriangulator.meshVertices;
@@ -52,8 +48,8 @@ namespace CaveGeneration.MeshGeneration
         {
             Vector3[] vertices = mesh.vertices;
             Vector2[] uv = new Vector2[vertices.Length];
-            float xMax = Mathf.Max(textureDimensions.x, MIN_TEXTURE_DIMENSION);
-            float yMax = Mathf.Max(textureDimensions.y, MIN_TEXTURE_DIMENSION);
+            float xMax = Map.maxSubmapSize;
+            float yMax = Map.maxSubmapSize;
             for (int i = 0; i < vertices.Length; i++)
             {
                 float percentX = vertices[i].x / xMax;

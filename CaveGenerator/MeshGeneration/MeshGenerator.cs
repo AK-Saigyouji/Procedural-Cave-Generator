@@ -17,6 +17,9 @@ namespace CaveGeneration.MeshGeneration
         MeshData wallMesh;
         const string wallName = "Wall Mesh";
 
+        MeshData floorMesh;
+        const string floorName = "Floor Mesh";
+
         List<Outline> outlines;
 
         int mapIndex;
@@ -24,11 +27,11 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// Generate the data necessary to produce the ceiling mesh. Safe to run on background threads.
         /// </summary>
-        public void GenerateCeiling(Map map, Vector2 ceilingTextureDimensions)
+        public void GenerateCeiling(Map map)
         {
             mapIndex = map.index;
 
-            var ceilingBuilder = new CeilingBuilder(map, ceilingTextureDimensions);
+            var ceilingBuilder = new CeilingBuilder(map);
             ceilingBuilder.Build();
             ceilingMesh = ceilingBuilder.mesh;
             outlines = ceilingBuilder.outlines;
@@ -43,6 +46,13 @@ namespace CaveGeneration.MeshGeneration
             var wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines, wallsPerTextureTile, wallHeight);
             wallBuilder.Build();
             wallMesh = wallBuilder.mesh;
+        }
+
+        public void GenerateFloor(Map map)
+        {
+            var floorBuilder = new FloorBuilder(map);
+            floorBuilder.Build();
+            floorMesh = floorBuilder.mesh;
         }
 
         /// <summary>
@@ -60,6 +70,11 @@ namespace CaveGeneration.MeshGeneration
         public Mesh GetWallMesh()
         {
             return BuildMesh(wallMesh, wallName);
+        }
+
+        public Mesh GetFloorMesh()
+        {
+            return BuildMesh(floorMesh, floorName);
         }
 
         /// <summary>

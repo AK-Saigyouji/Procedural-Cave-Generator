@@ -11,44 +11,45 @@ namespace CaveGeneration
     public class CaveGenerator2D : CaveGenerator
     {
         public Material wallMaterial;
-        public Vector2 ceilingTextureDimensions = new Vector2(100f, 100f);
+        public Material floorMaterial;
 
         Quaternion ORIENTATION_2D = Quaternion.Euler(270f, 0f, 0f);
 
-        protected override GameObject GenerateCaveFromMap(Map map)
+        override protected MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index)
         {
-            cave = CreateChild("Cave2D", transform);
-            IList<Map> submaps = map.Subdivide();
-            MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
-            List<MapMeshes> meshes = new List<MapMeshes>();
-            for (int i = 0; i < submaps.Count; i++)
-            {
-                GameObject sector = CreateSector(submaps[i].index);
-                Mesh mesh = CreateWall(meshGenerators[i], sector);
-                meshes.Add(new MapMeshes(ceilingMesh: mesh));
-            }
-            generatedMeshes = meshes;
-            return cave;
+            GameObject sector = CreateSector(index);
+            Mesh ceilingMesh = CreateCeiling(meshGenerator, sector);
+            Mesh floorMesh = CreateFloor(meshGenerator, sector);
+            return new MapMeshes(ceilingMesh: ceilingMesh, floorMesh: floorMesh);
         }
 
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            meshGenerator.GenerateCeiling(map, ceilingTextureDimensions);
+            meshGenerator.GenerateCeiling(map);
+            meshGenerator.GenerateFloor(map);
         }
 
-        Mesh CreateWall(MeshGenerator meshGenerator, GameObject parent)
+        Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject parent)
         {
             Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
             GameObject wall = CreateObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial);
-            OrientWall(wall);
+            Orient2D(wall);
             RemoveExistingColliders(wall);
             AddColliders(wall, meshGenerator);
             return ceilingMesh;
         }
 
-        void OrientWall(GameObject wall)
+        Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
         {
-            wall.transform.localRotation = ORIENTATION_2D;
+            Mesh floorMesh = meshGenerator.GetFloorMesh();
+            GameObject floor = CreateObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
+            Orient2D(floor);
+            return floorMesh;
+        }
+
+        void Orient2D(GameObject gameObject)
+        {
+            gameObject.transform.localRotation = ORIENTATION_2D;
         }
 
         void RemoveExistingColliders(GameObject wall)

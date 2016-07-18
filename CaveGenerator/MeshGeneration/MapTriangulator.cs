@@ -49,8 +49,8 @@ namespace CaveGeneration.MeshGeneration
             new Vector2(0f, 0.5f)
         };
 
+        bool meshOnly;
         int[] vertexIndices;
-
         Map map;
         Dictionary<int, int> positionToVertexIndex;
 
@@ -59,13 +59,32 @@ namespace CaveGeneration.MeshGeneration
 
         const int MAX_VERTICES_IN_TRIANGULATION = 6;
 
+        /// <summary>
+        /// Map associating vertices to a list of triangles containing that vertex. Vertices are given by
+        /// their index into the meshVertices array.
+        /// </summary>
         public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
         public Vector3[] meshVertices { get { return LocalToGlobalPositions(localVertices); } }
         public int[] meshTriangles { get { return triangles.ToArray(); } }
 
-        public void Triangulate(Map map)
+        public MapTriangulator(Map map, bool meshOnly = false)
         {
-            Initialize(map);
+            this.map = map;
+            this.meshOnly = meshOnly;
+            vertexIndices = new int[MAX_VERTICES_IN_TRIANGULATION];
+            localVertices = new List<Vector2>();
+            triangles = new List<int>();
+            vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
+            positionToVertexIndex = new Dictionary<int, int>();
+        }
+
+        /// <summary>
+        /// Compute a triangulation for the map, producing mesh data (triangles and vertices) as well as a
+        /// map associating each vertex to the triangles containing it. 
+        /// </summary>
+        /// <param name="meshOnly">If set to true, does not produce the vertex to triangle map.</param>
+        public void Triangulate()
+        {
             int numSquaresAcross = map.length - 1;
             int numSquaresDeep = map.width - 1;
             for (int x = 0; x < numSquaresAcross; x++)
@@ -79,16 +98,6 @@ namespace CaveGeneration.MeshGeneration
                     }
                 }
             }
-        }
-
-        void Initialize(Map map)
-        {
-            this.map = map;
-            vertexIndices = new int[MAX_VERTICES_IN_TRIANGULATION];
-            localVertices = new List<Vector2>();
-            triangles = new List<int>();
-            vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
-            positionToVertexIndex = new Dictionary<int, int>();
         }
 
         void TriangulateSquare(int configuration, int x, int y)
@@ -137,15 +146,17 @@ namespace CaveGeneration.MeshGeneration
 
         void CreateTriangle(int a, int b, int c)
         {
-            Triangle triangle = new Triangle(a, b, c);
-
             triangles.Add(a);
             triangles.Add(b);
             triangles.Add(c);
 
-            AddTriangleToTable(a, triangle);
-            AddTriangleToTable(b, triangle);
-            AddTriangleToTable(c, triangle);
+            if (!meshOnly)
+            {
+                Triangle triangle = new Triangle(a, b, c);
+                AddTriangleToTable(a, triangle);
+                AddTriangleToTable(b, triangle);
+                AddTriangleToTable(c, triangle); 
+            }
         }
 
         void AddTriangleToTable(int index, Triangle triangle)

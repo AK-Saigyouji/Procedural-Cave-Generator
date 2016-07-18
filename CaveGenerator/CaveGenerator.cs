@@ -52,7 +52,19 @@ namespace CaveGeneration
         /// Produces the actual game object from the map.
         /// </summary>
         /// <returns>A game object holding the final result of the generator.</returns>
-        abstract protected GameObject GenerateCaveFromMap(Map map);
+        virtual protected GameObject GenerateCaveFromMap(Map map)
+        {
+            cave = CreateChild("Cave", transform);
+            IList<Map> submaps = map.Subdivide();
+            MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
+            List<MapMeshes> meshes = new List<MapMeshes>();
+            for (int i = 0; i < submaps.Count; i++)
+            {
+                meshes.Add(CreateMeshes(meshGenerators[i], submaps[i].index));
+            }
+            generatedMeshes = meshes;
+            return cave;
+        }
 
         /// <summary>
         /// Creates a mesh generator for each submap and populates the data in each generator necessary to produce meshes.
@@ -84,6 +96,8 @@ namespace CaveGeneration
         /// Generate all the data in the MeshGenerator in preparation for the creation of meshes.
         /// </summary>
         abstract protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map);
+
+        abstract protected MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index);
 
         protected GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
         {
