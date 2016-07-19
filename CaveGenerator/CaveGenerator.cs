@@ -99,7 +99,7 @@ namespace CaveGeneration
 
         abstract protected MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index);
 
-        protected GameObject CreateObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
+        protected GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
         {
             GameObject newObject = new GameObject(name, typeof(MeshRenderer), typeof(MeshFilter));
             newObject.transform.parent = parent == null ? null : parent.transform;

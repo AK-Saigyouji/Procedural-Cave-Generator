@@ -32,7 +32,7 @@ namespace CaveGeneration
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject parent)
         {
             Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
-            GameObject wall = CreateObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial);
+            GameObject wall = CreateGameObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial);
             Orient2D(wall);
             RemoveExistingColliders(wall);
             AddColliders(wall, meshGenerator);
@@ -42,7 +42,7 @@ namespace CaveGeneration
         Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh floorMesh = meshGenerator.GetFloorMesh();
-            GameObject floor = CreateObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
+            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
             Orient2D(floor);
             return floorMesh;
         }

@@ -20,6 +20,9 @@ namespace CaveGeneration.MeshGeneration
         MeshData floorMesh;
         const string floorName = "Floor Mesh";
 
+        MeshData enclosureMesh;
+        const string enclosureName = "Enclosure Mesh";
+
         List<Outline> outlines;
 
         int mapIndex;
@@ -48,11 +51,25 @@ namespace CaveGeneration.MeshGeneration
             wallMesh = wallBuilder.mesh;
         }
 
+        /// <summary>
+        /// Generate the data necessary to produce the floor mesh. Must first run GenerateCeiling. 
+        /// </summary>
         public void GenerateFloor(Map map)
         {
             var floorBuilder = new FloorBuilder(map);
             floorBuilder.Build();
             floorMesh = floorBuilder.mesh;
+        }
+
+        /// <summary>
+        /// Generate the data necessary to produce the enclosure mesh. The enclosure refers to the part that hangs
+        /// over the walkable areas of the map, effectively enclosing the cave. Must first run GenerateFloor.
+        /// </summary>
+        public void GenerateEnclosure(int wallHeight)
+        {
+            var enclosureBuilder = new EnclosureBuilder(floorMesh, wallHeight);
+            enclosureBuilder.Build();
+            enclosureMesh = enclosureBuilder.mesh;
         }
 
         /// <summary>
@@ -72,9 +89,22 @@ namespace CaveGeneration.MeshGeneration
             return BuildMesh(wallMesh, wallName);
         }
 
+        /// <summary>
+        /// Create and return the floor mesh. Must first run GenerateEnclosure.
+        /// </summary>
+        /// <returns></returns>
         public Mesh GetFloorMesh()
         {
             return BuildMesh(floorMesh, floorName);
+        }
+
+        /// <summary>
+        /// Create a return the enclosure mesh. Must first run GenerateFloors.
+        /// </summary>
+        /// <returns></returns>
+        public Mesh GetEnclosureMesh()
+        {
+            return BuildMesh(enclosureMesh, enclosureName);
         }
 
         /// <summary>
