@@ -42,7 +42,7 @@ public class MapGeneratorEditor : Editor {
 
     void CreateMeshAssets(MapMeshes meshes, string path)
     {
-        foreach (Mesh mesh in meshes.ExtractMeshes())
+        foreach (Mesh mesh in meshes.GetMeshes())
         {
             AssetDatabase.CreateAsset(mesh, path + mesh.name + ".mesh");
         }

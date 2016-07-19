@@ -1,18 +1,18 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace CaveGeneration.MeshGeneration
 {
-    class WallBuilder
+    class WallBuilder : IMeshBuilder
     {
         Vector3[] ceilingVertices;
         int wallsPerTextureTile;
         int wallHeight;
         List<Outline> outlines;
+        MeshData mesh;
 
-        public MeshData mesh { get; private set; }
+        const string name = "Wall Mesh";
 
         public WallBuilder(Vector3[] ceilingVertices, List<Outline> outlines, int wallsPerTextureTile, int wallHeight)
         {
@@ -26,16 +26,17 @@ namespace CaveGeneration.MeshGeneration
         /// Generate the data necessary to produce the wall mesh. Must first run GenerateCeiling. Note that this will
         /// raise the ceiling to accommodate the walls. 
         /// </summary>
-        public void Build()
+        public MeshData Build()
         {
             int outlineEdgeCount = outlines.Select(outline => outline.Count - 1).Sum();
             RaiseCeiling(wallHeight);
 
             mesh = new MeshData();
-
+            mesh.name = name;
             mesh.vertices = GetVertices(outlineEdgeCount);
             mesh.triangles = GetTriangles(outlineEdgeCount);
             mesh.uv = GetUVs(outlineEdgeCount, wallsPerTextureTile);
+            return mesh;
         }
 
         void RaiseCeiling(int height)

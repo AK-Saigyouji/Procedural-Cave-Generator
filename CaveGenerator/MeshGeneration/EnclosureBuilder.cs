@@ -3,11 +3,13 @@ using System.Collections;
 
 namespace CaveGeneration.MeshGeneration
 {
-    class EnclosureBuilder
+    class EnclosureBuilder : IMeshBuilder
     {
         MeshData floorMesh;
         int wallHeight;
-        public MeshData mesh { get; private set; }
+        MeshData mesh;
+
+        const string name = "Enclosure Mesh";
 
         public EnclosureBuilder(MeshData floorMesh, int wallHeight)
         {
@@ -15,9 +17,11 @@ namespace CaveGeneration.MeshGeneration
             this.wallHeight = wallHeight;
         }
 
-        public void Build()
+        public MeshData Build()
         {
             mesh = FloorToEnclosureMesh(wallHeight);
+            mesh.name = name;
+            return mesh;
         }
 
         MeshData FloorToEnclosureMesh(int wallHeight)

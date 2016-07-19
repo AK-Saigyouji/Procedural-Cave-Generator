@@ -30,7 +30,7 @@ namespace CaveGeneration
             Mesh ceilingMesh = CreateCeiling(meshGenerator, sector);
             Mesh wallMesh = CreateWall(meshGenerator, sector);
             Mesh floorMesh = CreateFloor(meshGenerator, sector);
-            return new MapMeshes(ceilingMesh: ceilingMesh, wallMesh: wallMesh, floorMesh: floorMesh);
+            return new MapMeshes(ceilingMesh, wallMesh, floorMesh);
         }
 
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)

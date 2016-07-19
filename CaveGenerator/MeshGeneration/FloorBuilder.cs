@@ -4,22 +4,26 @@ using System.Collections;
 
 namespace CaveGeneration.MeshGeneration
 {
-    public class FloorBuilder
+    public class FloorBuilder : IMeshBuilder
     {
 
-        public MeshData mesh { get; private set; }
+        MeshData mesh;
         Map map;
+
+        const string name = "Floor Mesh";
 
         public FloorBuilder(Map map)
         {
             this.map = map;
         }
 
-        public void Build()
+        public MeshData Build()
         {
             InvertMap();
             TriangulateMap();
             ComputeUV();
+            mesh.name = name;
+            return mesh;
         }
 
         void InvertMap()
@@ -31,7 +35,7 @@ namespace CaveGeneration.MeshGeneration
         void TriangulateMap()
         {
             mesh = new MeshData();
-            MapTriangulator mapTriangulator = new MapTriangulator(map, true);
+            MapTriangulator mapTriangulator = new MapTriangulator(map);
             mapTriangulator.Triangulate();
             mesh.triangles = mapTriangulator.meshTriangles;
             mesh.vertices = mapTriangulator.meshVertices;

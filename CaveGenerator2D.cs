@@ -20,7 +20,7 @@ namespace CaveGeneration
             GameObject sector = CreateSector(index);
             Mesh ceilingMesh = CreateCeiling(meshGenerator, sector);
             Mesh floorMesh = CreateFloor(meshGenerator, sector);
-            return new MapMeshes(ceilingMesh: ceilingMesh, floorMesh: floorMesh);
+            return new MapMeshes(ceilingMesh, floorMesh);
         }
 
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)

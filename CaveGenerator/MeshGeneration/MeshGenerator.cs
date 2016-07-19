@@ -1,43 +1,34 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Produces meshes and colliders for Map objects using the marching squares algorithm. 
-    /// Break large maps (max of 100 by 100 recommended - beyond 200 by 200 is likely to produde exceptions) into 
-    /// smaller maps before generating meshes. 
+    /// Produces meshes and colliders for Map objects. Break large maps into smaller maps before generating meshes.
+    /// Maps should not be larger than 100 by 100.
     /// </summary>
     public class MeshGenerator
     {
         MeshData ceilingMesh;
-        const string ceilingName = "Ceiling Mesh";
-
         MeshData wallMesh;
-        const string wallName = "Wall Mesh";
-
         MeshData floorMesh;
-        const string floorName = "Floor Mesh";
-
         MeshData enclosureMesh;
-        const string enclosureName = "Enclosure Mesh";
 
         List<Outline> outlines;
 
         int mapIndex;
 
         /// <summary>
-        /// Generate the data necessary to produce the ceiling mesh. Safe to run on background threads.
+        /// Generate the data necessary to produce the ceiling mesh.
         /// </summary>
         public void GenerateCeiling(Map map)
         {
             mapIndex = map.index;
 
-            var ceilingBuilder = new CeilingBuilder(map);
-            ceilingBuilder.Build();
-            ceilingMesh = ceilingBuilder.mesh;
-            outlines = ceilingBuilder.outlines;
+            IMeshBuilder ceilingBuilder = new CeilingBuilder(map);
+            ceilingMesh = ceilingBuilder.Build();
+
+            ComputeMeshOutlines();
         }
 
         /// <summary>
@@ -46,9 +37,8 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public void GenerateWalls(int wallsPerTextureTile, int wallHeight)
         {
-            var wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines, wallsPerTextureTile, wallHeight);
-            wallBuilder.Build();
-            wallMesh = wallBuilder.mesh;
+            IMeshBuilder wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines, wallsPerTextureTile, wallHeight);
+            wallMesh = wallBuilder.Build();
         }
 
         /// <summary>
@@ -56,9 +46,8 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public void GenerateFloor(Map map)
         {
-            var floorBuilder = new FloorBuilder(map);
-            floorBuilder.Build();
-            floorMesh = floorBuilder.mesh;
+            IMeshBuilder floorBuilder = new FloorBuilder(map);
+            floorMesh = floorBuilder.Build();
         }
 
         /// <summary>
@@ -67,9 +56,8 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public void GenerateEnclosure(int wallHeight)
         {
-            var enclosureBuilder = new EnclosureBuilder(floorMesh, wallHeight);
-            enclosureBuilder.Build();
-            enclosureMesh = enclosureBuilder.mesh;
+            IMeshBuilder enclosureBuilder = new EnclosureBuilder(floorMesh, wallHeight);
+            enclosureMesh = enclosureBuilder.Build();
         }
 
         /// <summary>
@@ -78,7 +66,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetCeilingMesh()
         {
-            return BuildMesh(ceilingMesh, ceilingName);
+            return BuildMesh(ceilingMesh);
         }
 
         /// <summary>
@@ -86,7 +74,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetWallMesh()
         {
-            return BuildMesh(wallMesh, wallName);
+            return BuildMesh(wallMesh);
         }
 
         /// <summary>
@@ -95,7 +83,7 @@ namespace CaveGeneration.MeshGeneration
         /// <returns></returns>
         public Mesh GetFloorMesh()
         {
-            return BuildMesh(floorMesh, floorName);
+            return BuildMesh(floorMesh);
         }
 
         /// <summary>
@@ -104,7 +92,13 @@ namespace CaveGeneration.MeshGeneration
         /// <returns></returns>
         public Mesh GetEnclosureMesh()
         {
-            return BuildMesh(enclosureMesh, enclosureName);
+            return BuildMesh(enclosureMesh);
+        }
+
+        void ComputeMeshOutlines()
+        {
+            OutlineGenerator outlineGenerator = new OutlineGenerator(ceilingMesh.vertices, ceilingMesh.triangles);
+            outlines = outlineGenerator.GenerateOutlines();
         }
 
         /// <summary>
@@ -126,14 +120,14 @@ namespace CaveGeneration.MeshGeneration
             return outlines2D;
         }
 
-        Mesh BuildMesh(MeshData meshData, string name)
+        Mesh BuildMesh(MeshData meshData)
         {
             Mesh mesh = new Mesh();
             mesh.vertices = meshData.vertices;
             mesh.triangles = meshData.triangles;
             mesh.RecalculateNormals();
             mesh.uv = meshData.uv;
-            mesh.name = name + " " + mapIndex;
+            mesh.name = meshData.name + " " + mapIndex;
             return mesh;
         }
     } 

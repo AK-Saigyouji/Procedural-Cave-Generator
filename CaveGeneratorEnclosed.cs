@@ -26,7 +26,7 @@ namespace CaveGeneration
             Mesh wallMesh = CreateWall(meshGenerator, sector);
             Mesh floorMesh = CreateFloor(meshGenerator, sector);
             Mesh enclosureMesh = CreateEnclosure(meshGenerator, sector);
-            return new MapMeshes(wallMesh: wallMesh, floorMesh: floorMesh);
+            return new MapMeshes(wallMesh, floorMesh, enclosureMesh);
         }
 
         Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)

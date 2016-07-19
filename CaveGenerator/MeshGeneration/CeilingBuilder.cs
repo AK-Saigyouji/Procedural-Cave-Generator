@@ -8,13 +8,12 @@ namespace CaveGeneration.MeshGeneration
     /// Responsible for generating all the data related to the ceiling / base of the map, namely its outline and all
     /// data required to construct the mesh. 
     /// </summary>
-    class CeilingBuilder
+    class CeilingBuilder : IMeshBuilder
     {
         Map map;
-        IDictionary<int, List<Triangle>> triangleMap;
+        MeshData mesh;
 
-        public MeshData mesh { get; private set; }
-        public List<Outline> outlines { get; private set; }
+        const string name = "Ceiling Mesh";
 
         public CeilingBuilder(Map map)
         {
@@ -25,11 +24,12 @@ namespace CaveGeneration.MeshGeneration
         /// Generates the data for the ceiling mesh, along with a table associating vertices (by index) to 
         /// the triangles containing them. 
         /// </summary>
-        public void Build()
+        public MeshData Build()
         {
             TriangulateMap();
             ComputeCeilingUVArray();
-            ComputeMeshOutlines();
+            mesh.name = name;
+            return mesh;
         }
 
         void TriangulateMap()
@@ -40,8 +40,6 @@ namespace CaveGeneration.MeshGeneration
             mesh = new MeshData();
             mesh.vertices = mapTriangulator.meshVertices;
             mesh.triangles = mapTriangulator.meshTriangles;
-
-            triangleMap = mapTriangulator.vertexIndexToTriangles;
         }
 
         void ComputeCeilingUVArray()
@@ -57,12 +55,6 @@ namespace CaveGeneration.MeshGeneration
                 uv[i] = new Vector2(percentX, percentY);
             }
             mesh.uv = uv;
-        }
-
-        void ComputeMeshOutlines()
-        {
-            OutlineGenerator outlineGenerator = new OutlineGenerator(mesh.vertices, triangleMap);
-            outlines = outlineGenerator.GenerateOutlines();
         }
     } 
 }

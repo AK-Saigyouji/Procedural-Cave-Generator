@@ -8,36 +8,15 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     public class MapMeshes
     {
-        public Mesh wallMesh { get; private set; }
-        public Mesh ceilingMesh { get; private set; }
-        public Mesh floorMesh { get; private set; }
+        Mesh[] meshes;
 
         private MapMeshes() { }
 
-        public MapMeshes(Mesh ceilingMesh = null, Mesh wallMesh = null, Mesh floorMesh = null)
+        public MapMeshes(params Mesh[] meshes)
         {
-            this.ceilingMesh = ceilingMesh;
-            this.wallMesh = wallMesh;
-            this.floorMesh = floorMesh;
+            this.meshes = meshes;
         }
 
-        /// <summary>
-        /// Get an iterable object containing the meshes that are not null.
-        /// </summary>
-        public IEnumerable<Mesh> ExtractMeshes()
-        {
-            if (floorMesh != null)
-            {
-                yield return floorMesh;
-            }
-            if (wallMesh != null)
-            {
-                yield return wallMesh;
-            }
-            if (ceilingMesh != null)
-            {
-                yield return ceilingMesh;
-            }
-        }
+        public IEnumerable<Mesh> Meshes { get { return meshes; } }
     } 
 }

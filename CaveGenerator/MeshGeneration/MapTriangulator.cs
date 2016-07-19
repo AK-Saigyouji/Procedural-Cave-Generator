@@ -49,7 +49,6 @@ namespace CaveGeneration.MeshGeneration
             new Vector2(0f, 0.5f)
         };
 
-        bool meshOnly;
         int[] vertexIndices;
         Map map;
         Dictionary<int, int> positionToVertexIndex;
@@ -59,22 +58,15 @@ namespace CaveGeneration.MeshGeneration
 
         const int MAX_VERTICES_IN_TRIANGULATION = 6;
 
-        /// <summary>
-        /// Map associating vertices to a list of triangles containing that vertex. Vertices are given by
-        /// their index into the meshVertices array.
-        /// </summary>
-        public IDictionary<int, List<Triangle>> vertexIndexToTriangles { get; private set; }
         public Vector3[] meshVertices { get { return LocalToGlobalPositions(localVertices); } }
         public int[] meshTriangles { get { return triangles.ToArray(); } }
 
-        public MapTriangulator(Map map, bool meshOnly = false)
+        public MapTriangulator(Map map)
         {
             this.map = map;
-            this.meshOnly = meshOnly;
             vertexIndices = new int[MAX_VERTICES_IN_TRIANGULATION];
             localVertices = new List<Vector2>();
             triangles = new List<int>();
-            vertexIndexToTriangles = new Dictionary<int, List<Triangle>>();
             positionToVertexIndex = new Dictionary<int, int>();
         }
 
@@ -104,7 +96,7 @@ namespace CaveGeneration.MeshGeneration
         {
             int[] points = configurationTable[configuration];
             SetVertexIndices(points, x, y);
-            CreateTriangles(points.Length);
+            AddTriangles(points.Length);
         }
 
         void SetVertexIndices(int[] points, int x, int y)
@@ -135,42 +127,20 @@ namespace CaveGeneration.MeshGeneration
             return vertexIndex;
         }
 
-        void CreateTriangles(int numVertices)
+        void AddTriangles(int numVertices)
         {
             int numTriangles = numVertices - 2;
             for (int i = 0; i < numTriangles; i++)
             {
-                CreateTriangle(vertexIndices[0], vertexIndices[i + 1], vertexIndices[i + 2]);
+                AddTriangle(vertexIndices[0], vertexIndices[i + 1], vertexIndices[i + 2]);
             }
         }
 
-        void CreateTriangle(int a, int b, int c)
+        void AddTriangle(int a, int b, int c)
         {
             triangles.Add(a);
             triangles.Add(b);
             triangles.Add(c);
-
-            if (!meshOnly)
-            {
-                Triangle triangle = new Triangle(a, b, c);
-                AddTriangleToTable(a, triangle);
-                AddTriangleToTable(b, triangle);
-                AddTriangleToTable(c, triangle); 
-            }
-        }
-
-        void AddTriangleToTable(int index, Triangle triangle)
-        {
-            List<Triangle> triangles;
-            if (vertexIndexToTriangles.TryGetValue(index, out triangles))
-            {
-                triangles.Add(triangle);
-            }
-            else
-            {
-                triangles = new List<Triangle> { triangle };
-                vertexIndexToTriangles[index] = triangles;
-            }
         }
 
         Vector3[] LocalToGlobalPositions(List<Vector2> localPositions)

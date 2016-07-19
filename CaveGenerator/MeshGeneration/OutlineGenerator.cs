@@ -12,21 +12,18 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     class OutlineGenerator
     {
-        IList<Vector3> vertices;
-        IDictionary<int, List<Triangle>> vertexIndexToContainingTriangles;
+        Vector3[] vertices;
+        Dictionary<int, List<Triangle>> trianglesContainingIndex;
 
         List<Outline> outlines;
-        bool[] checkedVertices;
+        bool[] visited;
 
         const int MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX = 3;
 
-        /// <summary>
-        /// Initialize the generator using the output of an appropriate triangulator. 
-        /// </summary>
-        public OutlineGenerator(IList<Vector3> vertices, IDictionary<int, List<Triangle>> vertexIndexToContainingTriangles)
+        public OutlineGenerator(Vector3[] vertices, int[] triangles)
         {
             this.vertices = vertices;
-            this.vertexIndexToContainingTriangles = vertexIndexToContainingTriangles;
+            trianglesContainingIndex = DetermineContainingTriangles(triangles);
             outlines = new List<Outline>();
         }
 
@@ -37,15 +34,46 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public List<Outline> GenerateOutlines()
         {
-            checkedVertices = new bool[vertices.Count];
-            for (int vertexIndex = 0; vertexIndex < vertices.Count; vertexIndex++)
+            visited = new bool[vertices.Length];
+            for (int vertexIndex = 0; vertexIndex < vertices.Length; vertexIndex++)
             {
-                if (!checkedVertices[vertexIndex] && MustBeOutlineVertex(vertexIndex))
+                if (!visited[vertexIndex] && MustBeOutlineVertex(vertexIndex))
                 {
                     GenerateOutlineFromPoint(vertexIndex);
                 }
             }
             return outlines;
+        }
+
+        Dictionary<int, List<Triangle>> DetermineContainingTriangles(int[] triangles)
+        {
+            var indexToTriangles = new Dictionary<int, List<Triangle>>();
+            for (int i = 0; i < triangles.Length; i += 3)
+            {
+                int a = triangles[i];
+                int b = triangles[i + 1];
+                int c = triangles[i + 2];
+
+                Triangle triangle = new Triangle(a, b, c);
+                AddTriangleToTable(indexToTriangles, a, triangle);
+                AddTriangleToTable(indexToTriangles, b, triangle);
+                AddTriangleToTable(indexToTriangles, c, triangle);
+            }
+            return indexToTriangles;
+        }
+
+        void AddTriangleToTable(Dictionary<int, List<Triangle>> table, int index, Triangle triangle)
+        {
+            List<Triangle> triangles;
+            if (table.TryGetValue(index, out triangles))
+            {
+                triangles.Add(triangle);
+            }
+            else
+            {
+                triangles = new List<Triangle> { triangle };
+                table[index] = triangles;
+            }
         }
 
         /// <summary>
@@ -55,12 +83,13 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         bool MustBeOutlineVertex(int vertexIndex)
         {
-            return vertexIndexToContainingTriangles[vertexIndex].Count <= MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX;
+            int numTrianglesContainingVertex = trianglesContainingIndex[vertexIndex].Count;
+            return numTrianglesContainingVertex <= MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX;
         }
 
         void GenerateOutlineFromPoint(int startVertexIndex)
         {
-            checkedVertices[startVertexIndex] = true;
+            visited[startVertexIndex] = true;
             Outline outline = new Outline();
 
             outline.Add(startVertexIndex);
@@ -76,14 +105,14 @@ namespace CaveGeneration.MeshGeneration
             if (vertexIndex == -1)
                 return;
             outline.Add(vertexIndex);
-            checkedVertices[vertexIndex] = true;
+            visited[vertexIndex] = true;
             int nextVertexIndex = GetConnectedOutlineVertex(vertexIndex, outline.Count);
             FollowOutline(nextVertexIndex, outline);
         }
 
         int GetInitialConnectedOutlineVertex(int startIndex)
         {
-            foreach (Triangle triangle in vertexIndexToContainingTriangles[startIndex])
+            foreach (Triangle triangle in trianglesContainingIndex[startIndex])
             {
                 foreach (int nextIndex in triangle.vertices)
                 {
@@ -98,11 +127,11 @@ namespace CaveGeneration.MeshGeneration
 
         int GetConnectedOutlineVertex(int currentIndex, int outlineSize)
         {
-            foreach (Triangle triangle in vertexIndexToContainingTriangles[currentIndex])
+            foreach (Triangle triangle in trianglesContainingIndex[currentIndex])
             {
                 foreach (int nextIndex in triangle.vertices)
                 {
-                    if (!checkedVertices[nextIndex] && IsOutlineEdge(currentIndex, nextIndex))
+                    if (!visited[nextIndex] && IsOutlineEdge(currentIndex, nextIndex))
                     {
                         return nextIndex;
                     }
@@ -122,7 +151,7 @@ namespace CaveGeneration.MeshGeneration
         bool DoVerticesShareMultipleTriangles(int vertexA, int vertexB)
         {
             int sharedTriangleCount = 0;
-            foreach (Triangle triangle in vertexIndexToContainingTriangles[vertexA])
+            foreach (Triangle triangle in trianglesContainingIndex[vertexA])
             {
                 if (triangle.Contains(vertexB))
                 {
