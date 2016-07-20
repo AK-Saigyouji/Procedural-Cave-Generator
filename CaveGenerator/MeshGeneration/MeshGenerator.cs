@@ -35,9 +35,9 @@ namespace CaveGeneration.MeshGeneration
         /// Generate the data necessary to produce the wall mesh. Must first run GenerateCeiling. Note that this will
         /// raise the ceiling to accommodate the walls. 
         /// </summary>
-        public void GenerateWalls(int wallsPerTextureTile, int wallHeight)
+        public void GenerateWalls(int wallHeight)
         {
-            IMeshBuilder wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines, wallsPerTextureTile, wallHeight);
+            IMeshBuilder wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines, wallHeight);
             wallMesh = wallBuilder.Build();
         }
 

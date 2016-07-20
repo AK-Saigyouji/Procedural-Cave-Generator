@@ -13,7 +13,7 @@ namespace CaveGeneration
         public Material wallMaterial;
         public Material floorMaterial;
 
-        Quaternion ORIENTATION_2D = Quaternion.Euler(270f, 0f, 0f);
+        readonly Quaternion ORIENTATION_2D = Quaternion.Euler(270f, 0f, 0f);
 
         override protected MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index)
         {
@@ -32,7 +32,7 @@ namespace CaveGeneration
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject parent)
         {
             Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
-            GameObject wall = CreateGameObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial);
+            GameObject wall = CreateGameObjectFromMesh(ceilingMesh, "Walls", parent, wallMaterial, false);
             Orient2D(wall);
             RemoveExistingColliders(wall);
             AddColliders(wall, meshGenerator);
@@ -42,7 +42,7 @@ namespace CaveGeneration
         Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh floorMesh = meshGenerator.GetFloorMesh();
-            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
+            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial, false);
             Orient2D(floor);
             return floorMesh;
         }

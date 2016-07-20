@@ -93,19 +93,27 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Generate all the data in the MeshGenerator in preparation for the creation of meshes.
+        /// Generate all the data in the MeshGenerator in preparation for the creation of meshes. This method may
+        /// get executed outside of the main thread, so don't touch the Unity API when implementing.
         /// </summary>
         abstract protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map);
 
         abstract protected MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index);
 
-        protected GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
+        protected GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material, bool castShadows)
         {
             GameObject newObject = new GameObject(name, typeof(MeshRenderer), typeof(MeshFilter));
             newObject.transform.parent = parent == null ? null : parent.transform;
             newObject.GetComponent<MeshFilter>().mesh = mesh;
             newObject.GetComponent<MeshRenderer>().material = material;
+            SetShadowCastingMode(newObject.GetComponent<MeshRenderer>(), castShadows);
             return newObject;
+        }
+
+        void SetShadowCastingMode(MeshRenderer meshRenderer, bool castShadows)
+        {
+            meshRenderer.shadowCastingMode = 
+                castShadows ? UnityEngine.Rendering.ShadowCastingMode.TwoSided : UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         protected GameObject CreateSector(int sectorIndex)

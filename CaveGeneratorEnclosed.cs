@@ -10,12 +10,11 @@ namespace CaveGeneration
         public Material enclosureMaterial;
         public Material wallMaterial;
         public Material floorMaterial;
-        public int wallsPerTextureTile = 5;
 
         protected override void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
             meshGenerator.GenerateCeiling(map);
-            meshGenerator.GenerateWalls(wallsPerTextureTile, wallHeight);
+            meshGenerator.GenerateWalls(wallHeight);
             meshGenerator.GenerateFloor(map);
             meshGenerator.GenerateEnclosure(wallHeight);
         }
@@ -32,7 +31,7 @@ namespace CaveGeneration
         Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh wallMesh = meshGenerator.GetWallMesh();
-            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
+            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial, true);
             AddMeshCollider(wall, wallMesh);
             return wallMesh;
         }
@@ -40,7 +39,7 @@ namespace CaveGeneration
         Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh floorMesh = meshGenerator.GetFloorMesh();
-            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
+            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial, false);
             AddMeshCollider(floor, floorMesh);
             return floorMesh;
         }
@@ -48,8 +47,7 @@ namespace CaveGeneration
         Mesh CreateEnclosure(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh enclosureMesh = meshGenerator.GetEnclosureMesh();
-            GameObject enclosure = CreateGameObjectFromMesh(enclosureMesh, "Enclosure", sector, enclosureMaterial);
-            AddMeshCollider(enclosure, enclosureMesh);
+            GameObject enclosure = CreateGameObjectFromMesh(enclosureMesh, "Enclosure", sector, enclosureMaterial, false);
             return enclosureMesh;
         }
 

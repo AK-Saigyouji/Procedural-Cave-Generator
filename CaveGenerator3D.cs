@@ -15,12 +15,11 @@ namespace CaveGeneration
         public Material ceilingMaterial;
         public Material wallMaterial;
         public Material floorMaterial;
-        public int wallsPerTextureTile = 5;
 
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
             meshGenerator.GenerateCeiling(map);
-            meshGenerator.GenerateWalls(wallsPerTextureTile, wallHeight);
+            meshGenerator.GenerateWalls(wallHeight);
             meshGenerator.GenerateFloor(map);
         }
 
@@ -36,14 +35,14 @@ namespace CaveGeneration
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
-            CreateGameObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial);
+            CreateGameObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial, false);
             return ceilingMesh;
         }
 
         Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh wallMesh = meshGenerator.GetWallMesh();
-            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
+            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial, true);
             AddMeshCollider(wall, wallMesh);
             return wallMesh;
         }
@@ -51,7 +50,7 @@ namespace CaveGeneration
         Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh floorMesh = meshGenerator.GetFloorMesh();
-            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
+            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial, false);
             AddMeshCollider(floor, floorMesh);
             return floorMesh;
         }

@@ -40,9 +40,9 @@ public class MapGeneratorEditor : Editor {
         CreateCavePrefab(path, caveGenerator.cave);
     }
 
-    void CreateMeshAssets(MapMeshes meshes, string path)
+    void CreateMeshAssets(MapMeshes mapMeshes, string path)
     {
-        foreach (Mesh mesh in meshes.GetMeshes())
+        foreach (Mesh mesh in mapMeshes.Meshes)
         {
             AssetDatabase.CreateAsset(mesh, path + mesh.name + ".mesh");
         }
