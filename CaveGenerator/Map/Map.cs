@@ -24,7 +24,7 @@ namespace CaveGeneration
         public Vector3 position { get; private set; }
         public int index { get; private set; }
 
-        static public readonly int maxSubmapSize = 100;
+        static public readonly int maxSubmapSize = 200;
 
         public Map(int length, int width, int squareSize)
         {

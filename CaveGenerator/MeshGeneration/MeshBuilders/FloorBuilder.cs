@@ -6,21 +6,23 @@ namespace CaveGeneration.MeshGeneration
 {
     public class FloorBuilder : IMeshBuilder
     {
-
         MeshData mesh;
         Map map;
+        IHeightMap heightMap;
 
         const string name = "Floor Mesh";
 
-        public FloorBuilder(Map map)
+        public FloorBuilder(Map map, IHeightMap heightMap)
         {
             this.map = map;
+            this.heightMap = heightMap;
         }
 
         public MeshData Build()
         {
             InvertMap();
             TriangulateMap();
+            ApplyHeightMap();
             ComputeUV();
             mesh.name = name;
             return mesh;
@@ -39,6 +41,18 @@ namespace CaveGeneration.MeshGeneration
             mapTriangulator.Triangulate();
             mesh.triangles = mapTriangulator.meshTriangles;
             mesh.vertices = mapTriangulator.meshVertices;
+        }
+
+        void ApplyHeightMap()
+        {
+            if (heightMap != null)
+            {
+                for (int i = 0; i < mesh.vertices.Length; i++)
+                {
+                    Vector3 vertex = mesh.vertices[i];
+                    mesh.vertices[i].y += heightMap.GetHeight(vertex.x, vertex.z);
+                }
+            }
         }
 
         void ComputeUV()

@@ -5,7 +5,7 @@ namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
     /// Produces meshes and colliders for Map objects. Break large maps into smaller maps before generating meshes.
-    /// Maps should not be larger than 100 by 100.
+    /// Maps should not be larger than 200 by 200.
     /// </summary>
     public class MeshGenerator
     {
@@ -33,20 +33,20 @@ namespace CaveGeneration.MeshGeneration
 
         /// <summary>
         /// Generate the data necessary to produce the wall mesh. Must first run GenerateCeiling. Note that this will
-        /// raise the ceiling to accommodate the walls. 
+        /// raise the ceiling to accommodate the walls.
         /// </summary>
-        public void GenerateWalls(int wallHeight)
+        public void GenerateWalls(int wallHeight, IHeightMap heightMap = null)
         {
-            IMeshBuilder wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines, wallHeight);
+            IMeshBuilder wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines, wallHeight, heightMap);
             wallMesh = wallBuilder.Build();
         }
 
         /// <summary>
         /// Generate the data necessary to produce the floor mesh. Must first run GenerateCeiling. 
         /// </summary>
-        public void GenerateFloor(Map map)
+        public void GenerateFloor(Map map, IHeightMap heightMap = null)
         {
-            IMeshBuilder floorBuilder = new FloorBuilder(map);
+            IMeshBuilder floorBuilder = new FloorBuilder(map, heightMap);
             floorMesh = floorBuilder.Build();
         }
 
@@ -54,9 +54,9 @@ namespace CaveGeneration.MeshGeneration
         /// Generate the data necessary to produce the enclosure mesh. The enclosure refers to the part that hangs
         /// over the walkable areas of the map, effectively enclosing the cave. Must first run GenerateFloor.
         /// </summary>
-        public void GenerateEnclosure(int wallHeight)
+        public void GenerateEnclosure(int wallHeight, IHeightMap heightMap = null)
         {
-            IMeshBuilder enclosureBuilder = new EnclosureBuilder(floorMesh, wallHeight);
+            IMeshBuilder enclosureBuilder = new EnclosureBuilder(floorMesh, wallHeight, heightMap);
             enclosureMesh = enclosureBuilder.Build();
         }
 
@@ -66,7 +66,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetCeilingMesh()
         {
-            return BuildMesh(ceilingMesh);
+            return CreateMesh(ceilingMesh);
         }
 
         /// <summary>
@@ -74,25 +74,23 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetWallMesh()
         {
-            return BuildMesh(wallMesh);
+            return CreateMesh(wallMesh);
         }
 
         /// <summary>
         /// Create and return the floor mesh. Must first run GenerateEnclosure.
         /// </summary>
-        /// <returns></returns>
         public Mesh GetFloorMesh()
         {
-            return BuildMesh(floorMesh);
+            return CreateMesh(floorMesh);
         }
 
         /// <summary>
         /// Create a return the enclosure mesh. Must first run GenerateFloors.
         /// </summary>
-        /// <returns></returns>
         public Mesh GetEnclosureMesh()
         {
-            return BuildMesh(enclosureMesh);
+            return CreateMesh(enclosureMesh);
         }
 
         void ComputeMeshOutlines()
@@ -120,7 +118,7 @@ namespace CaveGeneration.MeshGeneration
             return outlines2D;
         }
 
-        Mesh BuildMesh(MeshData meshData)
+        Mesh CreateMesh(MeshData meshData)
         {
             Mesh mesh = new Mesh();
             mesh.vertices = meshData.vertices;

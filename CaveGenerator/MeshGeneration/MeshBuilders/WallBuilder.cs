@@ -10,14 +10,17 @@ namespace CaveGeneration.MeshGeneration
         int wallHeight;
         List<Outline> outlines;
         MeshData mesh;
+        IHeightMap heightMap;
 
+        const float UVSCALE = 3f;
         const string name = "Wall Mesh";
 
-        public WallBuilder(Vector3[] ceilingVertices, List<Outline> outlines, int wallHeight)
+        public WallBuilder(Vector3[] ceilingVertices, List<Outline> outlines, int wallHeight, IHeightMap heightMap)
         {
             this.ceilingVertices = ceilingVertices;
             this.wallHeight = wallHeight;
             this.outlines = outlines;
+            this.heightMap = heightMap;
         }
 
         /// <summary>
@@ -26,23 +29,49 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public MeshData Build()
         {
+            RaiseCeiling();
+            ApplyHeightMap();
+            CreateMesh();
+            return mesh;
+        }
+
+        void CreateMesh()
+        {
             int outlineEdgeCount = outlines.Select(outline => outline.Count - 1).Sum();
             int outlineVertexCount = outlineEdgeCount + outlines.Count;
-            RaiseCeiling(wallHeight);
 
             mesh = new MeshData();
             mesh.name = name;
             mesh.vertices = GetVertices(outlineVertexCount);
             mesh.triangles = GetTriangles(outlineEdgeCount);
             mesh.uv = GetUVs(outlineVertexCount);
-            return mesh;
         }
 
-        void RaiseCeiling(int height)
+        void RaiseCeiling()
         {
             for (int i = 0; i < ceilingVertices.Length; i++)
             {
-                ceilingVertices[i].y += height;
+                ceilingVertices[i].y = wallHeight;
+            }
+        }
+
+        void ApplyHeightMap()
+        {
+            if (heightMap != null)
+            {
+                float offset = 0.5f;
+                for (int i = 0; i < ceilingVertices.Length; i++)
+                {
+                    Vector3 vertex = ceilingVertices[i];
+                    ceilingVertices[i].y += offset + heightMap.GetHeight(vertex.x, vertex.z);
+                }
+                foreach (Outline outline in outlines)
+                {
+                    for (int i = 1; i < outline.Count; i++)
+                    {
+                        ceilingVertices[outline[i]].y -= offset;
+                    }
+                } 
             }
         }
 
@@ -63,7 +92,6 @@ namespace CaveGeneration.MeshGeneration
             return vertices;
         }
 
-
         Vector2[] GetUVs(int outlineEdgeCount)
         {
             Vector2[] uv = new Vector2[2 * outlineEdgeCount];
@@ -72,13 +100,13 @@ namespace CaveGeneration.MeshGeneration
             foreach (Outline outline in outlines)
             {
                 float xPercentage = 0f;
+                float yPercentage = wallHeight / UVSCALE;
                 float increment = ComputeUVIncrement(outline);
-                for (int i = 0; i < outline.Count; i++)
+                for (int i = 0; i < outline.Count; i++, vertexIndex += 2)
                 {
                     xPercentage += ComputeDistanceTo(outline, i) * increment;
-                    uv[vertexIndex] = new Vector2(xPercentage, 1f);
+                    uv[vertexIndex] = new Vector2(xPercentage, yPercentage);
                     uv[vertexIndex + 1] = new Vector2(xPercentage, 0f);
-                    vertexIndex += 2;
                 }
             }
             return uv;
@@ -86,9 +114,8 @@ namespace CaveGeneration.MeshGeneration
 
         float ComputeUVIncrement(Outline outline)
         {
-            int scale = wallHeight;
             float outlineDistance = ComputeOutlineDistance(outline);
-            float increment = (1f / (outlineDistance)) * (int)(outlineDistance / scale);
+            float increment = ((int)(outlineDistance / UVSCALE)) / outlineDistance;
             return increment;
         }
 
@@ -120,7 +147,7 @@ namespace CaveGeneration.MeshGeneration
             foreach (Outline outline in outlines)
             {
                 int numEdges = outline.Count - 1;
-                for (int i = 0; i < numEdges; i++, triangleIndex+=6, currentVertex+=2) 
+                for (int i = 0; i < numEdges; i++, triangleIndex += 6, currentVertex += 2)
                 {
                     AddQuadAtIndex(triangles, triangleIndex, currentVertex);
                 }

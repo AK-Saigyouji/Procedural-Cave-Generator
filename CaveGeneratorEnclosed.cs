@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using CaveGeneration.MeshGeneration;
-using System.Collections;
 
 namespace CaveGeneration
 {
@@ -11,12 +10,21 @@ namespace CaveGeneration
         public Material wallMaterial;
         public Material floorMaterial;
 
+        IHeightMap floorHeightMap;
+        IHeightMap enclosureHeightMap;
+
+        protected override void PrepareHeightMaps()
+        {
+            floorHeightMap = GetFloorHeightMap();
+            enclosureHeightMap = GetMainHeightMap();
+        }
+
         protected override void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
             meshGenerator.GenerateCeiling(map);
             meshGenerator.GenerateWalls(wallHeight);
-            meshGenerator.GenerateFloor(map);
-            meshGenerator.GenerateEnclosure(wallHeight);
+            meshGenerator.GenerateFloor(map, floorHeightMap);
+            meshGenerator.GenerateEnclosure(wallHeight, enclosureHeightMap);
         }
 
         protected override MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index)
@@ -47,7 +55,7 @@ namespace CaveGeneration
         Mesh CreateEnclosure(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh enclosureMesh = meshGenerator.GetEnclosureMesh();
-            GameObject enclosure = CreateGameObjectFromMesh(enclosureMesh, "Enclosure", sector, enclosureMaterial, false);
+            CreateGameObjectFromMesh(enclosureMesh, "Enclosure", sector, enclosureMaterial, false);
             return enclosureMesh;
         }
 
@@ -55,6 +63,26 @@ namespace CaveGeneration
         {
             MeshCollider collider = gameObject.AddComponent<MeshCollider>();
             collider.sharedMesh = mesh;
+        }
+
+        IHeightMap GetFloorHeightMap()
+        {
+            HeightMapFloor heightMap = GetComponent<HeightMapFloor>();
+            if (heightMap != null)
+            {
+                heightMap.Create(seed.GetHashCode());
+            }
+            return heightMap;
+        }
+
+        IHeightMap GetMainHeightMap()
+        {
+            HeightMapMain heightMap = GetComponent<HeightMapMain>();
+            if (heightMap != null)
+            {
+                heightMap.Create(seed.GetHashCode());
+            }
+            return heightMap;
         }
     }
 }

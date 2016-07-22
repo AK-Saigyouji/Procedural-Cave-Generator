@@ -16,11 +16,20 @@ namespace CaveGeneration
         public Material wallMaterial;
         public Material floorMaterial;
 
+        IHeightMap ceilingHeightMap;
+        IHeightMap floorHeightMap;
+
+        protected override void PrepareHeightMaps()
+        {
+            floorHeightMap = GetFloorHeightMap();
+            ceilingHeightMap = GetMainHeightMap();
+        }
+
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
             meshGenerator.GenerateCeiling(map);
-            meshGenerator.GenerateWalls(wallHeight);
-            meshGenerator.GenerateFloor(map);
+            meshGenerator.GenerateWalls(wallHeight, ceilingHeightMap);
+            meshGenerator.GenerateFloor(map, floorHeightMap);
         }
 
         protected override MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index)
@@ -59,6 +68,26 @@ namespace CaveGeneration
         {
             MeshCollider collider = gameObject.AddComponent<MeshCollider>();
             collider.sharedMesh = mesh;
+        }
+
+        IHeightMap GetFloorHeightMap()
+        {
+            HeightMapFloor heightMap = GetComponent<HeightMapFloor>();
+            if (heightMap != null)
+            {
+                heightMap.Create(seed.GetHashCode());
+            }
+            return heightMap;
+        }
+
+        IHeightMap GetMainHeightMap()
+        {
+            HeightMapMain heightMap = GetComponent<HeightMapMain>();
+            if (heightMap != null)
+            {
+                heightMap.Create(seed.GetHashCode());
+            }
+            return heightMap;
         }
     } 
 }
