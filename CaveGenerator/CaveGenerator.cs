@@ -8,37 +8,21 @@ namespace CaveGeneration
 {
     public abstract class CaveGenerator : MonoBehaviour
     {
-        public int length = 50;
-        public int width = 50;
-        [Range(0.4f, 0.6f)]
-        public float initialMapDensity = 0.5f;
-        public string seed;
-        public bool useRandomSeed = true;
-        public int borderSize = 0;
-        public int squareSize = 1;
-        public int minWallSize = 50;
-        public int minFloorSize = 50;
+        [SerializeField]
+        protected MapParameters mapParameters;
 
-        public GameObject cave { get; protected set; }
-        public List<MapMeshes> generatedMeshes { get; protected set; }
+        public GameObject Cave { get; protected set; }
+        public List<MapMeshes> GeneratedMeshes { get; protected set; }
+        public MapParameters MapParameters { get { return mapParameters; } protected set { } }
 
         /// <summary>
         /// Main method for creating cave objects. By default, the cave will be a child of the object holding the cave 
         /// generate script. 
         /// </summary>
-        public GameObject GenerateCaveUsingInspectorValues()
-        {
-            MapParameters parameters = new MapParameters(length: length, width: width, mapDensity: initialMapDensity, 
-                seed: seed, useRandomSeed: useRandomSeed, squareSize: squareSize, borderSize: borderSize,
-                minFloorSize: minFloorSize, minWallSize: minWallSize);
-
-            return GenerateCave(parameters);
-        }
-
-        protected GameObject GenerateCave(MapParameters parameters)
+        public GameObject GenerateCave()
         {
             DestroyChildren();
-            IMapGenerator mapGenerator = GetMapGenerator(parameters);
+            IMapGenerator mapGenerator = GetMapGenerator(mapParameters);
             Map map = mapGenerator.GenerateMap();
             return GenerateCaveFromMap(map);
         }
@@ -54,7 +38,7 @@ namespace CaveGeneration
         /// <returns>A game object holding the final result of the generator.</returns>
         virtual protected GameObject GenerateCaveFromMap(Map map)
         {
-            cave = CreateChild("Cave", transform);
+            Cave = CreateChild("Cave", transform);
             IList<Map> submaps = map.Subdivide();
             PrepareHeightMaps();
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
@@ -63,8 +47,8 @@ namespace CaveGeneration
             {
                 meshes.Add(CreateMeshes(meshGenerators[i], submaps[i].index));
             }
-            generatedMeshes = meshes;
-            return cave;
+            GeneratedMeshes = meshes;
+            return Cave;
         }
         
         /// <summary>
@@ -127,7 +111,7 @@ namespace CaveGeneration
 
         protected GameObject CreateSector(int sectorIndex)
         {
-            return CreateChild(name: "Sector " + sectorIndex, parent: cave.transform);
+            return CreateChild(name: "Sector " + sectorIndex, parent: Cave.transform);
         }
 
         protected GameObject CreateChild(string name, Transform parent)
@@ -149,6 +133,16 @@ namespace CaveGeneration
                 child.parent = null;
                 Destroy(child.gameObject);
             }
+        }
+
+        void Reset()
+        {
+            mapParameters.Reset();
+        }
+
+        void OnValidate()
+        {
+            mapParameters.OnValidate();
         }
     } 
 }

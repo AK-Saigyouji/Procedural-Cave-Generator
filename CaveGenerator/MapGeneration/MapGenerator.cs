@@ -33,17 +33,15 @@ namespace CaveGeneration.MapGeneration
 
         public void UpdateParameters(MapParameters parameters)
         {
-            parameters.Validate();
-
-            length = parameters.length;
-            width = parameters.length;
-            mapDensity = parameters.mapDensity;
-            seed = parameters.seed;
-            useRandomSeed = parameters.useRandomSeed;
-            borderSize = parameters.borderSize;
-            squareSize = parameters.squareSize;
-            minimumWallRegionSize = parameters.minWallSize;
-            MinimumFloorRegionSize = parameters.minFloorSize;
+            length = parameters.Length;
+            width = parameters.Width;
+            mapDensity = parameters.InitialMapDensity;
+            seed = parameters.Seed;
+            useRandomSeed = parameters.UseRandomSeed;
+            borderSize = parameters.BorderSize;
+            squareSize = parameters.SquareSize;
+            minimumWallRegionSize = parameters.MinWallSize;
+            MinimumFloorRegionSize = parameters.MinFloorSize;
         }
 
         /// <summary>

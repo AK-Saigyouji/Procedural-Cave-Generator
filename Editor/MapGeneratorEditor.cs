@@ -14,7 +14,7 @@ public class MapGeneratorEditor : Editor {
         {
             if (GUILayout.Button("Generate New Map"))
             {
-                caveGenerator.GenerateCaveUsingInspectorValues();
+                caveGenerator.GenerateCave();
             }
 
             if (GUILayout.Button("Create Prefab"))
@@ -26,18 +26,18 @@ public class MapGeneratorEditor : Editor {
 
     public void CreatePrefab(CaveGenerator caveGenerator)
     {
-        if (caveGenerator.cave == null)
+        if (caveGenerator.Cave == null)
         {
             Debug.Log("Cavegenerator: no cave object found!");
             return;
         }
         string guid = AssetDatabase.CreateFolder("Assets", "GeneratedCave");
         string path = AssetDatabase.GUIDToAssetPath(guid) + "/";
-        foreach (MapMeshes meshes in caveGenerator.generatedMeshes)
+        foreach (MapMeshes meshes in caveGenerator.GeneratedMeshes)
         {
             CreateMeshAssets(meshes, path);
         }
-        CreateCavePrefab(path, caveGenerator.cave);
+        CreateCavePrefab(path, caveGenerator.Cave);
     }
 
     void CreateMeshAssets(MapMeshes mapMeshes, string path)

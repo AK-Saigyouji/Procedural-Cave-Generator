@@ -13,7 +13,7 @@ namespace Utility
         static readonly int threadCount = 8;
 
         /// <summary>
-        /// .NET 3.5 implementation of a parallel foreach. Distributes the actions across multiple threads for faster 
+        /// Implementation of a parallel foreach. Distributes the actions across multiple threads for faster 
         /// computation. Actions must not touch the Unity API, or else Unity will lock up.
         /// </summary>
         static public void ParallelExecute(params Action[] actions)
