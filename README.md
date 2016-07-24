@@ -12,7 +12,7 @@ Note: The textures themselves are from a free asset pack called [Natural Tiling 
 
 ## 1. Using the procedural cave generator
 
-### In editor:
+### In editor
 
 Create a new empty game object, and attach one of the cave generator scripts: CaveGenerator2D, CaveGenerator3D, or CaveGeneratorEnclosed. Configure the parameters as desired in the inspector (tooltips have been implemented to give additional information on what each parameter does). Then run the scene, and you will see two buttons appear in the inspector to generate a new map or to create a prefab. Generating a new map will create a new cave, and attach it as a child to the empty game object, overwriting any previously generated cave. Creating a prefab will turn the current cave into a prefab and save it into your directory in a folder called "GeneratedCave". This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. 
 
