@@ -32,7 +32,7 @@ namespace CaveGeneration
         "of above 0.5 will end up larger.")]
         [SerializeField]
         float initialMapDensity;
-        public float InitialMapDensity
+        public float InitialDensity
         {
             get { return initialMapDensity; }
             set { SetMapDensity(value); }

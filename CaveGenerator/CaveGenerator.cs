@@ -12,6 +12,7 @@ namespace CaveGeneration
         protected MapParameters mapParameters;
 
         public GameObject Cave { get; protected set; }
+        public Map Map { get; private set; }
         public List<MapMeshes> GeneratedMeshes { get; protected set; }
         public MapParameters MapParameters { get { return mapParameters; } protected set { } }
 
@@ -19,24 +20,24 @@ namespace CaveGeneration
         /// Main method for creating cave objects. By default, the cave will be a child of the object holding the cave 
         /// generate script. 
         /// </summary>
-        public GameObject GenerateCave()
+        public void GenerateCave()
         {
             DestroyChildren();
-            IMapGenerator mapGenerator = GetMapGenerator(mapParameters);
-            Map map = mapGenerator.GenerateMap();
-            return GenerateCaveFromMap(map);
+            IMapGenerator mapGenerator = GetMapGenerator();
+            Map = mapGenerator.GenerateMap();
+            GenerateCaveFromMap(Map);
         }
 
-        virtual protected IMapGenerator GetMapGenerator(MapParameters parameters)
+        virtual protected IMapGenerator GetMapGenerator()
         {
-            return new MapGenerator(parameters);
+            return new MapGenerator(mapParameters);
         }
 
         /// <summary>
         /// Produces the actual game object from the map.
         /// </summary>
         /// <returns>A game object holding the final result of the generator.</returns>
-        virtual protected GameObject GenerateCaveFromMap(Map map)
+        virtual protected void GenerateCaveFromMap(Map map)
         {
             Cave = CreateChild("Cave", transform);
             IList<Map> submaps = map.Subdivide();
@@ -48,7 +49,6 @@ namespace CaveGeneration
                 meshes.Add(CreateMeshes(meshGenerators[i], submaps[i].index));
             }
             GeneratedMeshes = meshes;
-            return Cave;
         }
         
         /// <summary>
