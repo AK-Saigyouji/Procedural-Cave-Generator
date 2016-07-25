@@ -32,7 +32,7 @@ The following is a quick look under the hood of how the generator works.
 
 ### Map generation
 
-I've created an application that offers a visualization of the map generator and an overview of the underlying algorithms. It can be accessed [here](https://mapgenerator.azurewebsites.net/).
+I've created an application that offers a visualization of the map generator and an overview of the underlying algorithms. It can be accessed [here](https://ak-saigyouji.github.io).
 
 ### Mesh generation
 
