@@ -27,32 +27,34 @@ namespace CaveGeneration.MeshGeneration
 
             IMeshBuilder ceilingBuilder = new CeilingBuilder(map);
             ceilingMesh = ceilingBuilder.Build();
-
-            ComputeMeshOutlines();
         }
 
         /// <summary>
-        /// Generate the data necessary to produce the wall mesh. Must first run GenerateCeiling. Note that this will
-        /// raise the ceiling to accommodate the walls.
+        /// Generate the data necessary to produce the wall mesh. Must first generate ceiling. Note that this will
+        /// raise the ceiling to accommodate the walls, if one was generated.
         /// </summary>
         public void GenerateWalls(int wallHeight, IHeightMap heightMap = null)
         {
+            ComputeMeshOutlines();
+
             IMeshBuilder wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines, wallHeight, heightMap);
             wallMesh = wallBuilder.Build();
         }
 
         /// <summary>
-        /// Generate the data necessary to produce the floor mesh. Must first run GenerateCeiling. 
+        /// Generate the data necessary to produce the floor mesh. Must first generate ceiling. 
         /// </summary>
         public void GenerateFloor(Map map, IHeightMap heightMap = null)
         {
+            mapIndex = map.index;
+
             IMeshBuilder floorBuilder = new FloorBuilder(map, heightMap);
             floorMesh = floorBuilder.Build();
         }
 
         /// <summary>
         /// Generate the data necessary to produce the enclosure mesh. The enclosure refers to the part that hangs
-        /// over the walkable areas of the map, effectively enclosing the cave. Must first run GenerateFloor.
+        /// over the walkable areas of the map, enclosing the cave. Must first generate floor.
         /// </summary>
         public void GenerateEnclosure(int wallHeight, IHeightMap heightMap = null)
         {
@@ -61,7 +63,7 @@ namespace CaveGeneration.MeshGeneration
         }
 
         /// <summary>
-        /// Get the mesh for the ceiling/base component. Must first run GenerateCeiling to populate the data. If you plan
+        /// Get the mesh for the ceiling/base component. Must first generate ceiling to populate the data. If you plan
         /// to generate walls, do so before calling this method, as generating walls will raise the ceiling mesh. 
         /// </summary>
         public Mesh GetCeilingMesh()
@@ -70,7 +72,7 @@ namespace CaveGeneration.MeshGeneration
         }
 
         /// <summary>
-        /// Create and return the wall 3D wall mesh. Must first run GenerateWalls.
+        /// Create and return the wall 3D wall mesh. Must first generate walls.
         /// </summary>
         public Mesh GetWallMesh()
         {
@@ -78,7 +80,7 @@ namespace CaveGeneration.MeshGeneration
         }
 
         /// <summary>
-        /// Create and return the floor mesh. Must first run GenerateEnclosure.
+        /// Create and return the floor mesh. Must first generate floors.
         /// </summary>
         public Mesh GetFloorMesh()
         {
@@ -86,7 +88,7 @@ namespace CaveGeneration.MeshGeneration
         }
 
         /// <summary>
-        /// Create a return the enclosure mesh. Must first run GenerateFloors.
+        /// Create a return the enclosure mesh. Must first generate enclosure.
         /// </summary>
         public Mesh GetEnclosureMesh()
         {
@@ -101,9 +103,11 @@ namespace CaveGeneration.MeshGeneration
 
         /// <summary>
         /// Generates a list of arrays of 2D points corresponding to the vertices of the outlines of the walls.
+        /// Use after generating meshes.
         /// </summary>
         public List<Vector2[]> GetOutlines()
         {
+            ComputeMeshOutlines();
             List<Vector2[]> outlines2D = new List<Vector2[]>();
             foreach (Outline outline in outlines)
             {

@@ -23,10 +23,6 @@ namespace CaveGeneration.MeshGeneration
             this.heightMap = heightMap;
         }
 
-        /// <summary>
-        /// Generate the data necessary to produce the wall mesh. Must first run GenerateCeiling. Note that this will
-        /// raise the ceiling to accommodate the walls. 
-        /// </summary>
         public MeshData Build()
         {
             RaiseCeiling();

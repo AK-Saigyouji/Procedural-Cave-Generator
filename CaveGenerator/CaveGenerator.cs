@@ -23,10 +23,14 @@ namespace CaveGeneration
         /// </summary>
         public void GenerateCave()
         {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             DestroyChildren();
             IMapGenerator mapGenerator = GetMapGenerator();
             Map = mapGenerator.GenerateMap();
+            sw.Start();
             GenerateCaveFromMap(Map);
+            Utility.Stopwatch.Query(sw, "Time: ");
+
         }
 
         virtual protected IMapGenerator GetMapGenerator()

@@ -4,8 +4,8 @@ using System.Collections.Generic;
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Triangulates a Map according to the Marching Squares algorithm, yielding core mesh data (triangles and vertices)
-    /// along with a lookup table of the triangles containing each vertex.
+    /// Triangulates a Map according to the Marching Squares algorithm, yielding vertices and triangles ready to be
+    /// used in a mesh.
     /// </summary>
     class MapTriangulator
     {
@@ -71,10 +71,8 @@ namespace CaveGeneration.MeshGeneration
         }
 
         /// <summary>
-        /// Compute a triangulation for the map, producing mesh data (triangles and vertices) as well as a
-        /// map associating each vertex to the triangles containing it. 
+        /// Compute a triangulation for the map. 
         /// </summary>
-        /// <param name="meshOnly">If set to true, does not produce the vertex to triangle map.</param>
         public void Triangulate()
         {
             int numSquaresAcross = map.length - 1;
@@ -84,7 +82,7 @@ namespace CaveGeneration.MeshGeneration
                 for (int y = 0; y < numSquaresDeep; y++)
                 {
                     int configuration = ComputeConfiguration(map[x, y + 1], map[x + 1, y + 1], map[x + 1, y], map[x, y]);
-                    if (configuration != 0)
+                    if (configuration != 0) 
                     {
                         TriangulateSquare(configuration, x, y);
                     }
