@@ -25,8 +25,8 @@ namespace CaveGeneration.MapGeneration
         public Map GenerateMap()
         {
             MapBuilder builder = new MapBuilder(map.Length, map.Width, map.SquareSize);
-            builder.RandomFillMap(map.InitialDensity, GetSeed());
-            builder.SmoothMap();
+            builder.RandomFill(map.InitialDensity, GetSeed());
+            builder.Smooth();
             builder.RemoveSmallFloorRegions(map.MinFloorSize);
             builder.RemoveSmallWallRegions(map.MinWallSize);
             builder.ConnectFloors();

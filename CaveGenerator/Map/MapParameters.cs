@@ -31,6 +31,7 @@ namespace CaveGeneration
         "different. In particular, an initial map density of below 0.5 will end up smaller, while an initial density " +
         "of above 0.5 will end up larger.")]
         [SerializeField]
+        [Range(0.4f, 0.6f)]
         float initialMapDensity;
         public float InitialDensity
         {
@@ -113,7 +114,12 @@ namespace CaveGeneration
         const int DEFAULT_WALL_THRESHOLD = 50;
         const int DEFAULT_FLOOR_THRESHOLD = 50;
 
-        public void Reset()
+        public MapParameters()
+        {
+            Reset();
+        }
+        
+        void Reset()
         {
             length = DEFAULT_LENGTH;
             width = DEFAULT_WIDTH;

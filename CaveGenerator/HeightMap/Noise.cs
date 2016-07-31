@@ -13,11 +13,11 @@ namespace CaveGeneration
         const int OFFSET_MINIMUM = -100000;
         const int OFFSET_MAXIMUM = 100000;
 
-        public Noise(int numLayers, float amplitudeDecay, float frequencyGrowth, float scale, int seed)
+        public Noise(int numLayers, float amplitudePersistance, float frequencyGrowth, float scale, int seed)
         {
             this.scale = scale;
             offsets = CreateOffsets(seed, numLayers);
-            amplitudes = GetArrayOfExponents(amplitudeDecay, numLayers);
+            amplitudes = GetArrayOfExponents(amplitudePersistance, numLayers);
             frequencies = GetArrayOfExponents(frequencyGrowth, numLayers);
         }
 

@@ -13,12 +13,13 @@ namespace CaveGeneration
 
         public GameObject Cave { get; protected set; }
         public Map Map { get; private set; }
-        public List<MapMeshes> GeneratedMeshes { get; protected set; }
+        public IList<MapMeshes> GeneratedMeshes { get; protected set; }
         public MapParameters MapParameters { get { return mapParameters; } protected set { } }
 
         /// <summary>
         /// Main method for creating cave objects. By default, the cave will be a child of the object holding the cave 
-        /// generate script. 
+        /// generate script. Can also be accessed through the Cave property. Associated Map object can be accessed
+        /// through Map property.
         /// </summary>
         public void GenerateCave()
         {
@@ -34,23 +35,27 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Produces the actual game object from the map.
+        /// Produces the actual game object from the map as a child of the current game object. 
         /// </summary>
-        /// <returns>A game object holding the final result of the generator.</returns>
         virtual protected void GenerateCaveFromMap(Map map)
         {
             Cave = CreateChild("Cave", transform);
             IList<Map> submaps = map.Subdivide();
             PrepareHeightMaps();
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
+            GeneratedMeshes = GenerateMeshes(submaps, meshGenerators);
+        }
+        
+        IList<MapMeshes> GenerateMeshes(IList<Map> submaps, IList<MeshGenerator> meshGenerators)
+        {
             List<MapMeshes> meshes = new List<MapMeshes>();
             for (int i = 0; i < submaps.Count; i++)
             {
-                meshes.Add(CreateMeshes(meshGenerators[i], submaps[i].index));
+                meshes.Add(CreateMapMeshes(meshGenerators[i], submaps[i].index));
             }
-            GeneratedMeshes = meshes;
+            return meshes.AsReadOnly();
         }
-        
+
         /// <summary>
         /// Any required height maps should be initialized here.
         /// </summary>
@@ -91,7 +96,7 @@ namespace CaveGeneration
         /// </summary>
         abstract protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map);
 
-        abstract protected MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index);
+        abstract protected MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, int index);
 
         protected GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material, bool castShadows)
         {
@@ -137,7 +142,7 @@ namespace CaveGeneration
 
         void Reset()
         {
-            mapParameters.Reset();
+            mapParameters = new MapParameters();
         }
 
         void OnValidate()

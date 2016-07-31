@@ -15,7 +15,7 @@ namespace CaveGeneration
 
         readonly Quaternion ORIENTATION_2D = Quaternion.Euler(270f, 0f, 0f);
 
-        override protected MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index)
+        override protected MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, int index)
         {
             GameObject sector = CreateSector(index);
             Mesh ceilingMesh = CreateCeiling(meshGenerator, sector);

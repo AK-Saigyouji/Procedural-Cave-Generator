@@ -27,7 +27,7 @@ namespace CaveGeneration
             meshGenerator.GenerateEnclosure(wallHeight, enclosureHeightMap);
         }
 
-        protected override MapMeshes CreateMeshes(MeshGenerator meshGenerator, int index)
+        protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, int index)
         {
             GameObject sector = CreateSector(index);
             Mesh wallMesh = CreateWall(meshGenerator, sector);

@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-
 namespace CaveGeneration.MapGeneration
 {
     public class MapBuilder
@@ -30,7 +29,7 @@ namespace CaveGeneration.MapGeneration
         /// map tiles randomly based on the map density: e.g. if the map density is 0.45 then roughly 45% will be filled
         /// with map tiles (excluding boundary) and the rest with floor tiles. 
         /// </summary>
-        public void RandomFillMap(float mapDensity, int seed)
+        public void RandomFill(float mapDensity, int seed)
         {
             Random.seed = seed;
             for (int x = 0; x < map.length; x++)
@@ -48,7 +47,7 @@ namespace CaveGeneration.MapGeneration
         /// turning noise into a smoother map consisting of regions.
         /// </summary>
         /// <param name="iterations">The number of smoothing passes.</param>
-        public void SmoothMap()
+        public void Smooth()
         {
             int interiorLength = map.length - 1;
             int interiorWidth = map.width - 1;
