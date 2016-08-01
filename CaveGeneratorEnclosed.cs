@@ -21,10 +21,7 @@ namespace CaveGeneration
 
         protected override void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            meshGenerator.GenerateCeiling(map);
-            meshGenerator.GenerateWalls(wallHeight);
-            meshGenerator.GenerateFloor(map, floorHeightMap);
-            meshGenerator.GenerateEnclosure(wallHeight, enclosureHeightMap);
+            meshGenerator.GenerateEnclosed(map, wallHeight, floorHeightMap, enclosureHeightMap);
         }
 
         protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, int index)

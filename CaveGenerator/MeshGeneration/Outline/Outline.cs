@@ -14,6 +14,11 @@ namespace CaveGeneration.MeshGeneration
 
         List<int> indices = new List<int>();
 
+        public void Reverse()
+        {
+            indices.Reverse();
+        }
+
         public void Add(int vertexIndex)
         {
             indices.Add(vertexIndex);

@@ -25,8 +25,7 @@ namespace CaveGeneration
 
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            meshGenerator.GenerateCeiling(map);
-            meshGenerator.GenerateFloor(map);
+            meshGenerator.Generate2D(map);
         }
 
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject parent)

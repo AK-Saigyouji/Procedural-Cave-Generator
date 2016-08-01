@@ -6,27 +6,21 @@ namespace CaveGeneration.MeshGeneration
 {
     class WallBuilder : IMeshBuilder
     {
-        Vector3[] ceilingVertices;
-        int wallHeight;
+        Vector3[] vertices;
         List<Outline> outlines;
         MeshData mesh;
-        IHeightMap heightMap;
 
         const float UVSCALE = 3f;
         const string name = "Wall Mesh";
 
-        public WallBuilder(Vector3[] ceilingVertices, List<Outline> outlines, int wallHeight, IHeightMap heightMap)
+        public WallBuilder(Vector3[] vertices, List<Outline> outlines)
         {
-            this.ceilingVertices = ceilingVertices;
-            this.wallHeight = wallHeight;
+            this.vertices = vertices;
             this.outlines = outlines;
-            this.heightMap = heightMap;
         }
 
         public MeshData Build()
         {
-            RaiseCeiling();
-            ApplyHeightMap();
             CreateMesh();
             return mesh;
         }
@@ -43,34 +37,6 @@ namespace CaveGeneration.MeshGeneration
             mesh.uv = GetUVs(outlineVertexCount);
         }
 
-        void RaiseCeiling()
-        {
-            for (int i = 0; i < ceilingVertices.Length; i++)
-            {
-                ceilingVertices[i].y = wallHeight;
-            }
-        }
-
-        void ApplyHeightMap()
-        {
-            if (heightMap != null)
-            {
-                float offset = 0.5f;
-                for (int i = 0; i < ceilingVertices.Length; i++)
-                {
-                    Vector3 vertex = ceilingVertices[i];
-                    ceilingVertices[i].y += offset + heightMap.GetHeight(vertex.x, vertex.z);
-                }
-                foreach (Outline outline in outlines)
-                {
-                    for (int i = 1; i < outline.Count; i++)
-                    {
-                        ceilingVertices[outline[i]].y -= offset;
-                    }
-                } 
-            }
-        }
-
         Vector3[] GetVertices(int outlineVertexCount)
         {
             Vector3[] vertices = new Vector3[2 * outlineVertexCount];
@@ -79,7 +45,7 @@ namespace CaveGeneration.MeshGeneration
             {
                 for (int i = 0; i < outline.Count; i++)
                 {
-                    Vector3 vertex = ceilingVertices[outline[i]];
+                    Vector3 vertex = this.vertices[outline[i]];
                     vertices[vertexIndex] = vertex;
                     vertices[vertexIndex + 1] = new Vector3(vertex.x, 0f, vertex.z);
                     vertexIndex += 2;
@@ -96,11 +62,11 @@ namespace CaveGeneration.MeshGeneration
             foreach (Outline outline in outlines)
             {
                 float xPercentage = 0f;
-                float yPercentage = wallHeight / UVSCALE;
                 float increment = ComputeUVIncrement(outline);
                 for (int i = 0; i < outline.Count; i++, vertexIndex += 2)
                 {
                     xPercentage += ComputeDistanceTo(outline, i) * increment;
+                    float yPercentage = vertices[outline[i]].y / UVSCALE;
                     uv[vertexIndex] = new Vector2(xPercentage, yPercentage);
                     uv[vertexIndex + 1] = new Vector2(xPercentage, 0f);
                 }
@@ -121,7 +87,17 @@ namespace CaveGeneration.MeshGeneration
             {
                 return 0;
             }
-            return Vector3.Distance(ceilingVertices[outline[index]], ceilingVertices[outline[index - 1]]);
+            Vector3 vectorA = vertices[outline[index]];
+            Vector3 vectorB = vertices[outline[index - 1]];
+            return Distance2D(vectorA, vectorB);
+        }
+
+        // Compute the distance between the projections of the vectors along the y-axis.
+        float Distance2D(Vector3 a, Vector3 b)
+        {
+            a.y = 0;
+            b.y = 0;
+            return Vector3.Distance(a, b);
         }
 
         float ComputeOutlineDistance(Outline outline)
