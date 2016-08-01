@@ -58,7 +58,14 @@ namespace CaveGeneration.MeshGeneration
 
         const int MAX_VERTICES_IN_TRIANGULATION = 6;
 
+        /// <summary>
+        /// Vertices produced by triangulator. Run triangulate first.
+        /// </summary>
         public Vector3[] meshVertices { get { return LocalToGlobalPositions(localVertices); } }
+
+        /// <summary>
+        /// Triangles produced by triangulator. Run triangulate first.
+        /// </summary>
         public int[] meshTriangles { get { return triangles.ToArray(); } }
 
         public MapTriangulator(Map map)

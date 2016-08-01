@@ -15,7 +15,7 @@
         {
             maxHeight = 1f;
             scale = 30f;
-            numLayers = 2;
+            numLayers = 4;
             amplitudeDecay = 0.5f;
             frequencyGrowth = 2f;
         }

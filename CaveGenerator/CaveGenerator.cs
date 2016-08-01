@@ -11,9 +11,27 @@ namespace CaveGeneration
         [SerializeField]
         protected MapParameters mapParameters;
 
+        /// <summary>
+        /// Most recently generated cave. Null if no cave has been generated.
+        /// </summary>
         public GameObject Cave { get; protected set; }
+
+        /// <summary>
+        /// Grid representation of the most recently generated cave. Can be used to figure out where the empty spaces
+        /// are in order to procedurally generate content. Do note that the geometry of the cave does not lend itself 
+        /// to an exact grid representation, so this is only an approximation.
+        /// </summary>
         public Map Map { get; private set; }
+
+        /// <summary>
+        /// The generated meshes themselves.
+        /// </summary>
         public IList<MapMeshes> GeneratedMeshes { get; protected set; }
+
+        /// <summary>
+        /// Property holding the core map parameters such as length, width, density etc. Use this to customize
+        /// properties through code.
+        /// </summary>
         public MapParameters MapParameters { get { return mapParameters; } protected set { } }
 
         /// <summary>
@@ -23,14 +41,10 @@ namespace CaveGeneration
         /// </summary>
         public void GenerateCave()
         {
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             DestroyChildren();
             IMapGenerator mapGenerator = GetMapGenerator();
             Map = mapGenerator.GenerateMap();
-            sw.Start();
             GenerateCaveFromMap(Map);
-            Utility.Stopwatch.Query(sw, "Time: ");
-
         }
 
         virtual protected IMapGenerator GetMapGenerator()

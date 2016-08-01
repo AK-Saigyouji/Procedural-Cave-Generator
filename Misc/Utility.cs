@@ -10,7 +10,7 @@ namespace Utility
     {
         // Max number of work items to send to threadpool. Exceeding 64 will throw an exception due to limitation
         // on number of reset handles.
-        static readonly int threadCount = 8;
+        const int threadCount = 8;
 
         /// <summary>
         /// Implementation of a parallel foreach. Distributes the actions across multiple threads for faster 
@@ -40,7 +40,7 @@ namespace Utility
     static class Stopwatch
     {
         /// <summary>
-        /// Prints the current time on the stopwatch along with the provided message, then resets it. Convenience
+        /// Prints the current time on the stopwatch along with the provided message, then restarts it. Convenience
         /// method for repeatedly querying and resetting a stopwatch to profile a set of methods.
         /// </summary>
         static public void Query(System.Diagnostics.Stopwatch sw, string message)

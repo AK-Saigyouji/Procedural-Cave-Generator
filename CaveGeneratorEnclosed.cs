@@ -70,7 +70,7 @@ namespace CaveGeneration
             HeightMapFloor heightMap = GetComponent<HeightMapFloor>();
             if (heightMap != null)
             {
-                heightMap.Create(mapParameters.Seed.GetHashCode());
+                heightMap.Initialize(mapParameters.Seed.GetHashCode());
             }
             return heightMap;
         }
@@ -80,7 +80,7 @@ namespace CaveGeneration
             HeightMapMain heightMap = GetComponent<HeightMapMain>();
             if (heightMap != null)
             {
-                heightMap.Create(mapParameters.Seed.GetHashCode());
+                heightMap.Initialize(mapParameters.Seed.GetHashCode());
             }
             return heightMap;
         }

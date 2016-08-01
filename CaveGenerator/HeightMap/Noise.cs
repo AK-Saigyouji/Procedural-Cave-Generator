@@ -2,6 +2,10 @@
 
 namespace CaveGeneration
 {
+    /// <summary>
+    /// Random number generator that produces continuously varying numbers between 0 and 1 by stacking several
+    /// layers of Perlin Noise and then normalizing. 
+    /// </summary>
     public class Noise
     {
         Vector2[] offsets;
@@ -21,6 +25,9 @@ namespace CaveGeneration
             frequencies = GetArrayOfExponents(frequencyGrowth, numLayers);
         }
 
+        /// <summary>
+        /// Get a random value between 0 and 1. 
+        /// </summary>
         public float GetHeight(float x, float y)
         {
             float height = 0f;
@@ -33,6 +40,7 @@ namespace CaveGeneration
             return Mathf.InverseLerp(-1f, 1f, height);
         }
 
+        // Offsets provide randomness to the noise by offsetting the points of perlin noise we sample. 
         Vector2[] CreateOffsets(int seed, int numLayers)
         {
             Vector2[] offsets = new Vector2[numLayers];

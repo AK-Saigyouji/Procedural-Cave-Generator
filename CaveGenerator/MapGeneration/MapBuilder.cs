@@ -1,14 +1,15 @@
 ﻿using UnityEngine;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace CaveGeneration.MapGeneration
 {
+    /// <summary>
+    /// Offers a variety of methods for configuring and generating a randomized Map object.
+    /// </summary>
     public class MapBuilder
     {
         Map map;
-
         List<TileRegion> floorRegions;
         List<TileRegion> wallRegions;
 
@@ -46,7 +47,6 @@ namespace CaveGeneration.MapGeneration
         /// Uses synchronous cellular automata to smooth out the map. Each cell becomes more like its neighbors,
         /// turning noise into a smoother map consisting of regions.
         /// </summary>
-        /// <param name="iterations">The number of smoothing passes.</param>
         public void Smooth()
         {
             int interiorLength = map.length - 1;
@@ -75,7 +75,7 @@ namespace CaveGeneration.MapGeneration
         /// Remove small regions of walls. Walls are considered to be in the same region if they are connected by a 
         /// sequence of vertical and horizontal steps through walls. 
         /// </summary>
-        /// <param name="removalThreshold">Number of tiles a region must have to not be removed.</param>
+        /// <param name="threshold">Number of tiles a region must have to not be removed.</param>
         public void RemoveSmallWallRegions(int threshold)
         {
             wallRegions = GetRegions(Tile.Wall);
@@ -86,7 +86,7 @@ namespace CaveGeneration.MapGeneration
         /// Remove small regions of floor tiles. Floor tiles are considered to be in the same region if they are connected 
         /// by a sequence of vertical and horizontal steps through floor tiles. 
         /// </summary>
-        /// <param name="removalThreshold">Number of tiles a region must have to not be removed.</param>
+        /// <param name="threshold">Number of tiles a region must have to not be removed.</param>
         public void RemoveSmallFloorRegions(int threshold)
         {
             floorRegions = GetRegions(Tile.Floor);

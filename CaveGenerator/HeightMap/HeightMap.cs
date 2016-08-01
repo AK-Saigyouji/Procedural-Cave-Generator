@@ -3,6 +3,10 @@ using System.Collections;
 
 namespace CaveGeneration
 {
+    /// <summary>
+    /// A generalization of perlin noise, this class allows the generation of continuously varying, random values
+    /// designed with terrain in mind.
+    /// </summary>
     public abstract class HeightMap : MonoBehaviour, IHeightMap
     {
         public float maxHeight;
@@ -26,14 +30,26 @@ namespace CaveGeneration
         protected Noise noise;
         HeightMapDrawer drawer;
 
-        public void Create(int seed)
+        /// <summary>
+        /// Once parameter selection is finalized, use this method to initialize the height map with a specific seed.
+        /// </summary>
+        public void Initialize(int seed)
         {
             float amplitudePersistance = 1 - amplitudeDecay;
             noise = new Noise(numLayers, amplitudePersistance, frequencyGrowth, scale, seed);
         }
 
+        /// <summary>
+        /// Get a randomized height value between 0 and max height based on the parameters supplied when Initialize was 
+        /// called. Repeated calls to GetHeight with the same parameters will return the same value. Method is analogous 
+        /// to Mathf.PerlinNoise. 
+        /// </summary>
         public virtual float GetHeight(float x, float y)
         {
+            if (noise == null)
+            {
+                Initialize(Time.renderedFrameCount);
+            }
             return maxHeight * noise.GetHeight(x, y);
         }
 
@@ -63,7 +79,7 @@ namespace CaveGeneration
 
         void UpdateDrawer()
         {
-            Create(seed: 0);
+            Initialize(seed: 0);
             if (drawer == null)
             {
                 drawer = new HeightMapDrawer(GetHeight);
