@@ -42,14 +42,14 @@ namespace CaveGeneration
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
-            CreateGameObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial, false);
+            CreateGameObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial, true);
             return ceilingMesh;
         }
 
         Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh wallMesh = meshGenerator.GetWallMesh();
-            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial, true);
+            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial, false);
             AddMeshCollider(wall, wallMesh);
             return wallMesh;
         }

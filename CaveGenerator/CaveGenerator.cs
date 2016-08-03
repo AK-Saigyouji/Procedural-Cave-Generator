@@ -129,7 +129,7 @@ namespace CaveGeneration
         void SetShadowCastingMode(MeshRenderer meshRenderer, bool castShadows)
         {
             meshRenderer.shadowCastingMode = 
-                castShadows ? UnityEngine.Rendering.ShadowCastingMode.TwoSided : UnityEngine.Rendering.ShadowCastingMode.Off;
+                castShadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         protected GameObject CreateSector(int sectorIndex)

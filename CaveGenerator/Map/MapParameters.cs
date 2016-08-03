@@ -27,16 +27,24 @@ namespace CaveGeneration
             set { SetWidth(value); }
         }
 
-        [Tooltip("Initial proportion of walls in the map, from 0 to 1. Note that the final proportion will be " +
-        "different. In particular, an initial map density of below 0.5 will end up smaller, while an initial density " +
-        "of above 0.5 will end up larger.")]
+        [Tooltip("Initial proportion of walls in the map, from 0 to 1. Note that the final proportion will likely be " +
+            "very different due to the various processing steps. Experiment to achieve desired proportion.")]
         [SerializeField]
-        [Range(0.4f, 0.6f)]
+        [Range(MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY)]
         float initialMapDensity;
         public float InitialDensity
         {
             get { return initialMapDensity; }
             set { SetMapDensity(value); }
+        }
+
+        [Tooltip("Expand floor regions in every direction by given quantity.")]
+        [SerializeField]
+        int floorExpansion;
+        public int FloorExpansion
+        {
+            get { return floorExpansion; }
+            set { SetFloorExpansion(value); }
         }
 
         [Tooltip("The seed uniquely identifies which map gets generated, if useRandomSeed is set to false.")]
@@ -49,7 +57,7 @@ namespace CaveGeneration
         }
 
         [Tooltip("If set to true, a random map will be generated. If false, the seed property will be used to specify " + 
-        "the map")]
+            "the map")]
         [SerializeField]
         bool useRandomSeed;
         public bool UseRandomSeed
@@ -67,9 +75,8 @@ namespace CaveGeneration
             set { SetBorderSize(value); }
         }
 
-        [Tooltip("How many game units each tile in the map should occupy. This is a cheap (in terms of memory " +
-        "and computation) way to increase the size of the map. Can be used to ensure that corridors are large " +
-        "enough to accomodate large game objects.")]
+        [Tooltip("How many game units each tile in the map should occupy. By default, each tile occupies 1 game unit " +
+            "so that a 100 by 100 map takes 100 by 100 game units.")]
         [SerializeField]
         int squareSize;
         public int SquareSize
@@ -79,8 +86,8 @@ namespace CaveGeneration
         }
 
         [Tooltip("Contiguous sections of wall with a tile count below this number will be removed (turned " + 
-        "to floor tiles). Regardless of how large this number is, the component of wall attached to the boundary " +
-        "will not be removed.")]
+            "to floor tiles). Regardless of how large this number is, the component of wall attached to the boundary " +
+            "will not be removed.")]
         [SerializeField]
         int minWallSize;
         public int MinWallSize
@@ -102,14 +109,16 @@ namespace CaveGeneration
         const int MINIMUM_WIDTH = 5;
         const int MINIMUM_BORDER_SIZE = 0;
         const int MINIMUM_SQUARE_SIZE = 1;
-        const float MINIMUM_MAP_DENSITY = 0.4f;
-        const float MAXIMUM_MAP_DENSITY = 0.6f;
+        const int MINIMUM_FLOOR_EXPANSION = 0;
+        const float MINIMUM_MAP_DENSITY = 0.3f;
+        const float MAXIMUM_MAP_DENSITY = 0.7f;
 
         const int DEFAULT_LENGTH = 75;
         const int DEFAULT_WIDTH = 75;
         const float DEFAULT_DENSITY = 0.5f;
         const bool DEFAULT_SEED_STATUS = true;
         const int DEFAULT_BORDER_SIZE = 0;
+        const int DEFAULT_FLOOR_EXPANSION = 0;
         const int DEFAULT_SQUARE_SIZE = 1;
         const int DEFAULT_WALL_THRESHOLD = 50;
         const int DEFAULT_FLOOR_THRESHOLD = 50;
@@ -124,6 +133,7 @@ namespace CaveGeneration
             length = DEFAULT_LENGTH;
             width = DEFAULT_WIDTH;
             initialMapDensity = DEFAULT_DENSITY;
+            floorExpansion = DEFAULT_FLOOR_EXPANSION;
             useRandomSeed = DEFAULT_SEED_STATUS;
             borderSize = DEFAULT_BORDER_SIZE;
             squareSize = DEFAULT_SQUARE_SIZE;
@@ -140,6 +150,10 @@ namespace CaveGeneration
             if (width < MINIMUM_WIDTH)
             {
                 width = MINIMUM_WIDTH;
+            }
+            if (floorExpansion < MINIMUM_FLOOR_EXPANSION)
+            {
+                floorExpansion = MINIMUM_FLOOR_EXPANSION;
             }
             if (squareSize < MINIMUM_SQUARE_SIZE)
             {
@@ -164,6 +178,11 @@ namespace CaveGeneration
         void SetBorderSize(int value)
         {
             SetParameter(ref borderSize, value, MINIMUM_BORDER_SIZE, int.MaxValue);
+        }
+
+        void SetFloorExpansion(int value)
+        {
+            SetParameter(ref floorExpansion, value, MINIMUM_FLOOR_EXPANSION, int.MaxValue);
         }
 
         void SetSquareSize(int value)

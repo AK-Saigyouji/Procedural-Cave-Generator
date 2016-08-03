@@ -15,7 +15,6 @@ namespace CaveGeneration.MapGeneration
 
         const int SMOOTHING_ITERATIONS = 5;
         const int CELLULAR_THRESHOLD = 4;
-        const int TUNNELING_RADIUS = 1;
 
         /// <summary>
         /// Begin building a new map by specifying its dimensions.
@@ -72,6 +71,27 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
+        /// Expand each floor region by a number of tiles in each direction based on the provided parameter.
+        /// </summary>
+        public void ExpandRegions(int radius)
+        {
+            Map newMap = new Map(map);
+            for (int x = 2; x < map.length - 2; x++)
+            {
+                for (int y = 2; y < map.width - 2; y++)
+                {
+                    if (map[x,y] == Tile.Floor)
+                    {
+                        Coord tile = new Coord(x, y);
+                        ClearNeighbors(newMap, tile, radius); 
+                    }
+                }
+            }
+            map = newMap;
+            ResetRegions();
+        }
+
+        /// <summary>
         /// Remove small regions of walls. Walls are considered to be in the same region if they are connected by a 
         /// sequence of vertical and horizontal steps through walls. 
         /// </summary>
@@ -97,7 +117,7 @@ namespace CaveGeneration.MapGeneration
         /// Ensure connectivity between all regions of floors in the map. It is recommended that you first prune
         /// small floor regions in order to avoid creating tunnels to tiny regions.
         /// </summary>
-        public void ConnectFloors()
+        public void ConnectFloors(int tunnelRadius)
         {
             List<TileRegion> floors = floorRegions ?? GetRegions(Tile.Floor);
             List<Room> rooms = floors.Select(region => new Room(region, map)).ToList();
@@ -105,7 +125,7 @@ namespace CaveGeneration.MapGeneration
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
             foreach (RoomConnection connection in finalConnections)
             {
-                CreatePassage(connection, TUNNELING_RADIUS);
+                CreatePassage(connection, tunnelRadius);
             }
             ResetRegions();
         }
@@ -294,6 +314,10 @@ namespace CaveGeneration.MapGeneration
         TileRegion GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
         {
             TileRegion tiles = new TileRegion();
+            if (queue.Count == 0)
+            {
+                return tiles;
+            }
             Tile tileType = map[queue.Peek()];
             while (queue.Count > 0)
             {
@@ -329,10 +353,6 @@ namespace CaveGeneration.MapGeneration
 
         void FillRegion(TileRegion region, Tile tileType)
         {
-            if (region.Count == 0)
-            {
-                return;
-            }
             for (int i = 0; i < region.Count; i++)
             {
                 map[region[i]] = tileType;
@@ -365,7 +385,7 @@ namespace CaveGeneration.MapGeneration
             List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
             foreach (Coord coord in line)
             {
-                ClearNeighbors(coord, tunnelingRadius);
+                ClearNeighbors(map, coord, tunnelingRadius);
             }
         }
 
@@ -384,7 +404,7 @@ namespace CaveGeneration.MapGeneration
             List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
             foreach (Coord coord in line)
             {
-                ClearNeighbors(coord, tunnelingRadius);
+                ClearNeighbors(map, coord, tunnelingRadius);
             }
         }
 
@@ -392,7 +412,7 @@ namespace CaveGeneration.MapGeneration
         /// Replace nearby tiles with floors. Does not affect boundary tiles.
         /// </summary>
         /// <param name="neighborReach">The radius of replacement: e.g. if 1, will replace the 8 adjacent tiles.</param>
-        void ClearNeighbors(Coord coord, int neighborReach)
+        void ClearNeighbors(Map map, Coord coord, int neighborReach)
         {
             for (int x = coord.x - neighborReach; x <= coord.x + neighborReach; x++)
             {

@@ -28,8 +28,9 @@ namespace CaveGeneration.MapGeneration
             builder.RandomFill(map.InitialDensity, GetSeed());
             builder.Smooth();
             builder.RemoveSmallFloorRegions(map.MinFloorSize);
+            builder.ConnectFloors(1 + map.FloorExpansion);
+            builder.ExpandRegions(map.FloorExpansion);
             builder.RemoveSmallWallRegions(map.MinWallSize);
-            builder.ConnectFloors();
             builder.ApplyBorder(map.BorderSize);
             return builder.ToMap();
         }
