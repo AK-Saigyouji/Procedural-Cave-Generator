@@ -58,16 +58,6 @@ namespace CaveGeneration.MeshGeneration
 
         const int MAX_VERTICES_IN_TRIANGULATION = 6;
 
-        /// <summary>
-        /// Vertices produced by triangulator. Run triangulate first.
-        /// </summary>
-        public Vector3[] meshVertices { get { return LocalToGlobalPositions(localVertices); } }
-
-        /// <summary>
-        /// Triangles produced by triangulator. Run triangulate first.
-        /// </summary>
-        public int[] meshTriangles { get { return triangles.ToArray(); } }
-
         public MapTriangulator(Map map)
         {
             this.map = map;
@@ -78,9 +68,24 @@ namespace CaveGeneration.MeshGeneration
         }
 
         /// <summary>
-        /// Compute a triangulation for the map. 
+        /// Compute a triangulation of the map passed into the constructor.
         /// </summary>
-        public void Triangulate()
+        /// <returns>MeshData object containing vertices and triangles.</returns>
+        public MeshData Triangulate()
+        {
+            TriangulateAllSquares();
+            return BuildMeshData();
+        }
+
+        MeshData BuildMeshData()
+        {
+            MeshData mesh = new MeshData();
+            mesh.vertices = LocalToGlobalPositions(localVertices);
+            mesh.triangles = triangles.ToArray();
+            return mesh;
+        }
+
+        void TriangulateAllSquares()
         {
             int numSquaresAcross = map.length - 1;
             int numSquaresDeep = map.width - 1;
@@ -89,7 +94,7 @@ namespace CaveGeneration.MeshGeneration
                 for (int y = 0; y < numSquaresDeep; y++)
                 {
                     int configuration = ComputeConfiguration(map[x, y + 1], map[x + 1, y + 1], map[x + 1, y], map[x, y]);
-                    if (configuration != 0) 
+                    if (configuration != 0)
                     {
                         TriangulateSquare(configuration, x, y);
                     }

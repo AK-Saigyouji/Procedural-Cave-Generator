@@ -1,11 +1,16 @@
-﻿using UnityEngine;
+﻿/* MapBuilder is a low-level class that offers a library of methods for map generation. The intention is to write
+ * light-weight, higher-level map generator classes that can easily be customized by choosing which of the methods
+ * in this class should be used and in what order.*/
+
+using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace CaveGeneration.MapGeneration
 {
     /// <summary>
-    /// Offers a variety of methods for configuring and generating a randomized Map object.
+    /// Offers a variety of methods for configuring and generating a randomized Map object. Start with an initialization
+    /// method, and end with the build method to receive the map.
     /// </summary>
     public class MapBuilder
     {
@@ -29,7 +34,7 @@ namespace CaveGeneration.MapGeneration
         /// map tiles randomly based on the map density: e.g. if the map density is 0.45 then roughly 45% will be filled
         /// with map tiles (excluding boundary) and the rest with floor tiles. 
         /// </summary>
-        public void RandomFill(float mapDensity, int seed)
+        public void InitializeRandomFill(float mapDensity, int seed)
         {
             Random.seed = seed;
             for (int x = 0; x < map.length; x++)
@@ -75,19 +80,18 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void ExpandRegions(int radius)
         {
-            Map newMap = new Map(map);
+            Map expandedMap = new Map(map);
             for (int x = 2; x < map.length - 2; x++)
             {
                 for (int y = 2; y < map.width - 2; y++)
                 {
                     if (map[x,y] == Tile.Floor)
                     {
-                        Coord tile = new Coord(x, y);
-                        ClearNeighbors(newMap, tile, radius); 
+                        ClearNeighbors(expandedMap, new Coord(x, y), radius); 
                     }
                 }
             }
-            map = newMap;
+            map = expandedMap;
             ResetRegions();
         }
 
@@ -382,6 +386,7 @@ namespace CaveGeneration.MapGeneration
 
         void CreatePassage(RoomConnection connection, int tunnelingRadius)
         {
+            tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
             List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
             foreach (Coord coord in line)
             {

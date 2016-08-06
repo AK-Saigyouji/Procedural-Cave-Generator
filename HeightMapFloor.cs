@@ -1,6 +1,6 @@
 ﻿namespace CaveGeneration
 {
-    public class HeightMapFloor : HeightMap
+    public class HeightMapFloor : HeightMapBuilder
     {
         void Reset()
         {

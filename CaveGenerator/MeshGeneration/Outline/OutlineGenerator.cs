@@ -20,10 +20,10 @@ namespace CaveGeneration.MeshGeneration
 
         const int MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX = 3;
 
-        public OutlineGenerator(Vector3[] vertices, int[] triangles)
+        public OutlineGenerator(MeshData mesh)
         {
-            this.vertices = vertices;
-            trianglesContainingIndex = DetermineContainingTriangles(triangles);
+            vertices = mesh.vertices;
+            trianglesContainingIndex = DetermineContainingTriangles(mesh.triangles);
             outlines = new List<Outline>();
         }
 

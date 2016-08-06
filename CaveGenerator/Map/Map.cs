@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using CaveGeneration.MapGeneration;
 
 namespace CaveGeneration
 {
@@ -12,8 +11,9 @@ namespace CaveGeneration
     }
 
     /// <summary>
-    /// The 2D grid-based Map. Points in the map are given x and y integer pairs like a 2d array. 
-    /// Values of 1 correspond to walls, 0 to open space.
+    /// The 2D grid-based Map. Points in the map are given by integer pairs like a 2d array. Each point is either 
+    /// a floor or wall tile. Exposed methods are intended for use internally for the purposes of generating the cave - 
+    /// for a read-only grid intended for external use, see the Grid class. 
     /// </summary>
     public class Map
     {
@@ -24,7 +24,7 @@ namespace CaveGeneration
         public Vector3 position { get; private set; }
         public int index { get; private set; }
 
-        static public readonly int maxSubmapSize = 200;
+        static public readonly int maxSubmapSize = 75;
 
         public Map(int length, int width, int squareSize)
         {
@@ -71,7 +71,7 @@ namespace CaveGeneration
         /// <returns>Returns a list of smaller Map objects.</returns>
         public IList<Map> Subdivide()
         {
-            IList<Map> maps = new List<Map>();
+            List<Map> maps = new List<Map>();
             int xNumComponents = Mathf.CeilToInt(length / (float)maxSubmapSize);
             int yNumComponents = Mathf.CeilToInt(width / (float)maxSubmapSize);
             for (int x = 0; x < xNumComponents; x++)
@@ -83,7 +83,7 @@ namespace CaveGeneration
                     maps.Add(subMap);
                 }
             }
-            return maps;
+            return maps.AsReadOnly();
         }
 
         Map GenerateSubMap(int xStart, int yStart, int submapSize)
@@ -167,7 +167,7 @@ namespace CaveGeneration
 
         /// <summary>
         /// The number of walls beside the given point. Both horizontal and diagonal tiles count, but the tile itself does not.
-        /// Note that the tile passed in must not be on the edge of the Map.
+        /// Note that the coordinates must be contained in the interior of the map (not on the boundary);
         /// </summary>
         /// <returns>Number of walls surrounding the given tile, between 0 and 8 inclusive.</returns>
         public int GetSurroundingWallCount(int x, int y)
@@ -190,7 +190,7 @@ namespace CaveGeneration
 
         public bool IsInteriorTile(int x, int y)
         {
-            return 0 < x && x < length - 1 && 0 < y && y < width - 1;
+            return (0 < x && x < length - 1) && (0 < y && y < width - 1);
         }
 
         public bool IsInteriorTile(Coord tile)
@@ -200,9 +200,9 @@ namespace CaveGeneration
 
         /// <summary>
         /// Gets the horizontally adjacent tiles. Examples:
-        /// (1,3) -> (0,3), (2,3), (1,4), (1,2) (assumes map is at least 3 by 5)
-        /// (0,0) -> (0,1), (1,0) (assumes map is at least 2 by 2)
-        /// (0,1) -> (1,1), (0,0), (0,2) (assumes map is at least (2 by 3)
+        /// (1,3) -> (0,3), (2,3), (1,4), (1,2) (assumes map is at least 3 by 5).
+        /// (0,0) -> (0,1), (1,0) (assumes map is at least 2 by 2).
+        /// (0,1) -> (1,1), (0,0), (0,2) (assumes map is at least (2 by 3).
         /// </summary>
         public IEnumerable<Coord> GetAdjacentTiles(int x, int y)
         {
@@ -218,22 +218,25 @@ namespace CaveGeneration
 
         /// <summary>
         /// Gets the horizontally adjacent tiles. Examples:
-        /// (1,3) -> (0,3), (2,3), (1,4), (1,2) (assumes map is at least 3 by 5)
-        /// (0,0) -> (0,1), (1,0) (assumes map is at least 2 by 2)
-        /// (0,1) -> (1,1), (0,0), (0,2) (assumes map is at least (2 by 3)
+        /// (1,3) -> (0,3), (2,3), (1,4), (1,2) (assumes map is at least 3 by 5).
+        /// (0,0) -> (0,1), (1,0) (assumes map is at least 2 by 2).
+        /// (0,1) -> (1,1), (0,0), (0,2) (assumes map is at least (2 by 3).
         /// </summary>
         public IEnumerable<Coord> GetAdjacentTiles(Coord tile)
         {
             return GetAdjacentTiles(tile.x, tile.y);
         }
 
+        /// <summary>
+        /// Swaps floor tiles and wall tiles.
+        /// </summary>
         public void Invert()
         {
             for (int x = 0; x < length; x++)
             {
                 for (int y = 0; y < width; y++)
                 {
-                    grid[x, y] = grid[x, y] == Tile.Wall ? Tile.Floor : Tile.Wall;
+                    grid[x, y] = (grid[x, y] == Tile.Wall) ? Tile.Floor : Tile.Wall;
                 }
             }
         }

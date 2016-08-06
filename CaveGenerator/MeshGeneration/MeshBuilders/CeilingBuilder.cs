@@ -17,14 +17,12 @@ namespace CaveGeneration.MeshGeneration
 
         const string name = "Ceiling Mesh";
 
-        public CeilingBuilder(Map map, int wallHeight, IHeightMap heightMap)
+        public CeilingBuilder(Map map, IHeightMap heightMap)
         {
             this.map = map;
-            this.wallHeight = wallHeight;
+            wallHeight = heightMap.BaseHeight;
             this.heightMap = heightMap;
         }
-
-        public CeilingBuilder(Map map) : this(map, 0, null) { }
 
         /// <summary>
         /// Generates the data for the ceiling mesh, along with a table associating vertices (by index) to 
@@ -42,11 +40,7 @@ namespace CaveGeneration.MeshGeneration
         void TriangulateMap()
         {
             MapTriangulator mapTriangulator = new MapTriangulator(map);
-            mapTriangulator.Triangulate();
-
-            mesh = new MeshData();
-            mesh.vertices = mapTriangulator.meshVertices;
-            mesh.triangles = mapTriangulator.meshTriangles;
+            mesh = mapTriangulator.Triangulate();
             mesh.name = name;
         }
 
@@ -66,7 +60,7 @@ namespace CaveGeneration.MeshGeneration
 
         void RaiseCeiling()
         {
-            if (wallHeight != 0) // save cycles if height is 0
+            if (wallHeight != 0)
             {
                 Vector3[] vertices = mesh.vertices;
                 for (int i = 0; i < vertices.Length; i++)
@@ -78,7 +72,7 @@ namespace CaveGeneration.MeshGeneration
 
         void ApplyHeightMap()
         {
-            if (heightMap != null) // null is acceptable value for height map, in which case we do nothing with it
+            if (!heightMap.IsSimple)
             {
                 Vector3[] vertices = mesh.vertices;
                 for (int i = 0; i < vertices.Length; i++)

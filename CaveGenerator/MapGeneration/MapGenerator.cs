@@ -1,8 +1,4 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
-using System.Linq;
-
-namespace CaveGeneration.MapGeneration
+﻿namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// Generates a randomized cave-like Map object with the property that every floor tile is reachable from every other
@@ -25,10 +21,10 @@ namespace CaveGeneration.MapGeneration
         public Map GenerateMap()
         {
             MapBuilder builder = new MapBuilder(map.Length, map.Width, map.SquareSize);
-            builder.RandomFill(map.InitialDensity, GetSeed());
+            builder.InitializeRandomFill(map.InitialDensity, GetSeed());
             builder.Smooth();
             builder.RemoveSmallFloorRegions(map.MinFloorSize);
-            builder.ConnectFloors(1 + map.FloorExpansion);
+            builder.ConnectFloors(map.FloorExpansion);
             builder.ExpandRegions(map.FloorExpansion);
             builder.RemoveSmallWallRegions(map.MinWallSize);
             builder.ApplyBorder(map.BorderSize);

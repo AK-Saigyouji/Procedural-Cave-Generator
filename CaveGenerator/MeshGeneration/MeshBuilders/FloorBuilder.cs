@@ -24,7 +24,6 @@ namespace CaveGeneration.MeshGeneration
             TriangulateMap();
             ApplyHeightMap();
             ComputeUV();
-            mesh.name = name;
             return mesh;
         }
 
@@ -36,11 +35,9 @@ namespace CaveGeneration.MeshGeneration
 
         void TriangulateMap()
         {
-            mesh = new MeshData();
             MapTriangulator mapTriangulator = new MapTriangulator(map);
-            mapTriangulator.Triangulate();
-            mesh.triangles = mapTriangulator.meshTriangles;
-            mesh.vertices = mapTriangulator.meshVertices;
+            mesh = mapTriangulator.Triangulate();
+            mesh.name = name;
         }
 
         void ApplyHeightMap()

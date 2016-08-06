@@ -113,6 +113,7 @@ namespace CaveGeneration
         const float MINIMUM_MAP_DENSITY = 0.3f;
         const float MAXIMUM_MAP_DENSITY = 0.7f;
 
+        const string DEFAULT_SEED = "";
         const int DEFAULT_LENGTH = 75;
         const int DEFAULT_WIDTH = 75;
         const float DEFAULT_DENSITY = 0.5f;
@@ -135,6 +136,7 @@ namespace CaveGeneration
             initialMapDensity = DEFAULT_DENSITY;
             floorExpansion = DEFAULT_FLOOR_EXPANSION;
             useRandomSeed = DEFAULT_SEED_STATUS;
+            seed = DEFAULT_SEED;
             borderSize = DEFAULT_BORDER_SIZE;
             squareSize = DEFAULT_SQUARE_SIZE;
             minWallSize = DEFAULT_WALL_THRESHOLD;

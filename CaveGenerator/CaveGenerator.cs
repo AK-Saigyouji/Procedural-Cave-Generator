@@ -1,4 +1,9 @@
-﻿using System;
+﻿/* This abstract class is the main driver for the entire cave generation algorithm. It accepts the parameters and delegates
+ * responsibility to the appropriate subsystems, in particular the map generator and mesh generator. When implementing
+ * a cave generator, it is necessary to override the methods responsible for determining what kind of meshes are being
+ * generated. */
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CaveGeneration.MeshGeneration;
@@ -116,14 +121,34 @@ namespace CaveGeneration
 
         abstract protected MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, int index);
 
-        protected GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material, bool castShadows)
+        protected GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
         {
             GameObject newObject = new GameObject(name, typeof(MeshRenderer), typeof(MeshFilter));
             newObject.transform.parent = parent == null ? null : parent.transform;
             newObject.GetComponent<MeshFilter>().mesh = mesh;
             newObject.GetComponent<MeshRenderer>().material = material;
-            SetShadowCastingMode(newObject.GetComponent<MeshRenderer>(), castShadows);
+            newObject.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return newObject;
+        }
+
+        /// <summary>
+        /// Finds the height map builder of type T on this object and extracts a height map from it, or otherwise
+        /// returns a constant height map.
+        /// </summary>
+        protected IHeightMap GetHeightMap<T>(int baseHeight) where T : HeightMapBuilder
+        {
+            HeightMapBuilder heightMapBuilder = GetComponent<T>();
+            IHeightMap heightMap;
+            if (heightMapBuilder != null)
+            {
+                int seed = mapParameters.Seed.GetHashCode();
+                heightMap = heightMapBuilder.Build(seed, baseHeight);
+            }
+            else
+            {
+                heightMap = new ConstantHeightMap(baseHeight);
+            }
+            return heightMap;
         }
 
         void SetShadowCastingMode(MeshRenderer meshRenderer, bool castShadows)

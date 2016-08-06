@@ -1,4 +1,9 @@
-﻿using System.Collections.Generic;
+﻿/* High level class overseeing the mesh generation system. The generate methods are all written in a thread-safe way, 
+ * which is why a custom MeshData class is used instead of Unity's unsafe Mesh class. The Create methods are not thread-safe,
+ * as they turn the MeshData classes into Meshes. Responsibility for generating individual meshes is delegated to specific
+ * MeshBuilders. */
+
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -22,37 +27,26 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// Generate the data necessary to produce mesh for isometric type cave. Generates ceiling, wall and floor meshes.
         /// </summary>
-        public void GenerateIsometric(Map map, int wallHeight, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        public void GenerateIsometric(Map map, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
             mapIndex = map.index;
-            GenerateCeiling(map, wallHeight, ceilingHeightMap);
+            GenerateCeiling(map, ceilingHeightMap);
             ComputeMeshOutlines(ceilingMesh);
-            GenerateWallsFromCeiling(wallHeight);
+            GenerateWallsFromCeiling();
             GenerateFloor(map, floorHeightMap);
         }
 
         /// <summary>
         /// Generate the data necessary to produce meshes for enclosed cave. Generates floor, wall and enclosure meshes.
         /// </summary>
-        public void GenerateEnclosed(Map map, int wallHeight, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
+        public void GenerateEnclosed(Map map, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
         {
             mapIndex = map.index;
             GenerateFloor(map, floorHeightMap);
             ComputeMeshOutlines(floorMesh);
             ReverseOutlines();
-            GenerateEnclosure(wallHeight, enclosureHeightMap);
-            GenerateWallsFromEnclosure(wallHeight);
-        }
-
-        /// <summary>
-        /// Generate the data necessary to produce meshes for 2D cave. Generates floor and ceiling meshes.
-        /// </summary>
-        public void Generate2D(Map map)
-        {
-            mapIndex = map.index;
-            GenerateCeiling(map, 0, null);
-            GenerateFloor(map, null);
-            ComputeMeshOutlines(ceilingMesh);
+            GenerateEnclosure(enclosureHeightMap);
+            GenerateWallsFromEnclosure();
         }
 
         /// <summary>
@@ -91,39 +85,19 @@ namespace CaveGeneration.MeshGeneration
             return CreateMesh(enclosureMesh);
         }
 
-        /// <summary>
-        /// Generates a list of arrays of 2D points corresponding to the vertices of the outlines of the walls.
-        /// Use after generating meshes.
-        /// </summary>
-        public List<Vector2[]> GetOutlines()
+        void GenerateCeiling(Map map, IHeightMap ceilingHeightMap)
         {
-            List<Vector2[]> outlines2D = new List<Vector2[]>();
-            foreach (Outline outline in outlines)
-            {
-                Vector2[] edgePoints = new Vector2[outline.Count];
-                for (int i = 0; i < outline.Count; i++)
-                {
-                    Vector3 vertex = ceilingMesh.vertices[outline[i]];
-                    edgePoints[i] = new Vector2(vertex.x, vertex.z);
-                }
-                outlines2D.Add(edgePoints);
-            }
-            return outlines2D;
-        }
-
-        void GenerateCeiling(Map map, int wallHeight, IHeightMap ceilingHeightMap)
-        {
-            IMeshBuilder ceilingBuilder = new CeilingBuilder(map, wallHeight, ceilingHeightMap);
+            IMeshBuilder ceilingBuilder = new CeilingBuilder(map, ceilingHeightMap);
             ceilingMesh = ceilingBuilder.Build();
         }
 
-        void GenerateWallsFromCeiling(int wallHeight)
+        void GenerateWallsFromCeiling()
         {
             IMeshBuilder wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines);
             wallMesh = wallBuilder.Build();
         }
 
-        void GenerateWallsFromEnclosure(int wallHeight)
+        void GenerateWallsFromEnclosure()
         {
             IMeshBuilder wallBuilder = new WallBuilder(enclosureMesh.vertices, outlines);
             wallMesh = wallBuilder.Build();
@@ -135,15 +109,15 @@ namespace CaveGeneration.MeshGeneration
             floorMesh = floorBuilder.Build();
         }
 
-        void GenerateEnclosure(int wallHeight, IHeightMap heightMap)
+        void GenerateEnclosure(IHeightMap heightMap)
         {
-            IMeshBuilder enclosureBuilder = new EnclosureBuilder(floorMesh, wallHeight, heightMap);
+            IMeshBuilder enclosureBuilder = new EnclosureBuilder(floorMesh, heightMap);
             enclosureMesh = enclosureBuilder.Build();
         }
 
         void ComputeMeshOutlines(MeshData mesh)
         {
-            OutlineGenerator outlineGenerator = new OutlineGenerator(mesh.vertices, mesh.triangles);
+            OutlineGenerator outlineGenerator = new OutlineGenerator(mesh);
             outlines = outlineGenerator.GenerateOutlines();
         }
 

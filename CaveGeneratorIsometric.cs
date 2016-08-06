@@ -6,10 +6,10 @@ using System.Linq;
 namespace CaveGeneration
 {
     /// <summary>
-    /// A 3D map generator. Generates flat cavernous regions and perpendicular walls along the outlines of those regions.
-    /// The walls receive a mesh collider for collision detection.
+    /// A 3D cave generator with an isometric camera in mind. Generates mesh colliders for the walkable floors as well as
+    /// the walls around them, but not the 'ceilings'. 
     /// </summary>
-    public class CaveGenerator3D : CaveGenerator
+    public class CaveGeneratorIsometric : CaveGenerator
     {
         public int wallHeight = 3;
         public Material ceilingMaterial;
@@ -21,13 +21,13 @@ namespace CaveGeneration
 
         protected override void PrepareHeightMaps()
         {
-            floorHeightMap = GetFloorHeightMap();
-            ceilingHeightMap = GetMainHeightMap();
+            floorHeightMap = GetHeightMap<HeightMapFloor>(0);
+            ceilingHeightMap = GetHeightMap<HeightMapMain>(wallHeight);
         }
 
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            meshGenerator.GenerateIsometric(map, wallHeight, floorHeightMap, ceilingHeightMap);
+            meshGenerator.GenerateIsometric(map, floorHeightMap, ceilingHeightMap);
         }
 
         protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, int index)
@@ -42,14 +42,14 @@ namespace CaveGeneration
         Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
-            CreateGameObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial, true);
+            CreateGameObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial);
             return ceilingMesh;
         }
 
         Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh wallMesh = meshGenerator.GetWallMesh();
-            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial, false);
+            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
             AddMeshCollider(wall, wallMesh);
             return wallMesh;
         }
@@ -57,7 +57,7 @@ namespace CaveGeneration
         Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
         {
             Mesh floorMesh = meshGenerator.GetFloorMesh();
-            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial, false);
+            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
             AddMeshCollider(floor, floorMesh);
             return floorMesh;
         }
@@ -66,26 +66,6 @@ namespace CaveGeneration
         {
             MeshCollider collider = gameObject.AddComponent<MeshCollider>();
             collider.sharedMesh = mesh;
-        }
-
-        IHeightMap GetFloorHeightMap()
-        {
-            HeightMapFloor heightMap = GetComponent<HeightMapFloor>();
-            if (heightMap != null)
-            {
-                heightMap.Initialize(mapParameters.Seed.GetHashCode());
-            }
-            return heightMap;
-        }
-
-        IHeightMap GetMainHeightMap()
-        {
-            HeightMapMain heightMap = GetComponent<HeightMapMain>();
-            if (heightMap != null)
-            {
-                heightMap.Initialize(mapParameters.Seed.GetHashCode());
-            }
-            return heightMap;
         }
     } 
 }

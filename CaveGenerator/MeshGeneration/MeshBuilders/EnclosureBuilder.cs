@@ -13,10 +13,10 @@ namespace CaveGeneration.MeshGeneration
 
         const string name = "Enclosure Mesh";
 
-        public EnclosureBuilder(MeshData floorMesh, int wallHeight, IHeightMap heightMap)
+        public EnclosureBuilder(MeshData floorMesh, IHeightMap heightMap)
         {
             this.floorMesh = floorMesh;
-            this.wallHeight = wallHeight;
+            wallHeight = heightMap.BaseHeight;
             this.heightMap = heightMap;
         }
 
@@ -39,7 +39,7 @@ namespace CaveGeneration.MeshGeneration
 
         void ApplyHeightMap()
         {
-            if (heightMap != null)
+            if (!heightMap.IsSimple)
             {
                 for (int i = 0; i < mesh.vertices.Length; i++)
                 {

@@ -1,8 +1,9 @@
-﻿/*
-Source: This script is from http://forum.unity3d.com/threads/how-to-calculate-mesh-tangents.38984 by user "col000r", who
-derived it from Lengyel, Eric. "Computing Tangent Space Basis Vectors for an Arbitrary Mesh". 
-Terathon Software 3D Graphics Library, 2001.
-*/
+﻿/* This class is used to determine tangents for a mesh. Unity has a built in method to compute normals, but nothing
+ * like that for tangents. This class fills that void. 
+ * Attribution: This script is from http://forum.unity3d.com/threads/how-to-calculate-mesh-tangents.38984 by user "col000r", 
+ * who attributes it to Lengyel, Eric. "Computing Tangent Space Basis Vectors for an Arbitrary Mesh". 
+ * Terathon Software 3D Graphics Library, 2001.
+ */
 
 using UnityEngine;
 
