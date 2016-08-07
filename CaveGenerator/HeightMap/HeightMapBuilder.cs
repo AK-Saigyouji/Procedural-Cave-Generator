@@ -4,8 +4,7 @@ using System.Collections;
 namespace CaveGeneration
 {
     /// <summary>
-    /// A generalization of perlin noise, this class allows the generation of continuously varying, random values
-    /// designed with terrain in mind.
+    /// Builds a height map out of one or more layers of perlin noise.
     /// </summary>
     public abstract class HeightMapBuilder : MonoBehaviour
     {
@@ -31,7 +30,7 @@ namespace CaveGeneration
         HeightMapDrawer drawer;
 
         /// <summary>
-        /// Once parameter selection is finalized, use this method to initialize the height map with a specific seed.
+        /// Once parameter selection is finalized, use this method to produce the height map.
         /// </summary>
         public HeightMap Build(int seed, int baseHeight)
         {

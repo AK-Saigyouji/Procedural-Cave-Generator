@@ -1,8 +1,8 @@
 ﻿namespace CaveGeneration
 {
     /// <summary>
-    /// Height map for the top section of a 3D cave, e.g. ceiling for the CaveGenerator3D or the enclosure for the 
-    /// CaveGeneratorEnclosed.
+    /// Height map for the top section of a 3D cave, e.g. ceiling for the isometric cave generator or the enclosure for the 
+    /// enclosed cave generator.
     /// </summary>
     public class HeightMapMain : HeightMapBuilder
     {

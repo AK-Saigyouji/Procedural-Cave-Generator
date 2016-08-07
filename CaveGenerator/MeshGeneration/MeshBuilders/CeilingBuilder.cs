@@ -5,8 +5,8 @@ using System.Collections.Generic;
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Responsible for generating all the data related to the ceiling / base of the map, namely its outline and all
-    /// data required to construct the mesh. 
+    /// Builds the mesh data for a cave ceiling, in particular the top part of a region of walls. Not to be confused
+    /// with an enclosure, which is the part hanging above the floor. 
     /// </summary>
     class CeilingBuilder : IMeshBuilder
     {
@@ -24,10 +24,6 @@ namespace CaveGeneration.MeshGeneration
             this.heightMap = heightMap;
         }
 
-        /// <summary>
-        /// Generates the data for the ceiling mesh, along with a table associating vertices (by index) to 
-        /// the triangles containing them. 
-        /// </summary>
         public MeshData Build()
         {
             TriangulateMap();

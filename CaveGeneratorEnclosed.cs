@@ -4,8 +4,9 @@ using CaveGeneration.MeshGeneration;
 namespace CaveGeneration
 {
     /// <summary>
-    /// A 3D cave generator with a 1st person camera in mind. Generates fully enclosed caves. Generates mesh colliders 
-    /// for the walkable areas and walls, but not the enclosure/ceiling above them. 
+    /// A 3D cave generator with a 1st person camera in mind. Generates fully enclosed caves, with separate meshes
+    /// for the floors, walls and enclosure/ceiling. Generates mesh colliders for the walkable areas and walls, but 
+    /// not the enclosure/ceiling above them. 
     /// </summary>
     public class CaveGeneratorEnclosed : CaveGenerator
     {
