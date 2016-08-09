@@ -1,49 +1,68 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace CaveGeneration
 {
     /// <summary>
-    /// Coord is an integer equivalent of Vector2 designed with coordinate grids in mind.
+    /// Immutable representation of a position in a 2d integer grid. Handles coordinates between -32768 and 32767.
     /// </summary>
     public struct Coord
     {
-        public int x;
-        public int y;
+        public readonly short x;
+        public readonly short y;
 
         public Coord(int x, int y)
         {
-            this.x = x;
-            this.y = y;
+            this.x = (short)x;
+            this.y = (short)y;
         }
 
         /// <summary>
-        /// Get the coord one unit to the left of this one.
+        /// Get the coord one unit to the left of this one. (x,y) -> (x-1,y).
         /// </summary>
         public Coord left { get { return new Coord(x - 1, y); } }
 
         /// <summary>
-        /// Get the coord one unit to the right of this one.
+        /// Get the coord one unit to the right of this one. (x,y) -> (x+1,y).
         /// </summary>
         public Coord right { get { return new Coord(x + 1, y); } }
 
         /// <summary>
-        /// Get the coord one unit above this one.
+        /// Get the coord one unit above this one. (x,y) -> (x,y+1).
         /// </summary>
         public Coord up { get { return new Coord(x, y + 1); } }
 
         /// <summary>
-        /// Get the coord one unit below this one.
+        /// Get the coord one unit below this one. (x,y) -> (x,y-1).
         /// </summary>
         public Coord down { get { return new Coord(x, y - 1); } }
 
         /// <summary>
+        /// Get the coord one unit to the top left. (x,y) -> (x-1,y+1).
+        /// </summary>
+        public Coord topLeft { get { return new Coord(x - 1, y + 1); } }
+
+        /// <summary>
+        /// Get the coord one unit to the top left. (x,y) -> (x+1,y+1).
+        /// </summary>
+        public Coord topRight { get { return new Coord(x + 1, y + 1); } }
+
+        /// <summary>
+        /// Get the coord one unit to the top left. (x,y) -> (x+1,y-1).
+        /// </summary>
+        public Coord bottomRight { get { return new Coord(x + 1, y - 1); } }
+
+        /// <summary>
+        /// Get the coord one unit to the top left. (x,y) -> (x-1,y-1).
+        /// </summary>
+        public Coord bottomLeft { get { return new Coord(x - 1, y - 1); } }
+
+        /// <summary>
         /// Get the distance between this coordinate and the given one.
         /// </summary>
-        public double Distance(Coord otherTile)
+        public float Distance(Coord otherTile)
         {
-            return Math.Sqrt(SquaredDistance(otherTile));
+            return Mathf.Sqrt(SquaredDistance(otherTile));
         }
 
         /// <summary>
@@ -64,7 +83,7 @@ namespace CaveGeneration
         /// <returns>Returns the maximum of the absolute difference between individual dimensions.</returns>
         public int SupNormDistance(Coord otherTile)
         {
-            return Math.Max(Math.Abs(x - otherTile.x), Math.Abs(y - otherTile.y));
+            return Mathf.Max(Mathf.Abs(x - otherTile.x), Mathf.Abs(y - otherTile.y));
         }
 
         /// <summary>
@@ -117,9 +136,8 @@ namespace CaveGeneration
 
         public override int GetHashCode()
         {
-            // The idea is to use the first 16 bits to hold x, and the other 16 bits to hold y. 
-            // Since this struct is usually used to hold map coordinates (much smaller than 65536), this results in 
-            // an injective hash code in practice.
+            // Since Coord is a pair of 16 bit objects, 32 bits is exactly enough for bijective mapping between 
+            // Coords and hash codes.
             return (x << 16) ^ y;
         }
 

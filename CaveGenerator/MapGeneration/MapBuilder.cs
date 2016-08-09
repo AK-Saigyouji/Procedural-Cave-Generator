@@ -15,8 +15,13 @@ namespace CaveGeneration.MapGeneration
     public class MapBuilder
     {
         Map map;
+
+        // Once computed, regions are cached until they're invalidated (nullified).
         List<TileRegion> floorRegions;
         List<TileRegion> wallRegions;
+
+        // Reusable list of tiles with max capacity. Used to minimize allocations.
+        List<Coord> tiles;
 
         const int SMOOTHING_ITERATIONS = 5;
         const int CELLULAR_THRESHOLD = 4;
@@ -27,6 +32,7 @@ namespace CaveGeneration.MapGeneration
         public MapBuilder(int length, int width, int squareSize)
         {
             map = new Map(length, width, squareSize);
+            tiles = new List<Coord>(length * width);
         }
 
         /// <summary>
@@ -317,10 +323,10 @@ namespace CaveGeneration.MapGeneration
 
         TileRegion GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
         {
-            TileRegion tiles = new TileRegion();
+            tiles.Clear();
             if (queue.Count == 0)
             {
-                return tiles;
+                return new TileRegion(tiles);
             }
             Tile tileType = map[queue.Peek()];
             while (queue.Count > 0)
@@ -343,7 +349,7 @@ namespace CaveGeneration.MapGeneration
                 if (IsNewTileOfType(visited, down, tileType))
                     queue.Enqueue(down);
             }
-            return tiles;
+            return new TileRegion(tiles);
         }
 
         bool IsNewTileOfType(bool[,] visited, Coord tile, Tile tileType)

@@ -4,19 +4,19 @@ using System;
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// A simple container for three distinct integers. 
+    /// A simple container for three distinct vertex indices. Since there's a 16 bit vertex limit for meshes, 
     /// </summary>
     struct Triangle
     {
-        public int a;
-        public int b;
-        public int c;
+        public ushort a;
+        public ushort b;
+        public ushort c;
 
         public Triangle(int a, int b, int c)
         {
-            this.a = a;
-            this.b = b;
-            this.c = c;
+            this.a = (ushort)a;
+            this.b = (ushort)b;
+            this.c = (ushort)c;
         }
 
         /// <summary>

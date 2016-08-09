@@ -9,12 +9,16 @@ namespace CaveGeneration.MapGeneration
     /// </summary>
     class TileRegion : IEnumerable<Coord>
     {
-        List<Coord> tiles = new List<Coord>();
-        public int Count { get { return tiles.Count; } }
+        Coord[] tiles;
+        public int Count { get { return tiles.Length; } }
 
-        public void Add(Coord coord)
+        public TileRegion(List<Coord> tiles)
         {
-            tiles.Add(coord);
+            this.tiles = new Coord[tiles.Count];
+            for (int i = 0; i < tiles.Count; i++)
+            {
+                this.tiles[i] = tiles[i];
+            }
         }
 
         public Coord this[int index]
@@ -24,7 +28,7 @@ namespace CaveGeneration.MapGeneration
 
         public IEnumerator<Coord> GetEnumerator()
         {
-            for (int i = 0; i < tiles.Count; ++i)
+            for (int i = 0; i < tiles.Length; ++i)
                 yield return tiles[i];
         }
 

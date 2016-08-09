@@ -1,8 +1,5 @@
 ﻿/* This class is used to determine tangents for a mesh. Unity has a built in method to compute normals, but nothing
- * like that for tangents. This class fills that void. 
- * Attribution: This script is from http://forum.unity3d.com/threads/how-to-calculate-mesh-tangents.38984 by user "col000r", 
- * who attributes it to Lengyel, Eric. "Computing Tangent Space Basis Vectors for an Arbitrary Mesh". 
- * Terathon Software 3D Graphics Library, 2001.
+ * for tangents. This class fills that void. 
  */
 
 using UnityEngine;
@@ -11,22 +8,21 @@ namespace CaveGeneration.MeshGeneration
 {
     public static class TangentSolver
     {
-        public static Vector4[] DetermineTangents(Mesh mesh)
+        // Passing in the Mesh itself would be ideal here, but accessing data from the mesh
+        // requires making copies of each array, which produces massive garbage. MeshData does not
+        // create copies.
+        public static Vector4[] DetermineTangents(MeshData mesh, Vector3[] normals)
         {
-            int vertexCount = mesh.vertexCount;
             Vector3[] vertices = mesh.vertices;
-            Vector3[] normals = mesh.normals;
-            Vector2[] texcoords = mesh.uv;
+            Vector2[] uv = mesh.uv;
             int[] triangles = mesh.triangles;
-            int triangleCount = triangles.Length / 3;
+            int vertexCount = vertices.Length;
 
             Vector4[] tangents = new Vector4[vertexCount];
             Vector3[] tan1 = new Vector3[vertexCount];
             Vector3[] tan2 = new Vector3[vertexCount];
 
-            int tri = 0;
-
-            for (int i = 0; i < (triangleCount); i++)
+            for (int tri = 0; tri < triangles.Length; tri += 3)
             {
                 int i1 = triangles[tri];
                 int i2 = triangles[tri + 1];
@@ -36,9 +32,9 @@ namespace CaveGeneration.MeshGeneration
                 Vector3 v2 = vertices[i2];
                 Vector3 v3 = vertices[i3];
 
-                Vector2 w1 = texcoords[i1];
-                Vector2 w2 = texcoords[i2];
-                Vector2 w3 = texcoords[i3];
+                Vector2 w1 = uv[i1];
+                Vector2 w2 = uv[i2];
+                Vector2 w3 = uv[i3];
 
                 float x1 = v2.x - v1.x;
                 float x2 = v3.x - v1.x;
@@ -46,7 +42,7 @@ namespace CaveGeneration.MeshGeneration
                 float y2 = v3.y - v1.y;
                 float z1 = v2.z - v1.z;
                 float z2 = v3.z - v1.z;
-
+                
                 float s1 = w2.x - w1.x;
                 float s2 = w3.x - w1.x;
                 float t1 = w2.y - w1.y;
@@ -63,8 +59,6 @@ namespace CaveGeneration.MeshGeneration
                 tan2[i1] += tdir;
                 tan2[i2] += tdir;
                 tan2[i3] += tdir;
-
-                tri += 3;
             }
 
             for (int i = 0; i < (vertexCount); i++)

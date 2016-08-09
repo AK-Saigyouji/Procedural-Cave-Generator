@@ -136,7 +136,7 @@ namespace CaveGeneration.MeshGeneration
             mesh.triangles = meshData.triangles;
             mesh.RecalculateNormals();
             mesh.uv = meshData.uv;
-            mesh.tangents = TangentSolver.DetermineTangents(mesh);
+            mesh.tangents = TangentSolver.DetermineTangents(meshData, mesh.normals);
             mesh.name = meshData.name + " " + mapIndex;
             return mesh;
         }

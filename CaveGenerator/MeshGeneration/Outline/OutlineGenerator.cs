@@ -27,8 +27,6 @@ namespace CaveGeneration.MeshGeneration
             outlines = new List<Outline>();
         }
 
-        private OutlineGenerator() { }
-
         /// <summary>
         /// Generate and return the outlines based on the data passed in during instantiation.
         /// </summary>
@@ -122,7 +120,7 @@ namespace CaveGeneration.MeshGeneration
                     }
                 }
             }
-            throw new Exception("Failed to initialize outline during mesh generation.");
+            throw new InvalidOperationException("Failed to initialize outline during mesh generation.");
         }
 
         int GetConnectedOutlineVertex(int currentIndex, int outlineSize)
