@@ -240,5 +240,10 @@ namespace CaveGeneration
                 }
             }
         }
+
+        public Grid ToGrid()
+        {
+            return new Grid(grid);
+        }
     }
 }

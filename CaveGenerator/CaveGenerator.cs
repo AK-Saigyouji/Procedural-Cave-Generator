@@ -26,10 +26,10 @@ namespace CaveGeneration
         /// are in order to procedurally generate content. Do note that the geometry of the cave does not lend itself 
         /// to an exact grid representation, so this is only an approximation.
         /// </summary>
-        public Map Map { get; private set; }
+        public Grid Grid { get; private set; }
 
         /// <summary>
-        /// The generated meshes themselves.
+        /// The meshes produced by the cave generator.
         /// </summary>
         public IList<MapMeshes> GeneratedMeshes { get; protected set; }
 
@@ -48,8 +48,9 @@ namespace CaveGeneration
         {
             DestroyChildren();
             IMapGenerator mapGenerator = GetMapGenerator();
-            Map = mapGenerator.GenerateMap();
+            Map Map = mapGenerator.GenerateMap();
             GenerateCaveFromMap(Map);
+            Grid = Map.ToGrid();
         }
 
         virtual protected IMapGenerator GetMapGenerator()
@@ -82,10 +83,7 @@ namespace CaveGeneration
         /// <summary>
         /// Any required height maps should be initialized here.
         /// </summary>
-        protected virtual void PrepareHeightMaps()
-        {
-
-        }
+        protected virtual void PrepareHeightMaps() { }
 
         /// <summary>
         /// Creates a mesh generator for each submap and populates the data in each generator necessary to produce meshes.
@@ -93,13 +91,14 @@ namespace CaveGeneration
         protected MeshGenerator[] PrepareMeshGenerators(IList<Map> submaps)
         {
             MeshGenerator[] meshGenerators = InitializeMeshGenerators(submaps.Count);
-            Action[] actions = new Action[meshGenerators.Length];
+            //Action[] actions = new Action[meshGenerators.Length];
             for (int i = 0; i < meshGenerators.Length; i++)
             {
                 int indexCopy = i;
-                actions[i] = (() => PrepareMeshGenerator(meshGenerators[indexCopy], submaps[indexCopy]));
+                //actions[i] = (() => PrepareMeshGenerator(meshGenerators[indexCopy], submaps[indexCopy]));
+                PrepareMeshGenerator(meshGenerators[indexCopy], submaps[indexCopy]);
             }
-            Utility.Threading.ParallelExecute(actions);
+            //Utility.Threading.ParallelExecute(actions);
             return meshGenerators;
         }
 
@@ -149,12 +148,6 @@ namespace CaveGeneration
                 heightMap = new ConstantHeightMap(baseHeight);
             }
             return heightMap;
-        }
-
-        void SetShadowCastingMode(MeshRenderer meshRenderer, bool castShadows)
-        {
-            meshRenderer.shadowCastingMode = 
-                castShadows ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         protected GameObject CreateSector(int sectorIndex)
