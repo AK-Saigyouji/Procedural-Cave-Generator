@@ -62,9 +62,10 @@ namespace CaveGeneration.MeshGeneration
         {
             this.map = map;
             vertexIndices = new int[MAX_VERTICES_IN_TRIANGULATION];
-            localVertices = new List<Vector2>();
-            triangles = new List<int>();
-            positionToVertexIndex = new Dictionary<int, int>();
+            int maxPossibleVertices = map.length * map.width;
+            localVertices = new List<Vector2>(maxPossibleVertices);
+            triangles = new List<int>(maxPossibleVertices * 6);
+            positionToVertexIndex = new Dictionary<int, int>(maxPossibleVertices);
         }
 
         /// <summary>

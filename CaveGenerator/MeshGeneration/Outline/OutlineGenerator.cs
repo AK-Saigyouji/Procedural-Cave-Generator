@@ -13,18 +13,24 @@ namespace CaveGeneration.MeshGeneration
     class OutlineGenerator
     {
         Vector3[] vertices;
-        Dictionary<int, List<Triangle>> trianglesContainingIndex;
+        int[] triangles;
+        List<Triangle>[] trianglesContainingIndex;
 
         List<Outline> outlines;
         bool[] visited;
+        List<int> outlineTemp;
+        int[] currentTriangle = new int[3]; // Allocated at instance level to avoid allocations or expensive foreach loops
 
+        const int MAX_CONTAINING_TRIANGLES = 8;
         const int MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX = 3;
 
         public OutlineGenerator(MeshData mesh)
         {
             vertices = mesh.vertices;
+            triangles = mesh.triangles;
             trianglesContainingIndex = DetermineContainingTriangles(mesh.triangles);
             outlines = new List<Outline>();
+            outlineTemp = new List<int>(mesh.vertices.Length);
         }
 
         /// <summary>
@@ -43,35 +49,25 @@ namespace CaveGeneration.MeshGeneration
             return outlines;
         }
 
-        Dictionary<int, List<Triangle>> DetermineContainingTriangles(int[] triangles)
+        List<Triangle>[] DetermineContainingTriangles(int[] triangles)
         {
-            var indexToTriangles = new Dictionary<int, List<Triangle>>();
+            var indexToTriangles = new List<Triangle>[vertices.Length];
+            for (int i = 0; i < vertices.Length; i++)
+            {
+                indexToTriangles[i] = new List<Triangle>(MAX_CONTAINING_TRIANGLES);
+            }
             for (int i = 0; i < triangles.Length; i += 3)
             {
                 int a = triangles[i];
                 int b = triangles[i + 1];
                 int c = triangles[i + 2];
 
-                Triangle triangle = new Triangle(a, b, c);
-                AddTriangleToTable(indexToTriangles, a, triangle);
-                AddTriangleToTable(indexToTriangles, b, triangle);
-                AddTriangleToTable(indexToTriangles, c, triangle);
+                Triangle triangle = new Triangle(i);
+                indexToTriangles[a].Add(triangle);
+                indexToTriangles[b].Add(triangle);
+                indexToTriangles[c].Add(triangle);
             }
             return indexToTriangles;
-        }
-
-        void AddTriangleToTable(Dictionary<int, List<Triangle>> table, int index, Triangle triangle)
-        {
-            List<Triangle> triangles;
-            if (table.TryGetValue(index, out triangles))
-            {
-                triangles.Add(triangle);
-            }
-            else
-            {
-                triangles = new List<Triangle> { triangle };
-                table[index] = triangles;
-            }
         }
 
         /// <summary>
@@ -88,17 +84,17 @@ namespace CaveGeneration.MeshGeneration
         void GenerateOutlineFromPoint(int startVertexIndex)
         {
             visited[startVertexIndex] = true;
-            Outline outline = new Outline();
+            outlineTemp.Clear();
 
-            outline.Add(startVertexIndex);
+            outlineTemp.Add(startVertexIndex);
             int nextVertexIndex = GetInitialConnectedOutlineVertex(startVertexIndex);
-            FollowOutline(nextVertexIndex, outline);
-            outline.Add(startVertexIndex);
+            FollowOutline(nextVertexIndex, outlineTemp);
+            outlineTemp.Add(startVertexIndex);
 
-            outlines.Add(outline);
+            outlines.Add(new Outline(outlineTemp));
         }
 
-        void FollowOutline(int vertexIndex, Outline outline)
+        void FollowOutline(int vertexIndex, List<int> outline)
         {
             if (vertexIndex == -1)
                 return;
@@ -110,13 +106,17 @@ namespace CaveGeneration.MeshGeneration
 
         int GetInitialConnectedOutlineVertex(int startIndex)
         {
-            foreach (Triangle triangle in trianglesContainingIndex[startIndex])
+            List<Triangle> containingTriangles = trianglesContainingIndex[startIndex];
+            for (int i = 0; i < containingTriangles.Count; i++)
             {
-                foreach (int nextIndex in triangle.vertices)
+                Triangle triangle = containingTriangles[i];
+                int[] indices = ExtractIndices(triangle);
+                foreach (int nextIndex in indices)
                 {
-                    if (IsOutlineEdge(startIndex, nextIndex) && IsCorrectOrientation(startIndex, nextIndex, triangle))
+                    int vertexIndex = triangles[nextIndex];
+                    if (IsOutlineEdge(startIndex, vertexIndex) && IsCorrectOrientation(startIndex, vertexIndex, triangle))
                     {
-                        return nextIndex;
+                        return vertexIndex;
                     }
                 }
             }
@@ -125,17 +125,28 @@ namespace CaveGeneration.MeshGeneration
 
         int GetConnectedOutlineVertex(int currentIndex, int outlineSize)
         {
-            foreach (Triangle triangle in trianglesContainingIndex[currentIndex])
+            List<Triangle> containingTriangles = trianglesContainingIndex[currentIndex];
+            for (int i = 0; i < containingTriangles.Count; i++)
             {
-                foreach (int nextIndex in triangle.vertices)
+                int[] indices = ExtractIndices(containingTriangles[i]);
+                foreach (int nextIndex in indices)
                 {
-                    if (!visited[nextIndex] && IsOutlineEdge(currentIndex, nextIndex))
+                    int vertexIndex = triangles[nextIndex];
+                    if (!visited[vertexIndex] && IsOutlineEdge(currentIndex, vertexIndex))
                     {
-                        return nextIndex;
+                        return vertexIndex;
                     }
                 }
             }
             return -1;
+        }
+
+        int[] ExtractIndices(Triangle triangle)
+        {
+            currentTriangle[0] = triangle.a;
+            currentTriangle[1] = triangle.b;
+            currentTriangle[2] = triangle.c;
+            return currentTriangle;
         }
 
         bool IsOutlineEdge(int vertexA, int vertexB)
@@ -149,9 +160,10 @@ namespace CaveGeneration.MeshGeneration
         bool DoVerticesShareMultipleTriangles(int vertexA, int vertexB)
         {
             int sharedTriangleCount = 0;
-            foreach (Triangle triangle in trianglesContainingIndex[vertexA])
+            List<Triangle> containingTriangles = trianglesContainingIndex[vertexA];
+            for (int i = 0; i < containingTriangles.Count; i++)
             {
-                if (triangle.Contains(vertexB))
+                if (IsVertexContainedInTriangle(containingTriangles[i], vertexB))
                 {
                     sharedTriangleCount++;
                     if (sharedTriangleCount > 1)
@@ -161,6 +173,11 @@ namespace CaveGeneration.MeshGeneration
                 }
             }
             return false;
+        }
+
+        bool IsVertexContainedInTriangle(Triangle triangle, int vertex)
+        {
+            return triangles[triangle.a] == vertex || triangles[triangle.b] == vertex || triangles[triangle.c] == vertex;
         }
 
         /// <summary>
@@ -174,8 +191,21 @@ namespace CaveGeneration.MeshGeneration
         /// oriented Outline.</returns>
         bool IsCorrectOrientation(int startIndex, int otherIndex, Triangle triangle)
         {
-            int indexThree = triangle.GetThirdPoint(startIndex, otherIndex);
-            return IsRightOf(vertices[startIndex], vertices[otherIndex], vertices[indexThree]);
+            int outsideIndex = GetThirdPoint(startIndex, otherIndex, triangle);
+            return IsRightOf(vertices[startIndex], vertices[otherIndex], vertices[outsideIndex]);
+        }
+        
+        int GetThirdPoint(int indexA, int indexB, Triangle triangle)
+        {
+            foreach (int triangleIndex in triangle.vertices)
+            {
+                int vertexIndex = triangles[triangleIndex];
+                if (vertexIndex != indexA && vertexIndex != indexB)
+                {
+                    return vertexIndex;
+                }
+            }
+            return -1;
         }
 
         /// <summary>

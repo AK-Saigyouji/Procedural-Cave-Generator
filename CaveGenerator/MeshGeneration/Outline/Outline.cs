@@ -10,18 +10,28 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     class Outline : IEnumerable<int>
     {
-        public int Count { get { return indices.Count; } }
+        public int Length { get { return indices.Length; } }
 
-        List<int> indices = new List<int>();
-
-        public void Add(int vertexIndex)
+        int[] indices;
+        
+        public Outline(List<int> indexList)
         {
-            indices.Add(vertexIndex);
+            indices = new int[indexList.Count];
+            for (int i = 0; i < indexList.Count; i++)
+            {
+                indices[i] = indexList[i];
+            }
         }
 
         public void Reverse()
         {
-            indices.Reverse();
+            int length = indices.Length;
+            for (int i = 0; i < length; i++)
+            {
+                int temp = indices[i];
+                indices[i] = indices[length - i - 1];
+                indices[length - i - 1] = temp;
+            }
         }
 
         public IEnumerator<int> GetEnumerator()

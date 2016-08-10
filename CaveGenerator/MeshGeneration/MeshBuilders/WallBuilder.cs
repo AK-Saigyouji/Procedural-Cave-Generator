@@ -27,7 +27,7 @@ namespace CaveGeneration.MeshGeneration
 
         void CreateMesh()
         {
-            int outlineEdgeCount = outlines.Select(outline => outline.Count - 1).Sum();
+            int outlineEdgeCount = outlines.Select(outline => outline.Length - 1).Sum();
             int outlineVertexCount = outlineEdgeCount + outlines.Count;
 
             mesh = new MeshData();
@@ -43,7 +43,7 @@ namespace CaveGeneration.MeshGeneration
             int vertexIndex = 0;
             foreach (Outline outline in outlines)
             {
-                for (int i = 0; i < outline.Count; i++)
+                for (int i = 0; i < outline.Length; i++)
                 {
                     Vector3 vertex = this.vertices[outline[i]];
                     vertices[vertexIndex] = vertex;
@@ -63,7 +63,7 @@ namespace CaveGeneration.MeshGeneration
             {
                 float xPercentage = 0f;
                 float increment = ComputeUVIncrement(outline);
-                for (int i = 0; i < outline.Count; i++, vertexIndex += 2)
+                for (int i = 0; i < outline.Length; i++, vertexIndex += 2)
                 {
                     xPercentage += ComputeDistanceTo(outline, i) * increment;
                     float yPercentage = vertices[outline[i]].y / UVSCALE;
@@ -103,7 +103,7 @@ namespace CaveGeneration.MeshGeneration
         float ComputeOutlineDistance(Outline outline)
         {
             float distance = 0;
-            for (int i = 0; i < outline.Count; i++)
+            for (int i = 0; i < outline.Length; i++)
             {
                 distance += ComputeDistanceTo(outline, i);
             }
@@ -118,7 +118,7 @@ namespace CaveGeneration.MeshGeneration
 
             foreach (Outline outline in outlines)
             {
-                int numEdges = outline.Count - 1;
+                int numEdges = outline.Length - 1;
                 for (int i = 0; i < numEdges; i++, triangleIndex += 6, currentVertex += 2)
                 {
                     AddQuadAtIndex(triangles, triangleIndex, currentVertex);

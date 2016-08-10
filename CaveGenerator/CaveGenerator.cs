@@ -66,7 +66,7 @@ namespace CaveGeneration
             Cave = CreateChild("Cave", transform);
             IList<Map> submaps = map.Subdivide();
             PrepareHeightMaps();
-            MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
+            MeshGenerator[] meshGenerators = PrepareMeshGeneratorsSinglethreaded(submaps);
             GeneratedMeshes = GenerateMeshes(submaps, meshGenerators);
         }
         
