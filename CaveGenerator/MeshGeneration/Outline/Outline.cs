@@ -19,6 +19,11 @@ namespace CaveGeneration.MeshGeneration
             indices.Add(vertexIndex);
         }
 
+        public void Reverse()
+        {
+            indices.Reverse();
+        }
+
         public IEnumerator<int> GetEnumerator()
         {
             return ((IEnumerable<int>)indices).GetEnumerator();

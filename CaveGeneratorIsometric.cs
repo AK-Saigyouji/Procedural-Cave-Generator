@@ -30,7 +30,7 @@ namespace CaveGeneration
             meshGenerator.GenerateIsometric(map, floorHeightMap, ceilingHeightMap);
         }
 
-        protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, int index)
+        protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, Coord index)
         {
             GameObject sector = CreateSector(index);
             Mesh ceilingMesh = CreateCeiling(meshGenerator, sector);

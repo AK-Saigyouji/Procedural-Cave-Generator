@@ -5,12 +5,23 @@ namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
     /// A simple container for three distinct vertex indices. Since there's a 16 bit vertex limit for meshes, 
+    /// the allowed range for triangle vertices is from 0 to 65535.
     /// </summary>
     struct Triangle
     {
-        public ushort a;
-        public ushort b;
-        public ushort c;
+        public readonly ushort a;
+        public readonly ushort b;
+        public readonly ushort c;
+
+        public IEnumerable<int> vertices
+        {
+            get
+            {
+                yield return a;
+                yield return b;
+                yield return c;
+            }
+        }
 
         public Triangle(int a, int b, int c)
         {
@@ -26,16 +37,6 @@ namespace CaveGeneration.MeshGeneration
         public bool Contains(int vertex)
         {
             return (vertex == a) || (vertex == b) || (vertex == c);
-        }
-
-        public IEnumerable<int> vertices
-        {
-            get
-            {
-                yield return a;
-                yield return b;
-                yield return c;
-            }
         }
 
         /// <summary>

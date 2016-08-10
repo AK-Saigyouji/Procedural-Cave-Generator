@@ -91,14 +91,26 @@ namespace CaveGeneration
         protected MeshGenerator[] PrepareMeshGenerators(IList<Map> submaps)
         {
             MeshGenerator[] meshGenerators = InitializeMeshGenerators(submaps.Count);
-            //Action[] actions = new Action[meshGenerators.Length];
+            Action[] actions = new Action[meshGenerators.Length];
             for (int i = 0; i < meshGenerators.Length; i++)
             {
                 int indexCopy = i;
-                //actions[i] = (() => PrepareMeshGenerator(meshGenerators[indexCopy], submaps[indexCopy]));
-                PrepareMeshGenerator(meshGenerators[indexCopy], submaps[indexCopy]);
+                actions[i] = (() => PrepareMeshGenerator(meshGenerators[indexCopy], submaps[indexCopy]));
+        }
+            Utility.Threading.ParallelExecute(actions);
+            return meshGenerators;
+        }
+
+        /// <summary>
+        /// Singlethreaded version of PrepareMeshGenerators. Useful for debugging and profiling.
+        /// </summary>
+        protected MeshGenerator[] PrepareMeshGeneratorsSinglethreaded(IList<Map> submaps)
+        {
+            MeshGenerator[] meshGenerators = InitializeMeshGenerators(submaps.Count);
+            for (int i = 0; i < meshGenerators.Length; i++)
+            {
+                PrepareMeshGenerator(meshGenerators[i], submaps[i]);
             }
-            //Utility.Threading.ParallelExecute(actions);
             return meshGenerators;
         }
 
@@ -118,7 +130,7 @@ namespace CaveGeneration
         /// </summary>
         abstract protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map);
 
-        abstract protected MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, int index);
+        abstract protected MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, Coord index);
 
         protected GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
         {
@@ -150,7 +162,7 @@ namespace CaveGeneration
             return heightMap;
         }
 
-        protected GameObject CreateSector(int sectorIndex)
+        protected GameObject CreateSector(Coord sectorIndex)
         {
             return CreateChild(name: "Sector " + sectorIndex, parent: Cave.transform);
         }

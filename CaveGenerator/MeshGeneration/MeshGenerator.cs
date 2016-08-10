@@ -22,10 +22,10 @@ namespace CaveGeneration.MeshGeneration
 
         List<Outline> outlines;
 
-        int mapIndex;
+        public Coord mapIndex { get; private set; }
 
         /// <summary>
-        /// Generate the data necessary to produce mesh for isometric type cave. Generates ceiling, wall and floor meshes.
+        /// Generate the data necessary to produce meshes for isometric type cave. Generates ceiling, wall and floor meshes.
         /// </summary>
         public void GenerateIsometric(Map map, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
@@ -47,6 +47,7 @@ namespace CaveGeneration.MeshGeneration
             ReverseOutlines();
             GenerateEnclosure(enclosureHeightMap);
             GenerateWallsFromEnclosure();
+            PruneWallsAtGlobalSeams(map.squareSize);
         }
 
         /// <summary>
@@ -83,6 +84,19 @@ namespace CaveGeneration.MeshGeneration
         public Mesh GetEnclosureMesh()
         {
             return CreateMesh(enclosureMesh);
+        }
+
+        public MeshData WallMeshData
+        {
+            get { return wallMesh; }
+        }
+
+        // Because of the fact that enclosed caves build walls around floors instead of walls, the seam between two
+        // floored chunks have walls generated on them. This method removes those walls.
+        void PruneWallsAtGlobalSeams(int scale)
+        {
+            int modulo = scale * Map.maxSubmapSize;
+            WallPruner.PruneModulo(wallMesh, modulo);
         }
 
         void GenerateCeiling(Map map, IHeightMap ceilingHeightMap)

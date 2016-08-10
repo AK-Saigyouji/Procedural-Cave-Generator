@@ -22,7 +22,7 @@ namespace CaveGeneration
         public int length { get { return grid.GetLength(0); } }
         public int width { get { return grid.GetLength(1); } }
         public Vector3 position { get; private set; }
-        public int index { get; private set; }
+        public Coord index { get; private set; }
 
         static public readonly int maxSubmapSize = 75;
 
@@ -79,7 +79,7 @@ namespace CaveGeneration
                 for (int y = 0; y < yNumComponents; y++)
                 {
                     Map subMap = GenerateSubMap(x * maxSubmapSize, y * maxSubmapSize, maxSubmapSize);
-                    subMap.index = x * yNumComponents + y;
+                    subMap.index = new Coord(x, y);
                     maps.Add(subMap);
                 }
             }
