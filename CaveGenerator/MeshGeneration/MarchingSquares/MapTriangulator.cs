@@ -49,23 +49,27 @@ namespace CaveGeneration.MeshGeneration
             new Vector2(0f, 0.5f)
         };
 
-        int[] vertexIndices;
+        VertexIndex[] vertexIndices; // Reusable array to hold the vertices in each square as they're processed.
         Map map;
-        Dictionary<int, int> positionToVertexIndex;
 
+        // These are used to cache vertices as we triangulate the map row by row. 
+        VertexIndex[] currentRow;
+        VertexIndex[] previousRow;
+
+        // These hold all vertices and triangles as they're computed.
         List<Vector2> localVertices;
-        List<int> triangles;
+        List<VertexIndex> triangles;
 
         const int MAX_VERTICES_IN_TRIANGULATION = 6;
 
         public MapTriangulator(Map map)
         {
             this.map = map;
-            vertexIndices = new int[MAX_VERTICES_IN_TRIANGULATION];
+            vertexIndices = new VertexIndex[MAX_VERTICES_IN_TRIANGULATION];
             int maxPossibleVertices = map.length * map.width;
             localVertices = new List<Vector2>(maxPossibleVertices);
-            triangles = new List<int>(maxPossibleVertices * 6);
-            positionToVertexIndex = new Dictionary<int, int>(maxPossibleVertices);
+            triangles = new List<VertexIndex>(maxPossibleVertices * 6);
+            InitializeRows();
         }
 
         /// <summary>
@@ -82,17 +86,27 @@ namespace CaveGeneration.MeshGeneration
         {
             MeshData mesh = new MeshData();
             mesh.vertices = LocalToGlobalPositions(localVertices);
-            mesh.triangles = triangles.ToArray();
+            mesh.triangles = ExtractTriangleArray();
             return mesh;
+        }
+
+        int[] ExtractTriangleArray()
+        {
+            int[] triangleArray = new int[triangles.Count];
+            for (int i = 0; i < triangleArray.Length; i++)
+            {
+                triangleArray[i] = triangles[i];
+            }
+            return triangleArray;
         }
 
         void TriangulateAllSquares()
         {
             int numSquaresAcross = map.length - 1;
             int numSquaresDeep = map.width - 1;
-            for (int x = 0; x < numSquaresAcross; x++)
+            for (int y = 0; y < numSquaresDeep; y++)
             {
-                for (int y = 0; y < numSquaresDeep; y++)
+                for (int x = 0; x < numSquaresAcross; x++)
                 {
                     int configuration = ComputeConfiguration(map[x, y + 1], map[x + 1, y + 1], map[x + 1, y], map[x, y]);
                     if (configuration != 0)
@@ -100,6 +114,32 @@ namespace CaveGeneration.MeshGeneration
                         TriangulateSquare(configuration, x, y);
                     }
                 }
+                SwapRows();
+            }
+        }
+
+        void InitializeRows()
+        {
+            // Each row contains all the squares for that row of the map. Each square holds 8 vertices.
+            VertexIndex[] currentRow = new VertexIndex[map.length * 8];
+            VertexIndex[] previousRow = new VertexIndex[map.length * 8];
+            for (int i = 0; i < currentRow.Length; i++)
+            {
+                currentRow[i] = VertexIndex.VoidValue;
+                previousRow[i] = VertexIndex.VoidValue;
+            }
+            this.currentRow = currentRow;
+            this.previousRow = previousRow;
+        }
+
+        void SwapRows()
+        {
+            VertexIndex[] temp = currentRow;
+            currentRow = previousRow;
+            previousRow = temp;
+            for (int i = 0; i < currentRow.Length; i++)
+            {
+                currentRow[i] = VertexIndex.VoidValue;
             }
         }
 
@@ -118,24 +158,64 @@ namespace CaveGeneration.MeshGeneration
             }
         }
 
-        int GetVertexIndex(int point, int x, int y)
+        VertexIndex GetVertexIndex(int point, int x, int y)
         {
-            Vector2 localPosition = GetLocalPosition(point, x, y);
-            return PositionToIndex(localPosition);
-        }
-
-        int PositionToIndex(Vector2 position)
-        {
-            int vertexIndex;
-            int positionId = ComputePositionId(position);
-            bool isNewPosition = !positionToVertexIndex.TryGetValue(positionId, out vertexIndex);
-            if (isNewPosition)
+            VertexIndex vertexIndex;
+            if (!TryGetCachedVertex(point, x, out vertexIndex))
             {
                 vertexIndex = localVertices.Count;
-                localVertices.Add(position);
-                positionToVertexIndex[positionId] = vertexIndex;
+                Vector2 localPosition = GetLocalPosition(point, x, y);
+                localVertices.Add(localPosition);
             }
+            CacheVertex(vertexIndex, point, x);
             return vertexIndex;
+        }
+
+        bool TryGetCachedVertex(int point, int x, out VertexIndex vertexIndex)
+        {
+            if (IsPointOnBottomOfSquare(point))
+            {
+                vertexIndex = GetVertexFromBelow(point, x);
+            }
+            else if (IsPointOnLeftOfSquare(point) && x > 0)
+            {
+                vertexIndex = GetVertexFromLeft(point, x);
+            }
+            else
+            {
+                vertexIndex = VertexIndex.VoidValue;
+            }
+            return vertexIndex != VertexIndex.VoidValue;
+        }
+
+        void CacheVertex(VertexIndex vertexIndex, int point, int x)
+        {
+            int positionInRow = 8 * x + point;
+            currentRow[positionInRow] = vertexIndex;
+        }
+
+        bool IsPointOnBottomOfSquare(int point)
+        {
+            return point == 6 || point == 5 || point == 4;
+        }
+
+        // Note: we exclude the case where point is on the bottom left corner, which is handled by the method for bottom.
+        bool IsPointOnLeftOfSquare(int point)
+        {
+            return point == 0 || point == 7;
+        }
+
+        VertexIndex GetVertexFromBelow(int point, int x)
+        {
+            int positionInPreviousRow = 8 * x - point + 6;
+            return previousRow[positionInPreviousRow];
+        }
+
+        // Assumes point is either 0 or 7 but not 6.
+        VertexIndex GetVertexFromLeft(int point, int x)
+        {
+            int positionInPreviousSquare = 8 * (x - 1) + 2 + point / 7;
+            return currentRow[positionInPreviousSquare];
         }
 
         void AddTriangles(int numVertices)
@@ -147,7 +227,7 @@ namespace CaveGeneration.MeshGeneration
             }
         }
 
-        void AddTriangle(int a, int b, int c)
+        void AddTriangle(VertexIndex a, VertexIndex b, VertexIndex c)
         {
             triangles.Add(a);
             triangles.Add(b);

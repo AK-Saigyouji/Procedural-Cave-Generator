@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CaveGeneration
@@ -6,7 +7,7 @@ namespace CaveGeneration
     /// <summary>
     /// Immutable representation of a position in a 2d integer grid. Handles coordinates between -32768 and 32767.
     /// </summary>
-    public struct Coord
+    public struct Coord : IEquatable<Coord>
     {
         public readonly short x;
         public readonly short y;

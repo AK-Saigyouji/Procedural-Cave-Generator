@@ -4,8 +4,8 @@ using System;
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Represents a mesh triangle. Its three vertices represent the three entries in a triangle array for a mesh, and are
-    /// thus consecutive integers.
+    /// Highly optimized struct for referencing a mesh triangle. The three vertices represent three consecutive indices
+    /// in a triangle array for a mesh. 
     /// </summary>
     struct Triangle
     {
@@ -25,6 +25,9 @@ namespace CaveGeneration.MeshGeneration
             }
         }
 
+        /// <summary>
+        /// Create a new triangle based on the first index is passed in. Other indices will be inferred.
+        /// </summary>
         public Triangle(int triangleIndex)
         {
             index = (ushort)(triangleIndex / 3);
