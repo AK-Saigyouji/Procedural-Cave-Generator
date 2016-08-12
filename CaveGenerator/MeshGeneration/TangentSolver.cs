@@ -24,17 +24,17 @@ namespace CaveGeneration.MeshGeneration
 
             for (int tri = 0; tri < triangles.Length; tri += 3)
             {
-                int i1 = triangles[tri];
-                int i2 = triangles[tri + 1];
-                int i3 = triangles[tri + 2];
+                int a = triangles[tri];
+                int b = triangles[tri + 1];
+                int c = triangles[tri + 2];
 
-                Vector3 v1 = vertices[i1];
-                Vector3 v2 = vertices[i2];
-                Vector3 v3 = vertices[i3];
+                Vector3 v1 = vertices[a];
+                Vector3 v2 = vertices[b];
+                Vector3 v3 = vertices[c];
 
-                Vector2 w1 = uv[i1];
-                Vector2 w2 = uv[i2];
-                Vector2 w3 = uv[i3];
+                Vector2 w1 = uv[a];
+                Vector2 w2 = uv[b];
+                Vector2 w3 = uv[c];
 
                 float x1 = v2.x - v1.x;
                 float x2 = v3.x - v1.x;
@@ -52,26 +52,22 @@ namespace CaveGeneration.MeshGeneration
                 Vector3 sdir = new Vector3((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
                 Vector3 tdir = new Vector3((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
 
-                tan1[i1] += sdir;
-                tan1[i2] += sdir;
-                tan1[i3] += sdir;
+                tan1[a] += sdir;
+                tan1[b] += sdir;
+                tan1[c] += sdir;
 
-                tan2[i1] += tdir;
-                tan2[i2] += tdir;
-                tan2[i3] += tdir;
+                tan2[a] += tdir;
+                tan2[b] += tdir;
+                tan2[c] += tdir;
             }
 
-            for (int i = 0; i < (vertexCount); i++)
+            for (int i = 0; i < vertexCount; i++)
             {
                 Vector3 n = normals[i];
                 Vector3 t = tan1[i];
                 Vector3.OrthoNormalize(ref n, ref t);
-
-                tangents[i].x = t.x;
-                tangents[i].y = t.y;
-                tangents[i].z = t.z;
-
-                tangents[i].w = (Vector3.Dot(Vector3.Cross(n, t), tan2[i]) < 0.0f) ? -1.0f : 1.0f;
+                float w = (Vector3.Dot(Vector3.Cross(n, t), tan2[i]) < 0.0f) ? -1.0f : 1.0f;
+                tangents[i] = new Vector4(t.x, t.y, t.z, w);
             }
             return tangents;
         }

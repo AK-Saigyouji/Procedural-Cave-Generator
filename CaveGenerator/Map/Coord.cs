@@ -5,7 +5,8 @@ using UnityEngine;
 namespace CaveGeneration
 {
     /// <summary>
-    /// Immutable representation of a position in a 2d integer grid. Handles coordinates between -32768 and 32767.
+    /// Similar to Vector2 but for coordinates, Coord is designed with coordinate grids (2d arrays) in mind. 
+    /// Handles coordinates between -32768 and 32767.
     /// </summary>
     public struct Coord : IEquatable<Coord>
     {
@@ -140,6 +141,16 @@ namespace CaveGeneration
             // Since Coord is a pair of 16 bit objects, 32 bits is exactly enough for bijective mapping between 
             // Coords and hash codes.
             return (x << 16) ^ y;
+        }
+
+        public static implicit operator Vector2(Coord tile)
+        {
+            return new Vector2(tile.x, tile.y);
+        }
+
+        public static implicit operator Coord(Vector2 vector)
+        {
+            return new Coord((int)vector.x, (int)vector.y);
         }
 
         public override string ToString()

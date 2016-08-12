@@ -1,7 +1,6 @@
 ﻿/* This abstract class is the main driver for the entire cave generation algorithm. It accepts the parameters and delegates
  * responsibility to the appropriate subsystems, in particular the map generator and mesh generator. When implementing
- * a cave generator, it is necessary to override the methods responsible for determining what kind of meshes are being
- * generated. */
+ * a cave generator, it is necessary to override the methods responsible for interfacing with the mesh generator. */
 
 using System;
 using System.Collections.Generic;
@@ -46,7 +45,6 @@ namespace CaveGeneration
         /// </summary>
         public void GenerateCave()
         {
-            DestroyChildren();
             IMapGenerator mapGenerator = GetMapGenerator();
             Map Map = mapGenerator.GenerateMap();
             GenerateCaveFromMap(Map);
@@ -69,7 +67,7 @@ namespace CaveGeneration
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
             GeneratedMeshes = GenerateMeshes(submaps, meshGenerators);
         }
-        
+
         IList<MapMeshes> GenerateMeshes(IList<Map> submaps, IList<MeshGenerator> meshGenerators)
         {
             List<MapMeshes> meshes = new List<MapMeshes>();

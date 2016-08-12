@@ -1,10 +1,14 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿/* In meshes, integers are used to represent a position in a vertex array. But since vertex arrays have length at most
+ * 65535, integers waste 16 bits. By using unsigned shorts we can cut in half the GC allocations of any temporary arrays
+ * used to hold vertex indices. Having a named struct also promotes type safety, since an int can refer to many things and
+ * offers many operations not appropriate for a vertex index.
+ */
 
 /// <summary>
 /// Represents a vertex in an array of mesh vertices. Meshes can have up to 65535 vertices: thus VertexIndex goes up to
 /// 65534. Supports incrementation and direct comparison, as well as conversion between integers, but not arithmetic.
 /// </summary>
+public struct VertexIndex : System.IEquatable<VertexIndex> {
 
     readonly ushort value;
     public const ushort VoidValue = 65535;

@@ -1,4 +1,11 @@
-﻿using UnityEngine;
+﻿/* This class turns a Map, which is a grid of 0s and 1s, into a mesh (specifically, into vertices and triangles).
+ * It does this using the Marching Squares algorithm. A square in this context refers to four points in the map
+ * in the arrangement (x,y),(x+1,y),(x,y+1),(x+1,y+1). The algorithm iterates over all such squares, and builds triangles
+ * based on which of the four corners are walls (giving rise to 16 configurations). The corners of the triangles are taken
+ * from the four corners of the square plus the four midpoints of the square. 
+ */
+
+using UnityEngine;
 using System.Collections.Generic;
 
 namespace CaveGeneration.MeshGeneration
@@ -51,10 +58,7 @@ namespace CaveGeneration.MeshGeneration
 
         VertexIndex[] vertexIndices; // Reusable array to hold the vertices in each square as they're processed.
         Map map;
-
-        // These are used to cache vertices as we triangulate the map row by row. 
-        VertexIndex[] currentRow;
-        VertexIndex[] previousRow;
+        VertexLookup vertexCache;
 
         // These hold all vertices and triangles as they're computed.
         List<Vector2> localVertices;
@@ -69,7 +73,7 @@ namespace CaveGeneration.MeshGeneration
             int maxPossibleVertices = map.length * map.width;
             localVertices = new List<Vector2>(maxPossibleVertices);
             triangles = new List<VertexIndex>(maxPossibleVertices * 6);
-            InitializeRows();
+            vertexCache = new VertexLookup(map.length);
         }
 
         /// <summary>
@@ -108,46 +112,21 @@ namespace CaveGeneration.MeshGeneration
             {
                 for (int x = 0; x < numSquaresAcross; x++)
                 {
-                    int configuration = ComputeConfiguration(map[x, y + 1], map[x + 1, y + 1], map[x + 1, y], map[x, y]);
-                    if (configuration != 0)
-                    {
-                        TriangulateSquare(configuration, x, y);
-                    }
+                    TriangulateSquare(x, y);
                 }
-                SwapRows();
+                vertexCache.RowComplete();
             }
         }
 
-        void InitializeRows()
+        void TriangulateSquare(int x, int y)
         {
-            // Each row contains all the squares for that row of the map. Each square holds 8 vertices.
-            VertexIndex[] currentRow = new VertexIndex[map.length * 8];
-            VertexIndex[] previousRow = new VertexIndex[map.length * 8];
-            for (int i = 0; i < currentRow.Length; i++)
+            int configuration = ComputeConfiguration(map, x, y);
+            if (configuration != 0)
             {
-                currentRow[i] = VertexIndex.VoidValue;
-                previousRow[i] = VertexIndex.VoidValue;
+                int[] points = configurationTable[configuration];
+                SetVertexIndices(points, x, y);
+                AddTriangles(points.Length); 
             }
-            this.currentRow = currentRow;
-            this.previousRow = previousRow;
-        }
-
-        void SwapRows()
-        {
-            VertexIndex[] temp = currentRow;
-            currentRow = previousRow;
-            previousRow = temp;
-            for (int i = 0; i < currentRow.Length; i++)
-            {
-                currentRow[i] = VertexIndex.VoidValue;
-            }
-        }
-
-        void TriangulateSquare(int configuration, int x, int y)
-        {
-            int[] points = configurationTable[configuration];
-            SetVertexIndices(points, x, y);
-            AddTriangles(points.Length);
         }
 
         void SetVertexIndices(int[] points, int x, int y)
@@ -161,61 +140,14 @@ namespace CaveGeneration.MeshGeneration
         VertexIndex GetVertexIndex(int point, int x, int y)
         {
             VertexIndex vertexIndex;
-            if (!TryGetCachedVertex(point, x, out vertexIndex))
+            if (!vertexCache.TryGetCachedVertex(point, x, out vertexIndex))
             {
                 vertexIndex = localVertices.Count;
                 Vector2 localPosition = GetLocalPosition(point, x, y);
                 localVertices.Add(localPosition);
             }
-            CacheVertex(vertexIndex, point, x);
+            vertexCache.CacheVertex(vertexIndex, point, x);
             return vertexIndex;
-        }
-
-        bool TryGetCachedVertex(int point, int x, out VertexIndex vertexIndex)
-        {
-            if (IsPointOnBottomOfSquare(point))
-            {
-                vertexIndex = GetVertexFromBelow(point, x);
-            }
-            else if (IsPointOnLeftOfSquare(point) && x > 0)
-            {
-                vertexIndex = GetVertexFromLeft(point, x);
-            }
-            else
-            {
-                vertexIndex = VertexIndex.VoidValue;
-            }
-            return vertexIndex != VertexIndex.VoidValue;
-        }
-
-        void CacheVertex(VertexIndex vertexIndex, int point, int x)
-        {
-            int positionInRow = 8 * x + point;
-            currentRow[positionInRow] = vertexIndex;
-        }
-
-        bool IsPointOnBottomOfSquare(int point)
-        {
-            return point == 6 || point == 5 || point == 4;
-        }
-
-        // Note: we exclude the case where point is on the bottom left corner, which is handled by the method for bottom.
-        bool IsPointOnLeftOfSquare(int point)
-        {
-            return point == 0 || point == 7;
-        }
-
-        VertexIndex GetVertexFromBelow(int point, int x)
-        {
-            int positionInPreviousRow = 8 * x - point + 6;
-            return previousRow[positionInPreviousRow];
-        }
-
-        // Assumes point is either 0 or 7 but not 6.
-        VertexIndex GetVertexFromLeft(int point, int x)
-        {
-            int positionInPreviousSquare = 8 * (x - 1) + 2 + point / 7;
-            return currentRow[positionInPreviousSquare];
         }
 
         void AddTriangles(int numVertices)
@@ -253,14 +185,13 @@ namespace CaveGeneration.MeshGeneration
             return new Vector2(x + offset.x, y + offset.y);
         }
 
-        int ComputePositionId(Vector2 position)
+        int ComputeConfiguration(Map map, int x, int y)
         {
-            return (int)(position.x * 10000 + position.y * 10);
-        }
-
-        int ComputeConfiguration(Tile topLeft, Tile topRight, Tile bottomRight, Tile bottomLeft)
-        {
-            return (int)bottomLeft + ((int)bottomRight * 2) + ((int)topRight * 4) + ((int)topLeft * 8);
+            int bottomLeft = (int)map[x, y];
+            int bottomRight = (int)map[x + 1, y];
+            int topRight = (int)map[x + 1, y + 1];
+            int topLeft = (int)map[x, y + 1];
+            return bottomLeft + bottomRight * 2 + topRight * 4 + topLeft * 8;
         }
     }
 }

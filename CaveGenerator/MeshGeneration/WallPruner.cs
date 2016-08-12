@@ -1,5 +1,11 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿/* This class was created to address a serious bug that arose when using a floor mesh to determine outlines.
+ * Each mesh is only a chunk that has to be patched together with other chunks. If two side-by-side meshes are connected
+ * along floors, then the outline generator would create outlines along that boundary, which would ultimately result
+ * in walls being created where they shouldn't be. This class takes a generated wall mesh and removes the triangles
+ * corresponding to those walls.
+ */
+
+using UnityEngine;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -66,8 +72,8 @@ namespace CaveGeneration.MeshGeneration
         {
             float x = (a.x + b.x + c.x) / 3;
             float z = (a.z + b.z + c.z) / 3;
-            int boundaryIndex = Map.maxSubmapSize;
-            return x % boundaryIndex == 0 || z % boundaryIndex == 0;
+            int boundaryIndex = mod;
+            return (x % boundaryIndex == 0) || (z % boundaryIndex == 0);
         }
     } 
 }

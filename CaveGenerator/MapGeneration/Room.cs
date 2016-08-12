@@ -19,12 +19,14 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public TileRegion edgeTiles { get; private set; }
 
-        Coord[] adjacentCoords = new Coord[8]; // See GetAdjacentCoords method for explanation
+        Coord[] adjacentCoords; // See GetAdjacentCoords method for explanation
 
         public Room(TileRegion region, Map map)
         {
+            adjacentCoords = new Coord[8];
             allTiles = region;
             edgeTiles = GetEdgeTiles(map);
+            adjacentCoords = null;
         }
 
         /// <summary>
@@ -34,10 +36,12 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         TileRegion GetEdgeTiles(Map map)
         {
-            Dictionary<int, bool> visited = new Dictionary<int, bool>(allTiles.Count);
+            // We'll use both whether or not a key is in the dictionary, as well as its true/false value.
+            // This is why a dictionary is used instead of a hashset.
+            Dictionary<Coord, bool> visited = new Dictionary<Coord, bool>(allTiles.Count);
             for (int i = 0; i < allTiles.Count; i++)
             {
-                visited[allTiles[i].GetHashCode()] = false;
+                visited[allTiles[i]] = false;
             }
             List<Coord> edgeTiles = new List<Coord>(allTiles.Count);
             Stack<Coord> stack = new Stack<Coord>();
@@ -45,19 +49,18 @@ namespace CaveGeneration.MapGeneration
             Coord firstTile = allTiles[0];
             stack.Push(firstTile);
             edgeTiles.Add(firstTile);
-            visited[firstTile.GetHashCode()] = true;
+            visited[firstTile] = true;
 
             while (stack.Count > 0)
             {
                 Coord tile = stack.Pop();
                 foreach (Coord adjacentTile in GetAdjacentCoords(tile))
                 {
-                    int id = adjacentTile.GetHashCode();
-                    if (visited.ContainsKey(id) 
+                    if (visited.ContainsKey(adjacentTile) 
                         && map.IsAdjacentToWallFast(adjacentTile) 
-                        && !visited[id])
+                        && !visited[adjacentTile])
                     {
-                        visited[id] = true;
+                        visited[adjacentTile] = true;
                         stack.Push(adjacentTile);
                         edgeTiles.Add(adjacentTile);
                     }

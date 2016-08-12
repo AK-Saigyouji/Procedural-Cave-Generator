@@ -24,7 +24,7 @@ namespace CaveGeneration
         public Vector3 position { get; private set; }
         public Coord index { get; private set; }
 
-        static public readonly int maxSubmapSize = 75;
+        public const int maxSubmapSize = 75;
 
         public Map(int length, int width, int squareSize)
         {
@@ -65,7 +65,7 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Cut up the Map into smaller Map chunks.
+        /// Divide the map into smaller Map chunks.
         /// </summary>
         /// <param name="submapSize">Maximum length and width for each submap.</param>
         /// <returns>Returns a list of smaller Map objects.</returns>
@@ -95,7 +95,7 @@ namespace CaveGeneration
             {
                 for (int y = yStart; y < yEnd; y++)
                 {
-                    subMap[x - xStart, y - yStart] = this[x, y];
+                    subMap[x - xStart, y - yStart] = grid[x, y];
                 }
             }
             subMap.position = new Vector3(xStart * squareSize, 0f, yStart * squareSize);
@@ -118,7 +118,7 @@ namespace CaveGeneration
         /// </summary>
         public bool IsAdjacentToWall(int x, int y)
         {
-            return GetAdjacentTiles(x, y).Any(adjTile => this[x, y] == Tile.Wall);
+            return GetAdjacentTiles(x, y).Any(adjTile => grid[x, y] == Tile.Wall);
         }
 
         /// <summary>
@@ -127,7 +127,7 @@ namespace CaveGeneration
         /// </summary>
         public bool IsAdjacentToWall(Coord tile)
         {
-            return GetAdjacentTiles(tile).Any(adjTile => this[adjTile] == Tile.Wall);
+            return IsAdjacentToWall(tile.x, tile.y);
         }
 
         /// <summary>
@@ -136,8 +136,8 @@ namespace CaveGeneration
         /// </summary>
         public bool IsAdjacentToWallFast(int x, int y)
         {
-            return this[x - 1, y] == Tile.Wall || this[x + 1, y] == Tile.Wall 
-                || this[x, y + 1] == Tile.Wall || this[x, y - 1] == Tile.Wall;
+            return grid[x - 1, y] == Tile.Wall || grid[x + 1, y] == Tile.Wall 
+                || grid[x, y + 1] == Tile.Wall || grid[x, y - 1] == Tile.Wall;
         }
 
         /// <summary>
@@ -206,14 +206,7 @@ namespace CaveGeneration
         /// </summary>
         public IEnumerable<Coord> GetAdjacentTiles(int x, int y)
         {
-            if (x > 0)
-                yield return new Coord(x - 1, y);
-            if (x + 1 < length)
-                yield return new Coord(x + 1, y);
-            if (y > 0)
-                yield return new Coord(x, y - 1);
-            if (y + 1 < width)
-                yield return new Coord(x, y + 1);
+            return GetAdjacentTiles(new Coord(x, y));
         }
 
         /// <summary>
@@ -224,7 +217,14 @@ namespace CaveGeneration
         /// </summary>
         public IEnumerable<Coord> GetAdjacentTiles(Coord tile)
         {
-            return GetAdjacentTiles(tile.x, tile.y);
+            if (tile.x > 0)
+                yield return tile.left;
+            if (tile.x + 1 < length)
+                yield return tile.right;
+            if (tile.y > 0)
+                yield return tile.down;
+            if (tile.y + 1 < width)
+                yield return tile.up;
         }
 
         /// <summary>
