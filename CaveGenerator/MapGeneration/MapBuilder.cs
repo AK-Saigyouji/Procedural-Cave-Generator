@@ -42,12 +42,12 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void InitializeRandomFill(float mapDensity, int seed)
         {
-            Random.seed = seed;
+            System.Random random = new System.Random(seed);
             for (int x = 0; x < map.length; x++)
             {
                 for (int y = 0; y < map.width; y++)
                 {
-                    map[x, y] = GetRandomTile(mapDensity, x, y);
+                    map[x, y] = GetRandomTile(mapDensity, x, y, random);
                 }
             }
             ResetRegions();
@@ -170,9 +170,9 @@ namespace CaveGeneration.MapGeneration
             return map;
         }
 
-        Tile GetRandomTile(float mapDensity, int x, int y)
+        Tile GetRandomTile(float mapDensity, int x, int y, System.Random random)
         {
-            if (Random.value < mapDensity || map.IsBoundaryTile(x, y))
+            if (random.NextDouble() < mapDensity || map.IsBoundaryTile(x, y))
             {
                 return Tile.Wall;
             }
@@ -393,25 +393,6 @@ namespace CaveGeneration.MapGeneration
         void CreatePassage(RoomConnection connection, int tunnelingRadius)
         {
             tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
-            List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
-            foreach (Coord coord in line)
-            {
-                ClearNeighbors(map, coord, tunnelingRadius);
-            }
-        }
-
-        /// <summary>
-        /// Debug method for visualizing the created connections. Use in place of CreatePassage if you want to see in the editor
-        /// exactly what connections are being made and where. Do not use in actual build, as Debug functionality is slow and will
-        /// run during gameplay. 
-        /// </summary>
-        void CreatePassageDebug(RoomConnection connection, int tunnelingRadius)
-        {
-            Coord A = connection.tileA;
-            Coord B = connection.tileB;
-            Vector3 start = new Vector3(A.x, 0f, A.y);
-            Vector3 end = new Vector3(B.x, 0f, B.y);
-            Debug.DrawLine(start, end, Color.cyan, 10000);
             List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
             foreach (Coord coord in line)
             {

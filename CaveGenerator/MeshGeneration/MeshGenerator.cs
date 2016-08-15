@@ -22,14 +22,14 @@ namespace CaveGeneration.MeshGeneration
 
         IList<Outline> outlines;
 
-        public Coord mapIndex { get; private set; }
+        public Coord index { get; private set; }
 
         /// <summary>
         /// Generate the data necessary to produce meshes for isometric type cave. Generates ceiling, wall and floor meshes.
         /// </summary>
         public void GenerateIsometric(Map map, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            mapIndex = map.index;
+            index = map.index;
             GenerateCeiling(map, ceilingHeightMap);
             ComputeMeshOutlines(ceilingMesh);
             GenerateWallsFromCeiling();
@@ -41,7 +41,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public void GenerateEnclosed(Map map, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
         {
-            mapIndex = map.index;
+            index = map.index;
             GenerateFloor(map, floorHeightMap);
             ComputeMeshOutlines(floorMesh);
             ReverseOutlines();

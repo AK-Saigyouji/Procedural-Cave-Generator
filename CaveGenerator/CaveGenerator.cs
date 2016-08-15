@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CaveGeneration.MeshGeneration;
 using CaveGeneration.MapGeneration;
+using System.Collections;
 
 namespace CaveGeneration
 {
@@ -16,6 +17,12 @@ namespace CaveGeneration
         protected MapParameters mapParameters;
 
         GameObject Cave;
+        Map map;
+
+        // This is defined at instance level to work around the inability to return values using Unity coroutines.
+        MeshGenerator[] meshGenerators;
+
+        public bool isGenerating { get; private set; }
 
         /// <summary>
         /// Grid representation of the most recently generated cave. Can be used to figure out where the empty spaces
@@ -41,15 +48,28 @@ namespace CaveGeneration
         /// </summary>
         public void GenerateCave()
         {
-            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
-            sw.Start();
+            if (isGenerating)
+            {
+                Debug.Log("Cannot generate cave: cave is already being generated.");
+                return;
+            }
+            isGenerating = true;
+            Debug.Log("Generating cave...");
             DestroyCurrentCave();
-            IMapGenerator mapGenerator = GetMapGenerator();
-            Map Map = mapGenerator.GenerateMap();
-            Utility.Stopwatch.Query(sw, "Time:");
-            GenerateCaveFromMap(Map);
-            Utility.Stopwatch.Query(sw, "Time:");
-            Grid = Map.ToGrid();
+            PrepareHeightMaps();
+            StartCoroutine(GenerateCaveAsync());
+        }
+
+        IEnumerator GenerateCaveAsync()
+        {
+            WaitForSeconds pause = new WaitForSeconds(0.01f);
+            Action generate = GenerateMap;
+            var result = generate.BeginInvoke(null, null);
+            while (!result.IsCompleted)
+            {
+                yield return pause;
+            }
+            yield return GenerateCaveFromMap();
         }
 
         /// <summary>
@@ -63,31 +83,40 @@ namespace CaveGeneration
             return temp;
         }
 
-        virtual protected IMapGenerator GetMapGenerator()
+        // This method gets run on a background and constitutes the bulk of the generation.
+        // Nothing in this method can touch the Unity API.
+        void GenerateMap()
         {
-            return new MapGenerator(mapParameters);
+            IMapGenerator mapGenerator = new MapGenerator(mapParameters);
+            map = mapGenerator.GenerateMap();
+            IList<Map> submaps = map.Subdivide();
+            meshGenerators = PrepareMeshGenerators(submaps);
         }
 
-        /// <summary>
-        /// Produce the actual game object from the map as a child of the current game object. 
-        /// </summary>
-        protected void GenerateCaveFromMap(Map map)
+        // This constitutes the rest of the cave generator, the part that must interact with the Unity API.
+        IEnumerator GenerateCaveFromMap()
         {
             Cave = CreateChild("Cave", transform);
-            IList<Map> submaps = map.Subdivide();
-            PrepareHeightMaps();
-            MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
-            GeneratedMeshes = GenerateMeshes(submaps, meshGenerators);
+            yield return GenerateMeshes(meshGenerators);
+            Grid = map.ToGrid();
+            TearDown();
         }
 
-        IList<MapMeshes> GenerateMeshes(IList<Map> submaps, IList<MeshGenerator> meshGenerators)
+        void TearDown()
         {
-            List<MapMeshes> meshes = new List<MapMeshes>();
-            for (int i = 0; i < submaps.Count; i++)
+            map = null;
+            meshGenerators = null;
+            Debug.Log("Cave generated!");
+            isGenerating = false;
+        }
+
+        IEnumerator GenerateMeshes(IList<MeshGenerator> meshGenerators)
+        {
+            GeneratedMeshes = new List<MapMeshes>();
+            foreach (var meshGenerator in meshGenerators)
             {
-                meshes.Add(CreateMapMeshes(meshGenerators[i], submaps[i].index));
+                yield return CreateMapMeshes(meshGenerator);
             }
-            return meshes.AsReadOnly();
         }
 
         /// <summary>
@@ -114,7 +143,7 @@ namespace CaveGeneration
         /// <summary>
         /// Singlethreaded version of PrepareMeshGenerators. Useful for debugging and profiling.
         /// </summary>
-        protected MeshGenerator[] PrepareMeshGeneratorsSinglethreaded(IList<Map> submaps)
+        MeshGenerator[] PrepareMeshGeneratorsSinglethreaded(IList<Map> submaps)
         {
             MeshGenerator[] meshGenerators = InitializeMeshGenerators(submaps.Count);
             for (int i = 0; i < meshGenerators.Length; i++)
@@ -124,7 +153,7 @@ namespace CaveGeneration
             return meshGenerators;
         }
 
-        protected MeshGenerator[] InitializeMeshGenerators(int count)
+        MeshGenerator[] InitializeMeshGenerators(int count)
         {
             MeshGenerator[] meshGenerators = new MeshGenerator[count];
             for (int i = 0; i < count; i++)
@@ -140,7 +169,11 @@ namespace CaveGeneration
         /// </summary>
         abstract protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map);
 
-        abstract protected MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, Coord index);
+        /// <summary>
+        /// After meshes have been prepared, this method is called to generate MapMeshes objects.
+        /// When overriding, add the created MapMesh object to the instance-level MeshGenerators list.
+        /// </summary>
+        abstract protected IEnumerator CreateMapMeshes(MeshGenerator meshGenerator);
 
         protected GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
         {
@@ -170,6 +203,50 @@ namespace CaveGeneration
                 heightMap = new ConstantHeightMap(baseHeight);
             }
             return heightMap;
+        }
+
+        protected Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector, Material ceilingMaterial)
+        {
+            string name = "Ceiling " + meshGenerator.index;
+            Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
+            ceilingMesh.name = name;
+            CreateGameObjectFromMesh(ceilingMesh, name, sector, ceilingMaterial);
+            return ceilingMesh;
+        }
+
+        protected Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector, Material wallMaterial)
+        {
+            string name = "Wall " + meshGenerator.index;
+            Mesh wallMesh = meshGenerator.GetWallMesh();
+            wallMesh.name = name;
+            GameObject wall = CreateGameObjectFromMesh(wallMesh, name, sector, wallMaterial);
+            AddMeshCollider(wall, wallMesh);
+            return wallMesh;
+        }
+
+        protected Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector, Material floorMaterial)
+        {
+            string name = "Floor " + meshGenerator.index;
+            Mesh floorMesh = meshGenerator.GetFloorMesh();
+            floorMesh.name = name;
+            GameObject floor = CreateGameObjectFromMesh(floorMesh, name, sector, floorMaterial);
+            AddMeshCollider(floor, floorMesh);
+            return floorMesh;
+        }
+
+        protected Mesh CreateEnclosure(MeshGenerator meshGenerator, GameObject sector, Material enclosureMaterial)
+        {
+            string name = "Enclosure " + meshGenerator.index;
+            Mesh enclosureMesh = meshGenerator.GetEnclosureMesh();
+            enclosureMesh.name = name;
+            CreateGameObjectFromMesh(enclosureMesh, name, sector, enclosureMaterial);
+            return enclosureMesh;
+        }
+
+        void AddMeshCollider(GameObject gameObject, Mesh mesh)
+        {
+            MeshCollider collider = gameObject.AddComponent<MeshCollider>();
+            collider.sharedMesh = mesh;
         }
 
         protected GameObject CreateSector(Coord sectorIndex)
