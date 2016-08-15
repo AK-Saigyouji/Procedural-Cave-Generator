@@ -1,4 +1,8 @@
-﻿using UnityEngine;
+﻿/* The basic idea behind wallbuilder is to generate quads on top of 2d outlines. The main challenge is the uv array,
+ * which is addressed more thoroughly in comments preceding the corresponding method. 
+ */
+
+using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -7,13 +11,13 @@ namespace CaveGeneration.MeshGeneration
     class WallBuilder : IMeshBuilder
     {
         Vector3[] vertices;
-        List<Outline> outlines;
+        IList<Outline> outlines;
         MeshData mesh;
 
         const float UVSCALE = 3f;
-        const string name = "Wall Mesh";
 
-        public WallBuilder(Vector3[] vertices, List<Outline> outlines)
+
+        public WallBuilder(Vector3[] vertices, IList<Outline> outlines)
         {
             this.vertices = vertices;
             this.outlines = outlines;
@@ -31,7 +35,6 @@ namespace CaveGeneration.MeshGeneration
             int outlineVertexCount = outlineEdgeCount + outlines.Count;
 
             mesh = new MeshData();
-            mesh.name = name;
             mesh.vertices = GetVertices(outlineVertexCount);
             mesh.triangles = GetTriangles(outlineEdgeCount);
             mesh.uv = GetUVs(outlineVertexCount);
@@ -54,6 +57,24 @@ namespace CaveGeneration.MeshGeneration
             return vertices;
         }
 
+        /* Computing the UV array for the walls proves to be a tricky matter. Unlike other meshes like the floor,
+         * it is not possible to consistently determine the UV for walls based purely on global coordinates. On top of that,
+         * there are two extra challenges. Walls are built on top of outline edges. But the distance between pairs of 
+         * outline edges is inconsistent. So it's necessary to use distance in computing the u coordinate. The second
+         * challenge is ensuring that the left edge of the beginning of an outline matches up with the right side of
+         * the end of the outline. 
+         * 
+         * The following implementation addresses both issues. To address the first, we base the u coordinate
+         * for each point in the outline on the length of the outline so far. To address the second, we scale
+         * this value by a quantity (uvIncrement) which ensures that the final u coordinate will be an integer,
+         * so that the texture will tile seamlessly. uvIncrement also serves the purpose of reducing the growth of u
+         * by a constant factor so that it doesn't tile too rapidly.
+         * 
+         * The one issue not addressed by this implementation is that the uv coordinates for a wall in one map chunk
+         * will not in general match up with the wall in an adjacent map chunk. It's not clear that there is a viable
+         * way to do this locally: it might be necessary to 'correct' wall UVs globally. 
+         */
+
         Vector2[] GetUVs(int outlineEdgeCount)
         {
             Vector2[] uv = new Vector2[2 * outlineEdgeCount];
@@ -61,14 +82,14 @@ namespace CaveGeneration.MeshGeneration
 
             foreach (Outline outline in outlines)
             {
-                float xPercentage = 0f;
+                float u = 0f;
                 float increment = ComputeUVIncrement(outline);
                 for (int i = 0; i < outline.Length; i++, vertexIndex += 2)
                 {
-                    xPercentage += ComputeDistanceTo(outline, i) * increment;
-                    float yPercentage = vertices[outline[i]].y / UVSCALE;
-                    uv[vertexIndex] = new Vector2(xPercentage, yPercentage);
-                    uv[vertexIndex + 1] = new Vector2(xPercentage, 0f);
+                    u += ComputeDistanceTo(outline, i) * increment;
+                    float v = vertices[outline[i]].y / UVSCALE;
+                    uv[vertexIndex] = new Vector2(u, v);
+                    uv[vertexIndex + 1] = new Vector2(u, 0f);
                 }
             }
             return uv;

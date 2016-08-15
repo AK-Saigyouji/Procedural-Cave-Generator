@@ -33,31 +33,37 @@ namespace CaveGeneration
         protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, Coord index)
         {
             GameObject sector = CreateSector(index);
-            Mesh ceilingMesh = CreateCeiling(meshGenerator, sector);
-            Mesh wallMesh = CreateWall(meshGenerator, sector);
-            Mesh floorMesh = CreateFloor(meshGenerator, sector);
+            Mesh ceilingMesh = CreateCeiling(meshGenerator, sector, index);
+            Mesh wallMesh = CreateWall(meshGenerator, sector, index);
+            Mesh floorMesh = CreateFloor(meshGenerator, sector, index);
             return new MapMeshes(ceilingMesh, wallMesh, floorMesh);
         }
 
-        Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector)
+        Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector, Coord index)
         {
+            string name = "Ceiling " + index;
             Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
-            CreateGameObjectFromMesh(ceilingMesh, "Ceiling", sector, ceilingMaterial);
+            ceilingMesh.name = name;
+            CreateGameObjectFromMesh(ceilingMesh, name, sector, ceilingMaterial);
             return ceilingMesh;
         }
 
-        Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
+        Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector, Coord index)
         {
+            string name = "Wall " + index;
             Mesh wallMesh = meshGenerator.GetWallMesh();
-            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
+            wallMesh.name = name;
+            GameObject wall = CreateGameObjectFromMesh(wallMesh, name, sector, wallMaterial);
             AddMeshCollider(wall, wallMesh);
             return wallMesh;
         }
 
-        Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
+        Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector, Coord index)
         {
+            string name = "Floor " + index;
             Mesh floorMesh = meshGenerator.GetFloorMesh();
-            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
+            floorMesh.name = name;
+            GameObject floor = CreateGameObjectFromMesh(floorMesh, name, sector, floorMaterial);
             AddMeshCollider(floor, floorMesh);
             return floorMesh;
         }

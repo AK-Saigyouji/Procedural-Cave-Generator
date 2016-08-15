@@ -26,7 +26,8 @@ public class MapGeneratorEditor : Editor {
 
     public void CreatePrefab(CaveGenerator caveGenerator)
     {
-        if (caveGenerator.Cave == null)
+        GameObject cave = caveGenerator.ExtractCave();
+        if (cave == null)
         {
             Debug.Log("Cavegenerator: no cave object found!");
             return;
@@ -37,7 +38,8 @@ public class MapGeneratorEditor : Editor {
         {
             CreateMeshAssets(meshes, path);
         }
-        CreateCavePrefab(path, caveGenerator.Cave);
+        CreateCavePrefab(path, cave);
+        Destroy(cave);
     }
 
     void CreateMeshAssets(MapMeshes mapMeshes, string path)

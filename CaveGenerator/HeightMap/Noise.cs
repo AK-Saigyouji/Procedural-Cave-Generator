@@ -3,20 +3,30 @@
 namespace CaveGeneration
 {
     /// <summary>
-    /// Random number generator that produces continuously varying numbers between 0 and 1 by stacking several
-    /// layers of Perlin Noise and then normalizing. 
+    /// Random number generator that produces continuously varying numbers between 0 and 1.
     /// </summary>
     public class Noise
     {
-        Vector2[] offsets;
-        float[] amplitudes;
-        float[] frequencies;
+        Vector2[] offsets; // Offsets provide randomness to the noise by offsetting the points of perlin noise we sample.
+        float[] amplitudes; // Descending coefficients for the contribution of each layer.
+        float[] frequencies; // Ascending coefficients for how closely together points of each layer are sampled.
 
-        float scale;
+        float scale; // Starting frequency / level of compression.
 
         const int OFFSET_MINIMUM = -100000;
         const int OFFSET_MAXIMUM = 100000;
 
+        /// <summary>
+        /// Create a new random number generator by specifying how layers of Perlin Noise should be added together. Using
+        /// just one layer results in ordinary Perlin Noise stretched out based on scale.
+        /// </summary>
+        /// <param name="numLayers">How many layers of Perlin Noise should be used.</param>
+        /// <param name="amplitudePersistance">Determines the coefficient for each layer. Layer n will receive a 
+        /// coefficient of this value raised to the power of n. Values will be clamped to within 0 and 1.</param>
+        /// <param name="frequencyGrowth">How compressed subsequent layers should be, i.e. how rapidly values
+        /// change as relative to input parameters. Values below 1 will be clamped to 1.</param>
+        /// <param name="scale">Initial frequency. Think rolling hills (low scale) vs jagged mountains (high scale).</param>
+        /// <param name="seed">Fixes the randomness.</param>
         public Noise(int numLayers, float amplitudePersistance, float frequencyGrowth, float scale, int seed)
         {
             this.scale = scale;
@@ -39,8 +49,7 @@ namespace CaveGeneration
             }
             return Mathf.InverseLerp(-1f, 1f, height);
         }
-
-        // Offsets provide randomness to the noise by offsetting the points of perlin noise we sample. 
+ 
         Vector2[] CreateOffsets(int seed, int numLayers)
         {
             Vector2[] offsets = new Vector2[numLayers];

@@ -15,10 +15,7 @@ namespace CaveGeneration
         [SerializeField]
         protected MapParameters mapParameters;
 
-        /// <summary>
-        /// Most recently generated cave. Null if no cave has been generated.
-        /// </summary>
-        public GameObject Cave { get; protected set; }
+        GameObject Cave;
 
         /// <summary>
         /// Grid representation of the most recently generated cave. Can be used to figure out where the empty spaces
@@ -39,16 +36,31 @@ namespace CaveGeneration
         public MapParameters MapParameters { get { return mapParameters; } protected set { } }
 
         /// <summary>
-        /// Main method for creating cave objects. By default, the cave will be a child of the object holding the cave 
-        /// generate script. Can also be accessed through the Cave property. Associated Map object can be accessed
-        /// through Map property.
+        /// Main method for creating cave objects. Call ExtractCave to get a reference to the most recently generated cave.
+        /// If ExtractCave is not called, next call to GenerateCave will override the most recently generated cave.
         /// </summary>
         public void GenerateCave()
         {
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
+            DestroyCurrentCave();
             IMapGenerator mapGenerator = GetMapGenerator();
             Map Map = mapGenerator.GenerateMap();
+            Utility.Stopwatch.Query(sw, "Time:");
             GenerateCaveFromMap(Map);
+            Utility.Stopwatch.Query(sw, "Time:");
             Grid = Map.ToGrid();
+        }
+
+        /// <summary>
+        /// Gets the most recently generated cave. Will also prevent it from being destroyed by the next call to generate cave.
+        /// </summary>
+        /// <returns>Most recently generated cave. Null if no cave has been generated or if it's already been extracted.</returns>
+        public GameObject ExtractCave()
+        {
+            GameObject temp = Cave;
+            Cave = null;
+            return temp;
         }
 
         virtual protected IMapGenerator GetMapGenerator()
@@ -57,9 +69,9 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Produces the actual game object from the map as a child of the current game object. 
+        /// Produce the actual game object from the map as a child of the current game object. 
         /// </summary>
-        virtual protected void GenerateCaveFromMap(Map map)
+        protected void GenerateCaveFromMap(Map map)
         {
             Cave = CreateChild("Cave", transform);
             IList<Map> submaps = map.Subdivide();
@@ -172,17 +184,11 @@ namespace CaveGeneration
             return child;
         }
 
-        void DestroyChildren()
+        void DestroyCurrentCave()
         {
-            List<Transform> children = new List<Transform>();
-            foreach (Transform child in transform)
+            if (Cave != null)
             {
-                children.Add(child);
-            }
-            foreach (Transform child in children)
-            {
-                child.parent = null;
-                Destroy(child.gameObject);
+                Destroy(Cave);
             }
         }
 

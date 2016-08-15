@@ -33,7 +33,7 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// Generate and return the outlines based on the data passed in during instantiation.
         /// </summary>
-        public List<Outline> GenerateOutlines()
+        public IList<Outline> GenerateOutlines()
         {
             var outlines = new List<Outline>();
             visited = new bool[vertices.Length];
@@ -44,7 +44,7 @@ namespace CaveGeneration.MeshGeneration
                     outlines.Add(GenerateOutlineFromPoint(index));
                 }
             }
-            return outlines;
+            return outlines.AsReadOnly();
         }
 
         /// <summary>

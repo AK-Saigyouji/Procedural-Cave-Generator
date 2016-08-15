@@ -82,7 +82,7 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Expand each floor region by a number of tiles in each direction based on the provided parameter.
+        /// Expand each floor region by a number of tiles in each direction based on the provided argument.
         /// </summary>
         public void ExpandRegions(int radius)
         {

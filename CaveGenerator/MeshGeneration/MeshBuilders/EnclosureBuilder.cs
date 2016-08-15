@@ -11,8 +11,6 @@ namespace CaveGeneration.MeshGeneration
         int wallHeight;
         IHeightMap heightMap;
 
-        const string name = "Enclosure Mesh";
-
         public EnclosureBuilder(MeshData floorMesh, IHeightMap heightMap)
         {
             this.floorMesh = floorMesh;
@@ -24,7 +22,6 @@ namespace CaveGeneration.MeshGeneration
         {
             mesh = FloorToEnclosureMesh();
             ApplyHeightMap();
-            mesh.name = name;
             return mesh;
         }
 

@@ -32,32 +32,38 @@ namespace CaveGeneration
         protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator, Coord index)
         {
             GameObject sector = CreateSector(index);
-            Mesh wallMesh = CreateWall(meshGenerator, sector);
-            Mesh floorMesh = CreateFloor(meshGenerator, sector);
-            Mesh enclosureMesh = CreateEnclosure(meshGenerator, sector);
+            Mesh wallMesh = CreateWall(meshGenerator, sector, index);
+            Mesh floorMesh = CreateFloor(meshGenerator, sector, index);
+            Mesh enclosureMesh = CreateEnclosure(meshGenerator, sector, index);
             return new MapMeshes(wallMesh, floorMesh, enclosureMesh);
         }
 
-        Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector)
+        Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector, Coord index)
         {
+            string name = "Walls " + index;
             Mesh wallMesh = meshGenerator.GetWallMesh();
-            GameObject wall = CreateGameObjectFromMesh(wallMesh, "Walls", sector, wallMaterial);
+            wallMesh.name = name;
+            GameObject wall = CreateGameObjectFromMesh(wallMesh, name, sector, wallMaterial);
             AddMeshCollider(wall, wallMesh);
             return wallMesh;
         }
 
-        Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector)
+        Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector, Coord index)
         {
+            string name = "Floor " + index;
             Mesh floorMesh = meshGenerator.GetFloorMesh();
-            GameObject floor = CreateGameObjectFromMesh(floorMesh, "Floor", sector, floorMaterial);
+            floorMesh.name = name;
+            GameObject floor = CreateGameObjectFromMesh(floorMesh, name, sector, floorMaterial);
             AddMeshCollider(floor, floorMesh);
             return floorMesh;
         }
 
-        Mesh CreateEnclosure(MeshGenerator meshGenerator, GameObject sector)
+        Mesh CreateEnclosure(MeshGenerator meshGenerator, GameObject sector, Coord index)
         {
+            string name = "Enclosure " + index;
             Mesh enclosureMesh = meshGenerator.GetEnclosureMesh();
-            CreateGameObjectFromMesh(enclosureMesh, "Enclosure", sector, enclosureMaterial);
+            enclosureMesh.name = name;
+            CreateGameObjectFromMesh(enclosureMesh, name, sector, enclosureMaterial);
             return enclosureMesh;
         }
 

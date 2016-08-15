@@ -20,7 +20,7 @@ namespace CaveGeneration.MeshGeneration
         MeshData floorMesh;
         MeshData enclosureMesh;
 
-        List<Outline> outlines;
+        IList<Outline> outlines;
 
         public Coord mapIndex { get; private set; }
 
@@ -56,7 +56,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetCeilingMesh()
         {
-            return CreateMesh(ceilingMesh);
+            return ceilingMesh.CreateMesh();
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetWallMesh()
         {
-            return CreateMesh(wallMesh);
+            return wallMesh.CreateMesh();
         }
 
         /// <summary>
@@ -74,7 +74,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetFloorMesh()
         {
-            return CreateMesh(floorMesh);
+            return floorMesh.CreateMesh();
         }
 
         /// <summary>
@@ -83,12 +83,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public Mesh GetEnclosureMesh()
         {
-            return CreateMesh(enclosureMesh);
-        }
-
-        public MeshData WallMeshData
-        {
-            get { return wallMesh; }
+            return enclosureMesh.CreateMesh();
         }
 
         // Because of the fact that enclosed caves build walls around floors instead of walls, the seam between two
@@ -141,18 +136,6 @@ namespace CaveGeneration.MeshGeneration
             {
                 outline.Reverse();
             }
-        }
-
-        Mesh CreateMesh(MeshData meshData)
-        {
-            Mesh mesh = new Mesh();
-            mesh.vertices = meshData.vertices;
-            mesh.triangles = meshData.triangles;
-            mesh.RecalculateNormals();
-            mesh.uv = meshData.uv;
-            mesh.tangents = TangentSolver.DetermineTangents(meshData, mesh.normals);
-            mesh.name = meshData.name + " " + mapIndex;
-            return mesh;
         }
     }
 }

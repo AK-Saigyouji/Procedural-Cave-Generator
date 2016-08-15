@@ -21,10 +21,10 @@ namespace CaveGeneration
         public int squareSize { get; private set; }
         public int length { get { return grid.GetLength(0); } }
         public int width { get { return grid.GetLength(1); } }
-        public Vector3 position { get; private set; }
+        public Vector3 position { get; private set; } 
         public Coord index { get; private set; }
 
-        public const int maxSubmapSize = 75;
+        public const int maxSubmapSize = 150; // Chunk size when the map is broken up.
 
         public Map(int length, int width, int squareSize)
         {
@@ -39,15 +39,16 @@ namespace CaveGeneration
             position = map.position;
         }
 
-        public Map(Tile[,] grid, int squareSize) : this(grid.GetLength(0), grid.GetLength(1), squareSize)
+        public Map(Tile[,] tiles, int squareSize) : this(tiles.GetLength(0), tiles.GetLength(1), squareSize)
         {
-            int length = grid.GetLength(0);
-            int width = grid.GetLength(1);
+            Tile[,] grid = this.grid;
+            int length = tiles.GetLength(0);
+            int width = tiles.GetLength(1);
             for (int x = 0; x < length; x++)
             {
                 for (int y = 0; y < width; y++)
                 {
-                    this.grid[x, y] = grid[x, y];
+                    grid[x, y] = tiles[x, y];
                 }
             }
         }
@@ -67,8 +68,7 @@ namespace CaveGeneration
         /// <summary>
         /// Divide the map into smaller Map chunks.
         /// </summary>
-        /// <param name="submapSize">Maximum length and width for each submap.</param>
-        /// <returns>Returns a list of smaller Map objects.</returns>
+        /// <returns>Returns a readonly list of smaller Map objects.</returns>
         public IList<Map> Subdivide()
         {
             List<Map> maps = new List<Map>();
@@ -136,6 +136,7 @@ namespace CaveGeneration
         /// </summary>
         public bool IsAdjacentToWallFast(int x, int y)
         {
+            Tile[,] grid = this.grid;
             return grid[x - 1, y] == Tile.Wall || grid[x + 1, y] == Tile.Wall 
                 || grid[x, y + 1] == Tile.Wall || grid[x, y - 1] == Tile.Wall;
         }
@@ -172,6 +173,7 @@ namespace CaveGeneration
         /// <returns>Number of walls surrounding the given tile, between 0 and 8 inclusive.</returns>
         public int GetSurroundingWallCount(int x, int y)
         {
+            Tile[,] grid = this.grid;
             return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]
                 + (int)grid[x - 1, y] + (int)grid[x + 1, y]
                 + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1];
@@ -241,6 +243,9 @@ namespace CaveGeneration
             }
         }
 
+        /// <summary>
+        /// Extract a read-only Grid object from the map to represent the locations of walls and floors.
+        /// </summary>
         public Grid ToGrid()
         {
             return new Grid(grid);

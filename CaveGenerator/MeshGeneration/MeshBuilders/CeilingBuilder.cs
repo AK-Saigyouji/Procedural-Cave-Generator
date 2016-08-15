@@ -15,8 +15,6 @@ namespace CaveGeneration.MeshGeneration
         IHeightMap heightMap;
         int wallHeight;
 
-        const string name = "Ceiling Mesh";
-
         public CeilingBuilder(Map map, IHeightMap heightMap)
         {
             this.map = map;
@@ -37,7 +35,6 @@ namespace CaveGeneration.MeshGeneration
         {
             MapTriangulator mapTriangulator = new MapTriangulator(map);
             mesh = mapTriangulator.Triangulate();
-            mesh.name = name;
         }
 
         void ComputeCeilingUVArray()

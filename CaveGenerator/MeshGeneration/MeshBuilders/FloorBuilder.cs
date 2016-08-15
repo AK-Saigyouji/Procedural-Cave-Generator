@@ -10,8 +10,6 @@ namespace CaveGeneration.MeshGeneration
         Map map;
         IHeightMap heightMap;
 
-        const string name = "Floor Mesh";
-
         public FloorBuilder(Map map, IHeightMap heightMap)
         {
             this.map = map;
@@ -37,7 +35,6 @@ namespace CaveGeneration.MeshGeneration
         {
             MapTriangulator mapTriangulator = new MapTriangulator(map);
             mesh = mapTriangulator.Triangulate();
-            mesh.name = name;
         }
 
         void ApplyHeightMap()

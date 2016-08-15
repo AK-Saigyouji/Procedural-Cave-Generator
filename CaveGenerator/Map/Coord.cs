@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CaveGeneration
 {
     /// <summary>
-    /// Similar to Vector2 but for coordinates, Coord is designed with coordinate grids (2d arrays) in mind. 
+    /// Similar to Vector2 but for integers, Coord is designed with coordinate grids (2d arrays) in mind. 
     /// Handles coordinates between -32768 and 32767.
     /// </summary>
     public struct Coord : IEquatable<Coord>
@@ -148,7 +148,8 @@ namespace CaveGeneration
             return new Vector2(tile.x, tile.y);
         }
 
-        public static implicit operator Coord(Vector2 vector)
+        // Going from vector to coord requires an explicit cast, as loss of data is possible.
+        public static explicit operator Coord(Vector2 vector)
         {
             return new Coord((int)vector.x, (int)vector.y);
         }
