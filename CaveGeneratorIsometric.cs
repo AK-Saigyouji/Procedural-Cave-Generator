@@ -38,10 +38,10 @@ namespace CaveGeneration
             Mesh ceilingMesh = CreateCeiling(meshGenerator, sector, ceilingMaterial);
             yield return null;
 
-            Mesh wallMesh = CreateWall(meshGenerator, sector, ceilingMaterial);
+            Mesh wallMesh = CreateWall(meshGenerator, sector, wallMaterial);
             yield return null;
 
-            Mesh floorMesh = CreateFloor(meshGenerator, sector, ceilingMaterial);
+            Mesh floorMesh = CreateFloor(meshGenerator, sector, floorMaterial);
             GeneratedMeshes.Add(new MapMeshes(ceilingMesh, wallMesh, floorMesh));
         }
     } 

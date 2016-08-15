@@ -14,7 +14,7 @@ namespace CaveGeneration.MeshGeneration
         IList<Outline> outlines;
         MeshData mesh;
 
-        const float UVSCALE = 3f;
+        const float UVSCALE = 10f;
 
 
         public WallBuilder(Vector3[] vertices, IList<Outline> outlines)

@@ -42,6 +42,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void InitializeRandomFill(float mapDensity, int seed)
         {
+            // Unity's Random seed cannot be set in a secondary thread, so System.Random is used instead.
             System.Random random = new System.Random(seed);
             for (int x = 0; x < map.length; x++)
             {
@@ -55,7 +56,7 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// Uses synchronous cellular automata to smooth out the map. Each cell becomes more like its neighbors,
-        /// turning noise into a smoother map consisting of regions.
+        /// turning noise into a smoother map consisting of more consistent regions.
         /// </summary>
         public void Smooth()
         {
