@@ -46,7 +46,7 @@ public class MapGeneratorEditor : Editor {
     {
         foreach (Mesh mesh in mapMeshes.Meshes)
         {
-            AssetDatabase.CreateAsset(mesh, path + mesh.name + ".mesh");
+            AssetDatabase.CreateAsset(mesh, path + mesh.name + ".asset");
         }
     }
 

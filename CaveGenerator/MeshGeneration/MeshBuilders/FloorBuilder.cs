@@ -10,6 +10,8 @@ namespace CaveGeneration.MeshGeneration
         Map map;
         IHeightMap heightMap;
 
+        const float UVSCALE = 50f;
+
         public FloorBuilder(Map map, IHeightMap heightMap)
         {
             this.map = map;
@@ -53,11 +55,10 @@ namespace CaveGeneration.MeshGeneration
         {
             Vector3[] vertices = mesh.vertices;
             Vector2[] uv = new Vector2[vertices.Length];
-            float textureScale = Map.maxSubmapSize;
             for (int i = 0; i < vertices.Length; i++)
             {
-                float percentX = vertices[i].x / textureScale;
-                float percentY = vertices[i].z / textureScale;
+                float percentX = vertices[i].x / UVSCALE;
+                float percentY = vertices[i].z / UVSCALE;
                 uv[i] = new Vector2(percentX, percentY);
             }
             mesh.uv = uv;

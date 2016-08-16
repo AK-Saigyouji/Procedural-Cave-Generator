@@ -33,6 +33,7 @@ namespace CaveGeneration
         protected override IEnumerator CreateMapMeshes(MeshGenerator meshGenerator)
         {
             GameObject sector = CreateSector(meshGenerator.index);
+            yield return null;
 
             Mesh wallMesh = CreateWall(meshGenerator, sector, wallMaterial);
             yield return null;
