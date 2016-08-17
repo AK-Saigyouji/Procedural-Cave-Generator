@@ -4,9 +4,9 @@
 
 This is a set of scripts that allow the creation of 3D cave terrain in Unity with collision detection and full texture support. Once configured in the editor, caves can be generated with the click of a button. 
 
-![3D cave with height map](http://i.imgur.com/c2aGDLO.jpg)
+![3D cave with height map](http://i.imgur.com/sBi6T2U.jpg)
 
-![Enclosed cave](http://i.imgur.com/ktE29Pv.jpg)
+![Enclosed cave](http://i.imgur.com/GS2n1Nu.jpg)
 
 Note: The textures themselves are from an excellent free asset pack called [Natural Tiling Textures](https://www.assetstore.unity3d.com/en/#!/content/35173) by Terramorph Workshop. 
 
