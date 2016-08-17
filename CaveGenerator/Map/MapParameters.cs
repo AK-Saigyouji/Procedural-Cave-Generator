@@ -47,12 +47,17 @@ namespace CaveGeneration
             set { SetFloorExpansion(value); }
         }
 
-        [Tooltip("The seed uniquely identifies which map gets generated, if useRandomSeed is set to false.")]
+        [Tooltip("The seed uniquely identifies which map gets generated. If using random seed, getting the seed will " +
+            "set its value to some random seed.")]
         [SerializeField]
         string seed;
         public string Seed
         {
-            get { return seed; }
+            get
+            {
+                seed = GetSeed();
+                return seed;
+            }
             set { seed = value; }
         }
 
@@ -76,7 +81,7 @@ namespace CaveGeneration
         }
 
         [Tooltip("How many game units each tile in the map should occupy. By default, each tile occupies 1 game unit " +
-            "so that a 100 by 100 map takes 100 by 100 game units.")]
+            "so that a 100 by 100 map takes 100 by 100 game units. Does not affect walls.")]
         [SerializeField]
         int squareSize;
         public int SquareSize
@@ -141,6 +146,22 @@ namespace CaveGeneration
             squareSize = DEFAULT_SQUARE_SIZE;
             minWallSize = DEFAULT_WALL_THRESHOLD;
             minFloorSize = DEFAULT_FLOOR_THRESHOLD;
+        }
+
+        /// <summary>
+        /// Get the seed, which determines which map gets generated. Same seed will generate the same map. Different seeds
+        /// will generate unpredictably different maps.
+        /// </summary>
+        string GetSeed()
+        {
+            if (UseRandomSeed)
+            {
+                return System.Environment.TickCount.ToString();
+            }
+            else
+            {
+                return seed;
+            }
         }
 
         public void OnValidate()
@@ -214,7 +235,5 @@ namespace CaveGeneration
                 parameter = value;
             }
         }
-
-
     } 
 }

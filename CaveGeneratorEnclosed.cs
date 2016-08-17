@@ -11,23 +11,13 @@ namespace CaveGeneration
     /// </summary>
     public class CaveGeneratorEnclosed : CaveGenerator
     {
-        public int wallHeight = 3;
         public Material enclosureMaterial;
         public Material wallMaterial;
         public Material floorMaterial;
 
-        IHeightMap floorHeightMap;
-        IHeightMap enclosureHeightMap;
-
-        protected override void PrepareHeightMaps()
-        {
-            floorHeightMap = GetHeightMap<HeightMapFloor>(0);
-            enclosureHeightMap = GetHeightMap<HeightMapMain>(wallHeight);
-        }
-
         protected override void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            meshGenerator.GenerateEnclosed(map, floorHeightMap, enclosureHeightMap);
+            meshGenerator.GenerateEnclosed(map, floorHeightMap, mainHeightMap);
         }
 
         protected override IEnumerator CreateMapMeshes(MeshGenerator meshGenerator)

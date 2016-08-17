@@ -21,7 +21,7 @@
         public Map GenerateMap()
         {
             MapBuilder builder = new MapBuilder(map.Length, map.Width, map.SquareSize);
-            builder.InitializeRandomFill(map.InitialDensity, GetSeed());
+            builder.InitializeRandomFill(map.InitialDensity, map.Seed);
             builder.Smooth();
             builder.RemoveSmallFloorRegions(map.MinFloorSize);
             builder.ConnectFloors(map.FloorExpansion);
@@ -29,22 +29,6 @@
             builder.RemoveSmallWallRegions(map.MinWallSize);
             builder.ApplyBorder(map.BorderSize);
             return builder.ToMap();
-        }
-
-        /// <summary>
-        /// Get the seed, which determines which map gets generated. Same seed will generate the same map. Different seeds
-        /// will generate unpredictably different maps.
-        /// </summary>
-        int GetSeed()
-        {
-            if (map.UseRandomSeed)
-            {
-                return System.Environment.TickCount;
-            }
-            else
-            {
-                return map.Seed.GetHashCode();
-            }
         }
     } 
 }

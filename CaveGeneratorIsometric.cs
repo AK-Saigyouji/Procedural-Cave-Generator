@@ -12,23 +12,13 @@ namespace CaveGeneration
     /// </summary>
     public class CaveGeneratorIsometric : CaveGenerator
     {
-        public int wallHeight = 3;
         public Material ceilingMaterial;
         public Material wallMaterial;
         public Material floorMaterial;
 
-        IHeightMap ceilingHeightMap;
-        IHeightMap floorHeightMap;
-
-        protected override void PrepareHeightMaps()
-        {
-            floorHeightMap = GetHeightMap<HeightMapFloor>(0);
-            ceilingHeightMap = GetHeightMap<HeightMapMain>(wallHeight);
-        }
-
         override protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            meshGenerator.GenerateIsometric(map, floorHeightMap, ceilingHeightMap);
+            meshGenerator.GenerateIsometric(map, floorHeightMap, mainHeightMap);
         }
 
         protected override IEnumerator CreateMapMeshes(MeshGenerator meshGenerator)

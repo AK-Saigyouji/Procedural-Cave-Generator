@@ -40,10 +40,10 @@ namespace CaveGeneration.MapGeneration
         /// map tiles randomly based on the map density: e.g. if the map density is 0.45 then roughly 45% will be filled
         /// with map tiles (excluding boundary) and the rest with floor tiles. 
         /// </summary>
-        public void InitializeRandomFill(float mapDensity, int seed)
+        public void InitializeRandomFill(float mapDensity, string seed)
         {
             // Unity's Random seed cannot be set in a secondary thread, so System.Random is used instead.
-            System.Random random = new System.Random(seed);
+            System.Random random = new System.Random(seed.GetHashCode());
             for (int x = 0; x < map.length; x++)
             {
                 for (int y = 0; y < map.width; y++)
