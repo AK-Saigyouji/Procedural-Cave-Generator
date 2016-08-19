@@ -16,7 +16,7 @@ namespace CaveGeneration
         [SerializeField]
         protected MapParameters mapParameters;
         [SerializeField]
-        protected int wallHeight;
+        int wallHeight;
 
         GameObject Cave;
         Map map;
@@ -63,7 +63,7 @@ namespace CaveGeneration
             {
                 if (value >= 1)
                 {
-                    wallHeight = 1;
+                    wallHeight = value;
                 }
                 else
                 {
@@ -124,7 +124,7 @@ namespace CaveGeneration
         /// </summary>
         abstract protected IEnumerator CreateMapMeshes(MeshGenerator meshGenerator);
 
-        protected Mesh CreateCeiling(MeshGenerator meshGenerator, GameObject sector, Material ceilingMaterial)
+        protected Mesh CreateCeiling(MeshGenerator meshGenerator, Transform sector, Material ceilingMaterial)
         {
             string name = "Ceiling " + meshGenerator.index;
             Mesh ceilingMesh = meshGenerator.GetCeilingMesh();
@@ -133,7 +133,7 @@ namespace CaveGeneration
             return ceilingMesh;
         }
 
-        protected Mesh CreateWall(MeshGenerator meshGenerator, GameObject sector, Material wallMaterial)
+        protected Mesh CreateWall(MeshGenerator meshGenerator, Transform sector, Material wallMaterial)
         {
             string name = "Wall " + meshGenerator.index;
             Mesh wallMesh = meshGenerator.GetWallMesh();
@@ -143,7 +143,7 @@ namespace CaveGeneration
             return wallMesh;
         }
 
-        protected Mesh CreateFloor(MeshGenerator meshGenerator, GameObject sector, Material floorMaterial)
+        protected Mesh CreateFloor(MeshGenerator meshGenerator, Transform sector, Material floorMaterial)
         {
             string name = "Floor " + meshGenerator.index;
             Mesh floorMesh = meshGenerator.GetFloorMesh();
@@ -153,7 +153,7 @@ namespace CaveGeneration
             return floorMesh;
         }
 
-        protected Mesh CreateEnclosure(MeshGenerator meshGenerator, GameObject sector, Material enclosureMaterial)
+        protected Mesh CreateEnclosure(MeshGenerator meshGenerator, Transform sector, Material enclosureMaterial)
         {
             string name = "Enclosure " + meshGenerator.index;
             Mesh enclosureMesh = meshGenerator.GetEnclosureMesh();
@@ -261,10 +261,10 @@ namespace CaveGeneration
             collider.sharedMesh = mesh;
         }
 
-        GameObject CreateGameObjectFromMesh(Mesh mesh, string name, GameObject parent, Material material)
+        GameObject CreateGameObjectFromMesh(Mesh mesh, string name, Transform parent, Material material)
         {
             GameObject newObject = new GameObject(name, typeof(MeshRenderer), typeof(MeshFilter));
-            newObject.transform.parent = parent == null ? null : parent.transform;
+            newObject.transform.parent = parent;
             newObject.GetComponent<MeshFilter>().mesh = mesh;
             newObject.GetComponent<MeshRenderer>().material = material;
             newObject.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

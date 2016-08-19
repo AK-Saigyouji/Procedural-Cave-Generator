@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using UnityEngine;
 
-namespace Utility
+namespace CaveGeneration.Utility
 {
     static class Threading
     {
@@ -38,7 +35,7 @@ namespace Utility
             WaitHandle.WaitAll(resetEvents);
         }
 
-        // Async/await and even tasks are not available to the .NET used by Unity. The following is a wrapper
+        // Async/await and even tasks are not available in the .NET used by Unity. The following is a wrapper
         // for invoking an action asynchronously and not terminating until it's complete.
 
         /// <summary>

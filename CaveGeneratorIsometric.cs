@@ -23,7 +23,7 @@ namespace CaveGeneration
 
         protected override IEnumerator CreateMapMeshes(MeshGenerator meshGenerator)
         {
-            GameObject sector = CreateSector(meshGenerator.index);
+            Transform sector = CreateSector(meshGenerator.index).transform;
             yield return null;
 
             Mesh ceilingMesh = CreateCeiling(meshGenerator, sector, ceilingMaterial);

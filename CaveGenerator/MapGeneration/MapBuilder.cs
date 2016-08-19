@@ -87,6 +87,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void ExpandRegions(int radius)
         {
+            radius = Mathf.Min(radius, Mathf.Max(map.length, map.width)); 
             Map expandedMap = new Map(map);
             for (int x = 2; x < map.length - 2; x++)
             {
