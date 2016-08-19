@@ -6,11 +6,15 @@ using UnityEngine;
 
 namespace CaveGeneration.MeshGeneration
 {
-    public static class TangentSolver
+    static class TangentSolver
     {
         // Passing in the Mesh itself would be ideal here, but accessing data from the mesh
         // requires making copies of each array, which produces massive garbage. MeshData does not
-        // create copies.
+        // create copies. 
+        /// <summary>
+        /// Get an array of tangent vectors for each vertex in the mesh, based on its vertices, triangles, normals
+        /// and uvs.
+        /// </summary>
         public static Vector4[] DetermineTangents(MeshData mesh, Vector3[] normals)
         {
             Vector3[] vertices = mesh.vertices;
@@ -24,6 +28,11 @@ namespace CaveGeneration.MeshGeneration
 
             for (int tri = 0; tri < triangles.Length; tri += 3)
             {
+                /* A lot of this code could be written more compactly by using Vector3s and separating functionality
+                 * into methods, but the extra copying involved was slower by a large factor.
+                 * A few comments have been left above unpacked code to show a more readable (but slower) version 
+                 * that should make it easier to follow the logic.
+                 */
                 int a = triangles[tri];
                 int b = triangles[tri + 1];
                 int c = triangles[tri + 2];
@@ -36,29 +45,65 @@ namespace CaveGeneration.MeshGeneration
                 Vector2 w2 = uv[b];
                 Vector2 w3 = uv[c];
 
+                //Vector3 lhs = v2 - v1;
+                //Vector3 rhs = v3 - v1;
                 float x1 = v2.x - v1.x;
                 float x2 = v3.x - v1.x;
                 float y1 = v2.y - v1.y;
                 float y2 = v3.y - v1.y;
                 float z1 = v2.z - v1.z;
                 float z2 = v3.z - v1.z;
-                
+
                 float s1 = w2.x - w1.x;
                 float s2 = w3.x - w1.x;
                 float t1 = w2.y - w1.y;
                 float t2 = w3.y - w1.y;
 
-                float r = 1.0f / (s1 * t2 - s2 * t1);
-                Vector3 sdir = new Vector3((t2 * x1 - t1 * x2) * r, (t2 * y1 - t1 * y2) * r, (t2 * z1 - t1 * z2) * r);
-                Vector3 tdir = new Vector3((s1 * x2 - s2 * x1) * r, (s1 * y2 - s2 * y1) * r, (s1 * z2 - s2 * z1) * r);
+                float determinant = s1 * t2 - s2 * t1;
+                float r = determinant != 0 ? 1 / determinant : 1;
 
-                tan1[a] += sdir;
-                tan1[b] += sdir;
-                tan1[c] += sdir;
+                // Let A be the 2 by 2 matrix [t2, -t1; -s2, s1] of texture differences
+                // Let V be the 2 by 3 matrix [lhs; rhs] of vector differences
+                // Let r be as above, 1 / det(A).
+                // Then we're interested in r * A * V = [sdir; tdir]
 
-                tan2[a] += tdir;
-                tan2[b] += tdir;
-                tan2[c] += tdir;
+                //Vector3 sdir = (t2 * lhs - t1 * rhs) * r;
+                float sx = (t2 * x1 - t1 * x2) * r;
+                float sy = (t2 * y1 - t1 * y2) * r;
+                float sz = (t2 * z1 - t1 * z2) * r;
+
+                //Vector3 tdir = (s1 * rhs - s2 * lhs) * r;
+                float tx = (s1 * x2 - s2 * x1) * r;
+                float ty = (s1 * y2 - s2 * y1) * r;
+                float tz = (s1 * z2 - s2 * z1) * r;
+
+                //tan1[a] += sdir;
+                //tan1[b] += sdir;
+                //tan1[c] += sdir;
+
+                tan1[a].x += sx;
+                tan1[a].y += sy;
+                tan1[a].z += sz;
+                tan1[b].x += sx;
+                tan1[b].y += sy;
+                tan1[b].z += sz;
+                tan1[c].x += sx;
+                tan1[c].y += sy;
+                tan1[c].z += sz;
+
+                //tan2[a] += tdir;
+                //tan2[b] += tdir;
+                //tan2[c] += tdir;
+
+                tan2[a].x += tx;
+                tan2[a].y += ty;
+                tan2[a].z += tz;
+                tan2[b].x += tx;
+                tan2[b].y += ty;
+                tan2[b].z += tz;
+                tan2[c].x += tx;
+                tan2[c].y += ty;
+                tan2[c].z += tz;
             }
 
             for (int i = 0; i < vertexCount; i++)
@@ -71,5 +116,5 @@ namespace CaveGeneration.MeshGeneration
             }
             return tangents;
         }
-    } 
+    }
 }
