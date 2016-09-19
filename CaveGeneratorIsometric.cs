@@ -23,16 +23,19 @@ namespace CaveGeneration
 
         protected override IEnumerator CreateMapMeshes(MeshGenerator meshGenerator)
         {
-            Transform sector = CreateSector(meshGenerator.index).transform;
+            Coord index = meshGenerator.index;
+            Transform sector = CreateSector(index).transform;
             yield return null;
 
-            Mesh ceilingMesh = CreateCeiling(meshGenerator, sector, ceilingMaterial);
+            Mesh wallMesh = CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", index, true);
             yield return null;
 
-            Mesh wallMesh = CreateWall(meshGenerator, sector, wallMaterial);
+            Mesh floorMesh = CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", index, true);
             yield return null;
 
-            Mesh floorMesh = CreateFloor(meshGenerator, sector, floorMaterial);
+            Mesh ceilingMesh = CreateComponent(meshGenerator.GetCeilingMesh(), sector, ceilingMaterial, "Ceiling", index, false);
+            yield return null;
+
             GeneratedMeshes.Add(new MapMeshes(ceilingMesh, wallMesh, floorMesh));
         }
     } 

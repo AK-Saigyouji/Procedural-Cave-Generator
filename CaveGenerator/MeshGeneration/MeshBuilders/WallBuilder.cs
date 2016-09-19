@@ -10,7 +10,7 @@ namespace CaveGeneration.MeshGeneration
 {
     class WallBuilder : IMeshBuilder
     {
-        Vector3[] vertices;
+        Vector3[] outlineVertices;
         IList<Outline> outlines;
         MeshData mesh;
 
@@ -19,7 +19,7 @@ namespace CaveGeneration.MeshGeneration
 
         public WallBuilder(Vector3[] vertices, IList<Outline> outlines)
         {
-            this.vertices = vertices;
+            outlineVertices = vertices;
             this.outlines = outlines;
         }
 
@@ -42,13 +42,14 @@ namespace CaveGeneration.MeshGeneration
 
         Vector3[] GetVertices(int outlineVertexCount)
         {
+            Vector3[] outlineVertices = this.outlineVertices;
             Vector3[] vertices = new Vector3[2 * outlineVertexCount];
             int vertexIndex = 0;
             foreach (Outline outline in outlines)
             {
                 for (int i = 0; i < outline.Length; i++)
                 {
-                    Vector3 vertex = this.vertices[outline[i]];
+                    Vector3 vertex = outlineVertices[outline[i]];
                     vertices[vertexIndex] = vertex;
                     vertices[vertexIndex + 1] = new Vector3(vertex.x, 0f, vertex.z);
                     vertexIndex += 2;
@@ -87,7 +88,7 @@ namespace CaveGeneration.MeshGeneration
                 for (int i = 0; i < outline.Length; i++, vertexIndex += 2)
                 {
                     u += ComputeDistanceTo(outline, i) * increment;
-                    float v = vertices[outline[i]].y / UVSCALE;
+                    float v = outlineVertices[outline[i]].y / UVSCALE;
                     uv[vertexIndex] = new Vector2(u, v);
                     uv[vertexIndex + 1] = new Vector2(u, 0f);
                 }
@@ -108,8 +109,8 @@ namespace CaveGeneration.MeshGeneration
             {
                 return 0;
             }
-            Vector3 vectorA = vertices[outline[index]];
-            Vector3 vectorB = vertices[outline[index - 1]];
+            Vector3 vectorA = outlineVertices[outline[index]];
+            Vector3 vectorB = outlineVertices[outline[index - 1]];
             return Distance2D(vectorA, vectorB);
         }
 

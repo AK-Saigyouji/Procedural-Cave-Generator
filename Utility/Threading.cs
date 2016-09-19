@@ -35,8 +35,8 @@ namespace CaveGeneration.Utility
             WaitHandle.WaitAll(resetEvents);
         }
 
-        // Async/await and even tasks are not available in the .NET used by Unity. The following is a wrapper
-        // for invoking an action asynchronously and not terminating until it's complete.
+        // Async/await and tasks are not available in the version of .NET used by Unity. The following is a wrapper
+        // for invoking an action and not terminating until it's complete without blocking the thread it's called from.
 
         /// <summary>
         /// A basic substitute for async/await usable in coroutines. May use secondary threads, so ensure
@@ -50,20 +50,6 @@ namespace CaveGeneration.Utility
             {
                 yield return pause;
             }
-        }
-    }
-
-    static class Stopwatch
-    {
-        /// <summary>
-        /// Prints the current time on the stopwatch along with the provided message, then restarts it. Convenience
-        /// method for repeatedly querying and resetting a stopwatch to profile a set of methods.
-        /// </summary>
-        static public void Query(System.Diagnostics.Stopwatch sw, string message = "")
-        {
-            Debug.Log(message + sw.Elapsed.TotalSeconds);
-            sw.Reset();
-            sw.Start();
         }
     }
 }

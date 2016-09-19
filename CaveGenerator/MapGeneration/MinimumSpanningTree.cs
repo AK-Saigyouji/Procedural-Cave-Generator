@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -33,8 +32,8 @@ namespace CaveGeneration.MapGeneration
 
         static List<RoomConnection> KruskalMinimumSpanningTree(List<RoomConnection> sortedConnections, int numRooms)
         {
-            DisjointSet components = new DisjointSet(numRooms);
-            List<RoomConnection> prunedConnections = new List<RoomConnection>();
+            var components = new UnionFind(numRooms);
+            var prunedConnections = new List<RoomConnection>();
 
             foreach (RoomConnection connection in sortedConnections)
             {
@@ -50,58 +49,6 @@ namespace CaveGeneration.MapGeneration
             return prunedConnections;
         }
 
-        public class DisjointSet
-        {
-            int[] parents;
-            int[] ranks;
-
-            public DisjointSet(int numNodes)
-            {
-                parents = GetRange(numNodes + 1);
-                ranks = new int[numNodes + 1];
-            }
-
-            public void Union(int nodeA, int nodeB)
-            {
-                int parentA = Find(nodeA);
-                int parentB = Find(nodeB);
-                if (ranks[parentA] > ranks[parentB])
-                {
-                    parents[parentB] = parentA;
-                }
-                else if (ranks[parentA] < ranks[parentB])
-                {
-                    parents[parentA] = parentB;
-                }
-                else
-                {
-                    ranks[parentA] += 1;
-                    parents[parentB] = parentA;
-                }
-            }
-
-            public int Find(int node)
-            {
-                int parent = parents[node];
-                if (parent != node)
-                {
-                    parent = Find(parent);
-                    parents[node] = parent;
-                }
-                return parent;
-            }
-
-            int[] GetRange(int count)
-            {
-                int[] range = new int[count];
-                for (int i = 0; i < count; i++)
-                {
-                    range[i] = i;
-                }
-                return range;
-            }
-        }
-
         static List<RoomConnection> BucketSort(List<RoomConnection> connections)
         {
             var buckets = InitializeBuckets(connections);
@@ -111,8 +58,8 @@ namespace CaveGeneration.MapGeneration
 
         static List<RoomConnection>[] InitializeBuckets(List<RoomConnection> connections)
         {
-            int longestLength = GetLongestLength(connections);
-            List<RoomConnection>[] buckets = new List<RoomConnection>[longestLength + 1];
+            int longestLength = GetLongestDistance(connections);
+            var buckets = new List<RoomConnection>[longestLength + 1];
             for (int i = 0; i < buckets.Length; i++)
             {
                 buckets[i] = new List<RoomConnection>();
@@ -130,7 +77,7 @@ namespace CaveGeneration.MapGeneration
 
         static List<RoomConnection> UnpackBuckets(List<RoomConnection>[] buckets)
         {
-            List<RoomConnection> roomConnections = new List<RoomConnection>();
+            var roomConnections = new List<RoomConnection>();
             for (int i = 0; i < buckets.Length; i++)
             {
                 foreach (var item in buckets[i])
@@ -141,7 +88,10 @@ namespace CaveGeneration.MapGeneration
             return roomConnections;
         }
 
-        static int GetLongestLength(List<RoomConnection> connections)
+        /// <summary>
+        /// From the list of connections, retrieve the maximum distance.
+        /// </summary>
+        static int GetLongestDistance(List<RoomConnection> connections)
         {
             int bestSoFar = 0;
             for (int i = 0; i < connections.Count; i++)
@@ -155,4 +105,3 @@ namespace CaveGeneration.MapGeneration
         }
     } 
 }
-

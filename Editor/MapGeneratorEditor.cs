@@ -14,7 +14,7 @@ public class MapGeneratorEditor : Editor {
         {
             if (GUILayout.Button("Generate New Map"))
             {
-                caveGenerator.GenerateCave();
+                caveGenerator.Generate();
             }
 
             if (GUILayout.Button("Create Prefab"))

@@ -56,7 +56,7 @@ namespace CaveGeneration.MapGeneration
                 Coord tile = stack.Pop();
                 foreach (Coord adjacentTile in GetAdjacentCoords(tile))
                 {
-                    if (visited.ContainsKey(adjacentTile) // ensure we haven't jumped to a different room
+                    if (visited.ContainsKey(adjacentTile) 
                         && map.IsAdjacentToWallFast(adjacentTile) 
                         && !visited[adjacentTile])
                     {
