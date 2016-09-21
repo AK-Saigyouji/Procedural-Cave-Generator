@@ -15,10 +15,10 @@ namespace CaveGeneration
     {
         [SerializeField] MapParameters mapParameters;
 
-        [Tooltip("Height of walls before height maps are applied. Minimum of 1.")]
+        [Tooltip(Tooltips.CAVE_GEN_WALL_HEIGHT)]
         [SerializeField] int wallHeight;
 
-        [Tooltip("Disables multithreading for profiling and debugging purposes.")]
+        [Tooltip(Tooltips.CAVE_GEN_DEBUG_MODE)]
         [SerializeField] bool debugMode;
 
         GameObject Cave;

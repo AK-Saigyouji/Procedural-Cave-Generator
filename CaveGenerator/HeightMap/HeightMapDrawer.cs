@@ -1,17 +1,14 @@
 ﻿using UnityEngine;
-using System.Collections;
-using System;
 
 namespace CaveGeneration
 {
     public class HeightMapDrawer
     {
+        const int WIDTH = 100;
+        const int LENGTH = 100;
 
-        const int width = 100;
-        const int length = 100;
-
-        Vector3[] vertices = new Vector3[(length - 1) * (width - 1) * 4];
-        int[] triangles = new int[(length - 1) * (width - 1) * 6];
+        Vector3[] vertices = new Vector3[(LENGTH - 1) * (WIDTH - 1) * 4];
+        int[] triangles = new int[(LENGTH - 1) * (WIDTH - 1) * 6];
         HeightMap heightMap;
 
         public Mesh mesh { get; private set; }
@@ -40,9 +37,9 @@ namespace CaveGeneration
         void UpdateVertices()
         {
             int vertexIndex = 0;
-            for (int x = 0; x < length - 1; x++)
+            for (int x = 0; x < LENGTH - 1; x++)
             {
-                for (int y = 0; y < width - 1; y++)
+                for (int y = 0; y < WIDTH - 1; y++)
                 {
                     vertices[vertexIndex] = GetVertex(x, y);
                     vertices[vertexIndex + 1] = GetVertex(x, y + 1);
@@ -62,9 +59,9 @@ namespace CaveGeneration
         {
             int triangleIndex = 0;
             int vertexIndex = 0;
-            for (int x = 0; x < length - 1; x++)
+            for (int x = 0; x < LENGTH - 1; x++)
             {
-                for (int y = 0; y < width - 1; y++)
+                for (int y = 0; y < WIDTH - 1; y++)
                 {
                     triangles[triangleIndex] = vertexIndex;
                     triangles[triangleIndex + 1] = vertexIndex + 1;

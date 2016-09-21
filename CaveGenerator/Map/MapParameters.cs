@@ -9,48 +9,41 @@ namespace CaveGeneration
     /// </summary>
     public class MapParameters
     {
-        [Tooltip("Number of units across in the x-axis occupied by the map.")]
-        [SerializeField]
-        int length;
+        [Tooltip(Tooltips.MAP_LENGTH)]
+        [SerializeField] int length;
         public int Length
         {
             get { return length; }
             set { SetLength(value); }
         }
 
-        [Tooltip("Number of units across in the z-axis occupied by the map.")]
-        [SerializeField]
-        int width;
+        [Tooltip(Tooltips.MAP_WIDTH)]
+        [SerializeField] int width;
         public int Width
         {
             get { return width; }
             set { SetWidth(value); }
         }
 
-        [Tooltip("Initial proportion of walls in the map, from 0 to 1. Note that the final proportion will likely be " +
-            "very different due to the various processing steps. Experiment to achieve desired proportion.")]
-        [SerializeField]
+        [Tooltip(Tooltips.MAP_DENSITY)]
         [Range(MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY)]
-        float initialMapDensity;
+        [SerializeField] float initialMapDensity;
         public float InitialDensity
         {
             get { return initialMapDensity; }
             set { SetMapDensity(value); }
         }
 
-        [Tooltip("Expand floor regions in every direction by given quantity.")]
-        [SerializeField]
-        int floorExpansion;
+        [Tooltip(Tooltips.MAP_FLOOR_EXPANSION)]
+        [SerializeField] int floorExpansion;
         public int FloorExpansion
         {
             get { return floorExpansion; }
             set { SetFloorExpansion(value); }
         }
 
-        [Tooltip("The seed uniquely identifies which map gets generated. If using random seed, getting the seed will " +
-            "set its value to some random seed.")]
-        [SerializeField]
-        string seed;
+        [Tooltip(Tooltips.MAP_SEED)]
+        [SerializeField] string seed;
         public string Seed
         {
             get
@@ -61,49 +54,40 @@ namespace CaveGeneration
             set { seed = value; }
         }
 
-        [Tooltip("If set to true, a random map will be generated. If false, the seed property will be used to specify " + 
-            "the map")]
-        [SerializeField]
-        bool useRandomSeed;
+        [Tooltip(Tooltips.MAP_USE_RANDOM_SEED)]
+        [SerializeField] bool useRandomSeed;
         public bool UseRandomSeed
         {
             get { return useRandomSeed; }
             set { useRandomSeed = value; }
         }
 
-        [Tooltip("The width of extra boundary around the map.")]
-        [SerializeField]
-        int borderSize;
+        [Tooltip(Tooltips.MAP_BORDER_SIZE)]
+        [SerializeField] int borderSize;
         public int BorderSize
         {
             get { return borderSize; }
             set { SetBorderSize(value); }
         }
 
-        [Tooltip("How many game units each tile in the map should occupy. By default, each tile occupies 1 game unit " +
-            "so that a 100 by 100 map takes 100 by 100 game units. Does not affect walls.")]
-        [SerializeField]
-        int squareSize;
+        [Tooltip(Tooltips.MAP_SQUARE_SIZE)]
+        [SerializeField] int squareSize;
         public int SquareSize
         {
             get { return squareSize; }
             set { SetSquareSize(value); }
         }
 
-        [Tooltip("Contiguous sections of wall with a tile count below this number will be removed (turned " + 
-            "to floor tiles). Regardless of how large this number is, the component of wall attached to the boundary " +
-            "will not be removed.")]
-        [SerializeField]
-        int minWallSize;
+        [Tooltip(Tooltips.MAP_MIN_WALL_SIZE)]
+        [SerializeField] int minWallSize;
         public int MinWallSize
         {
             get { return minWallSize; }
             set { minWallSize = value; }
         }
 
-        [Tooltip("Contiguous sections of floor with a tile count below this number will be removed (turned to wall tiles).")]
-        [SerializeField]
-        int minFloorSize;
+        [Tooltip(Tooltips.MAP_MIN_FLOOR_SIZE)]
+        [SerializeField] int minFloorSize;
         public int MinFloorSize
         {
             get { return minFloorSize; }
@@ -148,10 +132,6 @@ namespace CaveGeneration
             minFloorSize = DEFAULT_FLOOR_THRESHOLD;
         }
 
-        /// <summary>
-        /// Get the seed, which determines which map gets generated. Same seed will generate the same map. Different seeds
-        /// will generate unpredictably different maps.
-        /// </summary>
         string GetSeed()
         {
             if (UseRandomSeed)
@@ -218,6 +198,7 @@ namespace CaveGeneration
             SetParameter(ref initialMapDensity, value, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
         }
 
+        // This method is used when assigning values to the cavegenerator through code.
         void SetParameter<T>(ref T parameter, T value, T minimum, T maximum) where T: System.IComparable<T>
         {
             bool tooSmall = value.CompareTo(minimum) == -1;
@@ -228,7 +209,7 @@ namespace CaveGeneration
             }
             else if (tooBig)
             {
-                throw new System.ArgumentException("Parameter " + parameter + " must be less than " + maximum + ".");
+                throw new System.ArgumentException("Parameter " + parameter + " must be at most " + maximum + ".");
             }
             else
             {
