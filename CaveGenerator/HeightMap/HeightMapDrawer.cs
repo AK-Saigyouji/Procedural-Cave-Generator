@@ -1,8 +1,11 @@
-﻿using UnityEngine;
+﻿/* This is a class used solely in the editor to create a height map visualization that responds immediately to
+ * changes in the parameters of a heightmap, making it easy to fine-tune the parameters without having to generate caves.*/
+
+using UnityEngine;
 
 namespace CaveGeneration
 {
-    public class HeightMapDrawer
+    public sealed class HeightMapDrawer
     {
         const int WIDTH = 100;
         const int LENGTH = 100;

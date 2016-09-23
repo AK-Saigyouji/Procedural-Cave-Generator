@@ -4,7 +4,7 @@
     /// Generates a randomized cave-like Map object with the property that every floor tile is reachable from every other
     /// floor tile. The outermost boundary of the map consists of wall tiles.
     /// </summary>
-    public class MapGenerator : IMapGenerator
+    public sealed class MapGenerator : IMapGenerator
     {
         MapParameters map;
 

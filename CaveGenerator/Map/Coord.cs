@@ -60,7 +60,7 @@ namespace CaveGeneration
         public Coord bottomLeft { get { return new Coord(x - 1, y - 1); } }
 
         /// <summary>
-        /// Get the distance between this coordinate and the given one.
+        /// Get the Euclidean distance between this coordinate and the given one.
         /// </summary>
         public float Distance(Coord otherTile)
         {

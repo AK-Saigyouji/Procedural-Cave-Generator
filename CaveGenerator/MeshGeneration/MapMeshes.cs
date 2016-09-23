@@ -1,20 +1,19 @@
 ﻿using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Storage class to hold generated meshes.
+    /// Readonly storage class to hold generated meshes.
     /// </summary>
-    public class MapMeshes
+    public sealed class MapMeshes
     {
-        Mesh[] meshes;
-
-        private MapMeshes() { }
+        readonly System.Collections.ObjectModel.ReadOnlyCollection<Mesh> meshes;
 
         public MapMeshes(params Mesh[] meshes)
         {
-            this.meshes = meshes;
+            this.meshes = meshes.ToList().AsReadOnly();
         }
 
         public IEnumerable<Mesh> Meshes { get { return meshes; } }

@@ -1,6 +1,6 @@
 ﻿/* MapBuilder is a low-level class that offers a library of methods for map generation. The intention is to write
  * light-weight, higher-level map generator classes that can easily be customized by choosing which of the methods
- * in this class should be used and in what order.*/
+ * in this class should be used and in what order. See the default map generator for an example.*/
 
 using UnityEngine;
 using System.Collections.Generic;
@@ -12,7 +12,7 @@ namespace CaveGeneration.MapGeneration
     /// Offers a variety of methods for configuring and generating a randomized Map object. Start with an initialization
     /// method, and end with the build method to receive the map.
     /// </summary>
-    public class MapBuilder
+    public sealed class MapBuilder
     {
         Map map;
 

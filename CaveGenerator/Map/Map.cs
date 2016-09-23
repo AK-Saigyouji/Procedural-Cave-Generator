@@ -15,7 +15,7 @@ namespace CaveGeneration
     /// a floor or wall tile. Exposed methods are intended for use internally for the purposes of generating the cave - 
     /// for a read-only grid intended for external use, see the Grid class. 
     /// </summary>
-    public class Map
+    public sealed class Map
     {
         Tile[,] grid;
         public int squareSize { get; private set; }

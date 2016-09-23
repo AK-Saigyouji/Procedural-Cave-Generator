@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace CaveGeneration.MeshGeneration
 {
-    class WallBuilder : IMeshBuilder
+    sealed class WallBuilder : IMeshBuilder
     {
         Vector3[] outlineVertices;
         IList<Outline> outlines;

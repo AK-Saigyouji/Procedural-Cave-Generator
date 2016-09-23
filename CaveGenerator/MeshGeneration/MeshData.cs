@@ -8,7 +8,7 @@ namespace CaveGeneration.MeshGeneration
     /// assigning data is threadsafe, unlike the Mesh class in the Unity API. Note that for performance reasons
     /// accessing data does not produce copies, so be careful about altering state.
     /// </summary>
-    public class MeshData
+    public sealed class MeshData
     {
         public Vector3[] vertices { get; set; }
         public Vector2[] uv { get; set; }

@@ -5,7 +5,7 @@
 
 namespace CaveGeneration
 {
-    public class ConstantHeightMap : IHeightMap
+    public sealed class ConstantHeightMap : IHeightMap
     {
         public int BaseHeight { get; private set; }
         public bool IsSimple { get; private set; }

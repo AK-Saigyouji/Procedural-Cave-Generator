@@ -8,7 +8,7 @@ namespace CaveGeneration.MeshGeneration
     /// Outline represents an ordered collection of indices corresponding to points that separate a region of walls 
     /// from a region of space.
     /// </summary>
-    class Outline: IEnumerable<VertexIndex>
+    sealed class Outline: IEnumerable<VertexIndex>
     {
         public int Length { get { return indices.Length; } }
 

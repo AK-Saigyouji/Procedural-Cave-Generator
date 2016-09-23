@@ -13,7 +13,7 @@ namespace CaveGeneration.MeshGeneration
     /// Produces meshes and colliders for Map objects. Break large maps into smaller maps before generating meshes.
     /// Maps should not be larger than 200 by 200.
     /// </summary>
-    public class MeshGenerator
+    public sealed class MeshGenerator
     {
         MeshData ceilingMesh;
         MeshData wallMesh;

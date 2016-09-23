@@ -9,33 +9,27 @@ namespace CaveGeneration
     /// for the floors, walls and enclosure/ceiling. Generates mesh colliders for the walkable areas and walls, but 
     /// not the enclosure/ceiling above them. 
     /// </summary>
-    public class CaveGeneratorEnclosed : CaveGenerator
+    public sealed class CaveGeneratorEnclosed : CaveGenerator
     {
-        public Material enclosureMaterial;
-        public Material wallMaterial;
-        public Material floorMaterial;
+        [SerializeField] Material enclosureMaterial;
+        [SerializeField] Material wallMaterial;
+        [SerializeField] Material floorMaterial;
 
         protected override void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
             meshGenerator.GenerateEnclosed(map, floorHeightMap, mainHeightMap);
         }
 
-        protected override IEnumerator CreateMapMeshes(MeshGenerator meshGenerator)
+        protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator)
         {
             Coord index = meshGenerator.index;
-            Transform sector = CreateSector(index).transform;
-            yield return null;
+            Transform sector = ObjectFactory.CreateSector(index, Cave.transform).transform;
 
-            Mesh wallMesh = CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", index, true);
-            yield return null;
+            Mesh wallMesh = ObjectFactory.CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", index, true);
+            Mesh floorMesh = ObjectFactory.CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", index, true);
+            Mesh enclosureMesh = ObjectFactory.CreateComponent(meshGenerator.GetEnclosureMesh(), sector, enclosureMaterial, "Enclosure", index, false);
 
-            Mesh floorMesh = CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", index, true);
-            yield return null;
-
-            Mesh enclosureMesh = CreateComponent(meshGenerator.GetEnclosureMesh(), sector, enclosureMaterial, "Enclosure", index, false);
-            yield return null;
-
-            GeneratedMeshes.Add(new MapMeshes(wallMesh, floorMesh, enclosureMesh));
+            return new MapMeshes(wallMesh, floorMesh, enclosureMesh);
         }
     }
 }

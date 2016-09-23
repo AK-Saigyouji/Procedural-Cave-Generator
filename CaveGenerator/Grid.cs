@@ -7,7 +7,7 @@ namespace CaveGeneration
     /// <summary>
     /// A readonly, two dimensionsal grid of tiles approximately representing the walls and floors in a generated cave. 
     /// </summary>
-    public class Grid
+    public sealed class Grid
     {
         readonly Tile[,] tiles;
 

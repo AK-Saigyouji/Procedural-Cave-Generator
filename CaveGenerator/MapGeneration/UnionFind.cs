@@ -1,6 +1,6 @@
 ﻿namespace CaveGeneration.MapGeneration
 {
-    public class UnionFind
+    public sealed class UnionFind
     {
         int[] parents;
         int[] ranks;
@@ -41,6 +41,11 @@
             return parent;
         }
 
+        /// <summary>
+        /// Create an array of integers from 0 inclusive to count exclusive.
+        /// </summary>
+        /// <param name="count"></param>
+        /// <returns></returns>
         int[] GetRange(int count)
         {
             int[] range = new int[count];

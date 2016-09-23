@@ -7,7 +7,7 @@ namespace CaveGeneration.MapGeneration
     /// of tiles corresponding to the shortest distance between them, and the corresponding distance, rounded down
     /// to the nearest integer.
     /// </summary>
-    class RoomConnection : IComparable<RoomConnection>
+    sealed class RoomConnection : IComparable<RoomConnection>
     {
         public Room roomA { get; private set; }
         public Room roomB { get; private set; }

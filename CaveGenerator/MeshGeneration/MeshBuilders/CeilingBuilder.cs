@@ -8,7 +8,7 @@ namespace CaveGeneration.MeshGeneration
     /// Builds the mesh data for a cave ceiling, in particular the top part of a region of walls. Not to be confused
     /// with an enclosure, which is the part hanging above the floor. 
     /// </summary>
-    class CeilingBuilder : IMeshBuilder
+    sealed class CeilingBuilder : IMeshBuilder
     {
         Map map;
         MeshData mesh;

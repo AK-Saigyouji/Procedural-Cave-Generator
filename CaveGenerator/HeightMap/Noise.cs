@@ -3,9 +3,10 @@
 namespace CaveGeneration
 {
     /// <summary>
-    /// Random number generator that produces continuously varying numbers between 0 and 1.
+    /// Random number generator that produces continuously varying numbers between 0 and 1. Offers greater control
+    /// and more variation than Perlin Noise, but is otherwise similar. 
     /// </summary>
-    public class Noise
+    public sealed class LayeredNoise
     {
         Vector2[] offsets; // Offsets provide randomness to the noise by offsetting the points of perlin noise we sample.
         float[] amplitudes; // Descending coefficients for the contribution of each layer.
@@ -27,7 +28,7 @@ namespace CaveGeneration
         /// change as relative to input parameters. Values below 1 will be clamped to 1.</param>
         /// <param name="scale">Initial frequency. Think rolling hills (low scale) vs jagged mountains (high scale).</param>
         /// <param name="seed">Fixes the randomness.</param>
-        public Noise(int numLayers, float amplitudePersistance, float frequencyGrowth, float scale, int seed)
+        public LayeredNoise(int numLayers, float amplitudePersistance, float frequencyGrowth, float scale, int seed)
         {
             this.scale = scale;
             offsets = CreateOffsets(seed, numLayers);

@@ -4,7 +4,7 @@ using System.Collections;
 
 namespace CaveGeneration.MeshGeneration
 {
-    public class FloorBuilder : IMeshBuilder
+    public sealed class FloorBuilder : IMeshBuilder
     {
         MeshData mesh;
         Map map;

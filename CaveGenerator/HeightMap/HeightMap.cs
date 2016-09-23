@@ -7,14 +7,14 @@ namespace CaveGeneration
     /// A generalization of perlin noise, this class allows the generation of continuously varying, random values
     /// designed with terrain in mind.
     /// </summary>
-    public class HeightMap : IHeightMap
+    public sealed class HeightMap : IHeightMap
     {
         public int BaseHeight { get; private set; }
         public bool IsSimple { get; private set; }
         public float MaxHeight { get; private set; }
-        Noise noise;
+        LayeredNoise noise;
 
-        public HeightMap(Noise noise, int baseHeight, float maxHeight)
+        public HeightMap(LayeredNoise noise, int baseHeight, float maxHeight)
         {
             this.noise = noise;
             BaseHeight = baseHeight;

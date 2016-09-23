@@ -2,8 +2,8 @@
  * it's necessary to ensure each triangle with a common vertex points to the same vertex in the vertices array.
  * Keeping a dictionary for every vertex would work, but consumes O(map length * map width) memory. To improve performance
  * we can exploit the fact that when we determine vertices for a single row, those vertices can only be shared by the
- * vertices in the row directly above it. Thus we need only keep track of two rows at a time, not the entire map.
- * This brings memory down to O(map length).
+ * vertices in the row directly above it or to the right of it. Thus we need only keep track of two rows at a time, 
+ * not the entire map. This brings memory down to O(map length).
  */
 
 namespace CaveGeneration.MeshGeneration
@@ -13,7 +13,7 @@ namespace CaveGeneration.MeshGeneration
     /// visited vertex indices row by row. Note that it requires squares to be triangulated row-wise, in increasing
     /// order of x.
     /// </summary>
-    class VertexLookup
+    sealed class VertexLookup
     {
         VertexIndex[] currentRow;
         VertexIndex[] previousRow;
@@ -84,7 +84,7 @@ namespace CaveGeneration.MeshGeneration
 
         bool IsPointOnBottomOfSquare(int point)
         {
-            return point == 6 || point == 5 || point == 4;
+            return point == 4 || point == 5 || point == 6;
         }
 
         bool IsPointOnLeftOfSquare(int point)

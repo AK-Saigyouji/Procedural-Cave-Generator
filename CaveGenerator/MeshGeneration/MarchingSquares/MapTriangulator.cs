@@ -14,7 +14,7 @@ namespace CaveGeneration.MeshGeneration
     /// Triangulates a Map according to the Marching Squares algorithm, yielding vertices and triangles ready to be
     /// used in a mesh.
     /// </summary>
-    class MapTriangulator
+    sealed class MapTriangulator
     {
         // The lookup table for the marching squares algorithm. The eight points in the square are enumerated from 0 to 7, 
         // starting in the top left corner and going clockwise (see visual below). Based on the sixteen possible configurations 

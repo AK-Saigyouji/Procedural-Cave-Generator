@@ -7,7 +7,7 @@ namespace CaveGeneration.MapGeneration
     /// <summary>
     /// A simple class corresponding to a collection of tiles in the map.
     /// </summary>
-    class TileRegion : IEnumerable<Coord>
+    sealed class TileRegion : IEnumerable<Coord>
     {
         Coord[] tiles;
         public int Count { get { return tiles.Length; } }

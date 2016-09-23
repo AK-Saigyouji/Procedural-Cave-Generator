@@ -42,7 +42,7 @@ namespace CaveGeneration
         public HeightMap Build(int seed, int baseHeight)
         {
             float amplitudePersistance = 1 - amplitudeDecay;
-            Noise noise = new Noise(numLayers, amplitudePersistance, frequencyGrowth, scale, seed);
+            LayeredNoise noise = new LayeredNoise(numLayers, amplitudePersistance, frequencyGrowth, scale, seed);
             return new HeightMap(noise, baseHeight, maxHeight);
         }
 

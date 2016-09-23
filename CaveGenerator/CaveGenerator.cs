@@ -15,27 +15,22 @@ namespace CaveGeneration
     {
         [SerializeField] MapParameters mapParameters;
 
-        [Tooltip(Tooltips.CAVE_GEN_WALL_HEIGHT)]
-        [SerializeField] int wallHeight;
-
         [Tooltip(Tooltips.CAVE_GEN_DEBUG_MODE)]
         [SerializeField] bool debugMode;
 
-        GameObject Cave;
         Map map;
+        Func<IList<Map>, MeshGenerator[]> PrepareMeshGenerators;
 
+        protected GameObject Cave { get; private set; }
         protected IHeightMap floorHeightMap { get; private set; }
         protected IHeightMap mainHeightMap { get; private set; }
-
-        const int DEFAULT_HEIGHT = 3;
-        const int MIN_HEIGHT = 1;
 
         // This is defined at instance level to work around the inability to return values using Unity coroutines.
         MeshGenerator[] meshGenerators;
 
         /// <summary>
-        /// Is the cave generator currently generating a cave? Attempting to generate or extract a cave will have no effect 
-        /// while true.
+        /// Is the cave generator currently generating a cave? Attempting to extract or generate a cave while a cave is 
+        /// being generated will have no effect. 
         /// </summary>
         public bool isGenerating { get; private set; }
 
@@ -49,32 +44,13 @@ namespace CaveGeneration
         /// <summary>
         /// The meshes produced by the cave generator.
         /// </summary>
-        public IList<MapMeshes> GeneratedMeshes { get; protected set; }
+        public IList<MapMeshes> GeneratedMeshes { get; private set; }
 
         /// <summary>
         /// Holds the core map parameters such as length, width, density etc. Use this to customize map
         /// properties through code.
         /// </summary>
         public MapParameters MapParameters { get { return mapParameters; } }
-
-        /// <summary>
-        /// Height of the walls in the cave, before applying height maps. Must be at least 1.
-        /// </summary>
-        public int WallHeight
-        {
-            get { return wallHeight; }
-            set
-            {
-                if (value >= 1)
-                {
-                    wallHeight = value;
-                }
-                else
-                {
-                    throw new ArgumentException("Wall height must be at least 1");
-                }
-            }
-        }
 
         /// <summary>
         /// Main method for creating cave objects. Call ExtractCave to get a reference to the most recently generated cave.
@@ -89,7 +65,21 @@ namespace CaveGeneration
             }
             DestroyCurrentCave();
             PrepareHeightMaps();
+            SelectMethodForMeshGeneratorPreparation();
             StartCoroutine(GenerateCaveAsync());
+        }
+
+        // Must be called before map generation.
+        void SelectMethodForMeshGeneratorPreparation()
+        {
+            if (debugMode)
+            {
+                PrepareMeshGenerators = PrepareMeshGeneratorsSinglethreaded;
+            }
+            else
+            {
+                PrepareMeshGenerators = PrepareMeshGeneratorsMultithreaded;
+            }
         }
 
         IEnumerator GenerateCaveAsync()
@@ -97,11 +87,11 @@ namespace CaveGeneration
             Setup();
             if (debugMode)
             {
-                GenerateMapSinglethreaded();
+                GenerateMap();
             }
             else
             {
-                yield return Utility.Threading.ExecuteAndAwait(GenerateMapMultithreaded);
+                yield return Utility.Threading.ExecuteAndAwait(GenerateMap);
             }
             yield return GenerateCaveFromMap();
             TearDown();
@@ -130,56 +120,21 @@ namespace CaveGeneration
         abstract protected void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map);
 
         /// <summary>
-        /// After meshes have been prepared, this method is called to generate MapMeshes objects.
-        /// When overriding, add the created MapMesh object to the instance-level MeshGenerators list.
+        /// Extracts meshes from prepared mesh generator, and builds them into game objects. 
         /// </summary>
-        abstract protected IEnumerator CreateMapMeshes(MeshGenerator meshGenerator);
+        abstract protected MapMeshes CreateMapMeshes(MeshGenerator meshGenerator);
 
-        protected Mesh CreateComponent(Mesh mesh, Transform sector, Material material, string component, Coord index, bool hasCollider)
-        {
-            string name = GetComponentName(component, index);
-            mesh.name = name;
-            GameObject gameObject = CreateGameObjectFromMesh(mesh, component, sector, material);
-            if (hasCollider) AddMeshCollider(gameObject, mesh);
-            return mesh;
-        }
-
-        protected GameObject CreateSector(Coord sectorIndex)
-        {
-            return CreateChild(name: "Sector " + sectorIndex, parent: Cave.transform);
-        }
-
-        protected GameObject CreateChild(string name, Transform parent)
-        {
-            GameObject child = new GameObject(name);
-            child.transform.parent = parent;
-            return child;
-        }
-
-        string GetComponentName(string component, Coord index)
-        {
-            return component + " " + index;
-        }
-
-        void GenerateMapMultithreaded()
+        void GenerateMap()
         {
             IMapGenerator mapGenerator = new MapGenerator(mapParameters);
             map = mapGenerator.GenerateMap();
             IList<Map> submaps = map.Subdivide();
-            meshGenerators = PrepareMeshGeneratorsMultithreaded(submaps);
-        }
-
-        void GenerateMapSinglethreaded()
-        {
-            IMapGenerator mapGenerator = new MapGenerator(mapParameters);
-            map = mapGenerator.GenerateMap();
-            IList<Map> submaps = map.Subdivide();
-            meshGenerators = PrepareMeshGeneratorsSinglethreaded(submaps);
+            meshGenerators = PrepareMeshGenerators(submaps);
         }
 
         IEnumerator GenerateCaveFromMap()
         {
-            Cave = CreateChild("Cave", transform);
+            Cave = ObjectFactory.CreateChild("Cave", transform);
             yield return GenerateMeshes(meshGenerators);
             Grid = map.ToGrid();
         }
@@ -187,7 +142,7 @@ namespace CaveGeneration
         void PrepareHeightMaps()
         {
             floorHeightMap = GetHeightMap<HeightMapFloor>();
-            mainHeightMap = GetHeightMap<HeightMapMain>(wallHeight);
+            mainHeightMap = GetHeightMap<HeightMapMain>(mapParameters.WallHeight);
         }
 
         void Setup()
@@ -209,7 +164,8 @@ namespace CaveGeneration
             GeneratedMeshes = new List<MapMeshes>();
             foreach (var meshGenerator in meshGenerators)
             {
-                yield return CreateMapMeshes(meshGenerator);
+                GeneratedMeshes.Add(CreateMapMeshes(meshGenerator));
+                yield return null;
             }
         }
 
@@ -222,7 +178,7 @@ namespace CaveGeneration
             Action[] actions = new Action[meshGenerators.Length];
             for (int i = 0; i < meshGenerators.Length; i++)
             {
-                int indexCopy = i;
+                int indexCopy = i; // using i directly would result in each action using the same value of i
                 actions[i] = (() => PrepareMeshGenerator(meshGenerators[indexCopy], submaps[indexCopy]));
             }
             Utility.Threading.ParallelExecute(actions);
@@ -250,22 +206,6 @@ namespace CaveGeneration
                 meshGenerators[i] = new MeshGenerator();
             }
             return meshGenerators;
-        }
-
-        void AddMeshCollider(GameObject gameObject, Mesh mesh)
-        {
-            MeshCollider collider = gameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh = mesh;
-        }
-
-        GameObject CreateGameObjectFromMesh(Mesh mesh, string name, Transform parent, Material material)
-        {
-            GameObject newObject = new GameObject(name, typeof(MeshRenderer), typeof(MeshFilter));
-            newObject.transform.parent = parent;
-            newObject.GetComponent<MeshFilter>().mesh = mesh;
-            newObject.GetComponent<MeshRenderer>().material = material;
-            newObject.GetComponent<MeshRenderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            return newObject;
         }
 
         /// <summary>
@@ -299,16 +239,11 @@ namespace CaveGeneration
         void Reset()
         {
             mapParameters = new MapParameters();
-            wallHeight = DEFAULT_HEIGHT;
         }
 
         void OnValidate()
         {
             mapParameters.OnValidate();
-            if (wallHeight < MIN_HEIGHT)
-            {
-                wallHeight = MIN_HEIGHT;
-            }
         }
     } 
 }

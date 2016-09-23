@@ -4,7 +4,7 @@
     /// Height map for the top section of a 3D cave, e.g. ceiling for the isometric cave generator or the enclosure for the 
     /// enclosed cave generator.
     /// </summary>
-    public class HeightMapMain : HeightMapBuilder
+    public sealed class HeightMapMain : HeightMapBuilder
     {
         void Reset()
         {

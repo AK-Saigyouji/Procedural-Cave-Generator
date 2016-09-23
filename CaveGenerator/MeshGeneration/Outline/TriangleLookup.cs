@@ -15,7 +15,7 @@ namespace CaveGeneration.MeshGeneration
     /// <summary>
     /// Highly optimized table for retrieving information about which triangles in a mesh contain a given vertex.
     /// </summary>
-    class TriangleLookup
+    sealed class TriangleLookup
     {
         // How many triangles contain each vertex
         byte[] numTrianglesByIndex;

@@ -10,7 +10,7 @@ namespace CaveGeneration.MeshGeneration
     /// Note that it may skip extremely small outlines. As an example, it will skip the case of a single floor tile surrounded
     /// by walls. As such, it is recommended that very small rooms are pruned (filled in) before generating outlines.
     /// </summary>
-    class OutlineGenerator
+    sealed class OutlineGenerator
     {
         Vector3[] vertices;
         int[] triangles;

@@ -7,7 +7,7 @@ namespace CaveGeneration
     /// <summary>
     /// Convenience class for passing parameters for the map generator across interfaces.
     /// </summary>
-    public class MapParameters
+    public sealed class MapParameters
     {
         [Tooltip(Tooltips.MAP_LENGTH)]
         [SerializeField] int length;
@@ -94,11 +94,20 @@ namespace CaveGeneration
             set { minFloorSize = value; }
         }
 
+        [Tooltip(Tooltips.MAP_WALL_HEIGHT)]
+        [SerializeField] int wallHeight;
+        public int WallHeight
+        {
+            get { return wallHeight; }
+            set { SetWallHeight(value); }
+        }
+
         const int MINIMUM_LENGTH = 5;
         const int MINIMUM_WIDTH = 5;
         const int MINIMUM_BORDER_SIZE = 0;
         const int MINIMUM_SQUARE_SIZE = 1;
         const int MINIMUM_FLOOR_EXPANSION = 0;
+        const int MINIMUM_WALL_HEIGHT = 1;
         const float MINIMUM_MAP_DENSITY = 0.3f;
         const float MAXIMUM_MAP_DENSITY = 0.7f;
 
@@ -112,6 +121,7 @@ namespace CaveGeneration
         const int DEFAULT_SQUARE_SIZE = 1;
         const int DEFAULT_WALL_THRESHOLD = 50;
         const int DEFAULT_FLOOR_THRESHOLD = 50;
+        const int DEFAULT_WALL_HEIGHT = 3;
 
         public MapParameters()
         {
@@ -130,6 +140,7 @@ namespace CaveGeneration
             squareSize = DEFAULT_SQUARE_SIZE;
             minWallSize = DEFAULT_WALL_THRESHOLD;
             minFloorSize = DEFAULT_FLOOR_THRESHOLD;
+            wallHeight = DEFAULT_WALL_HEIGHT;
         }
 
         string GetSeed()
@@ -166,6 +177,10 @@ namespace CaveGeneration
             {
                 borderSize = MINIMUM_BORDER_SIZE;
             }
+            if (wallHeight < MINIMUM_WALL_HEIGHT)
+            {
+                wallHeight = MINIMUM_WALL_HEIGHT;
+            }
         }
 
         void SetLength(int value)
@@ -196,6 +211,11 @@ namespace CaveGeneration
         void SetMapDensity(float value)
         {
             SetParameter(ref initialMapDensity, value, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
+        }
+
+        void SetWallHeight(int value)
+        {
+            SetParameter(ref wallHeight, value, MINIMUM_WALL_HEIGHT, int.MaxValue);
         }
 
         // This method is used when assigning values to the cavegenerator through code.

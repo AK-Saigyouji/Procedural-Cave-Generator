@@ -4,9 +4,9 @@ namespace CaveGeneration
 {
     static class Tooltips
     {
-        public const string CAVE_GEN_WALL_HEIGHT = "Height of walls before height maps are applied. Minimum of 1.";
         public const string CAVE_GEN_DEBUG_MODE = "Disables multithreading for profiling and debugging purposes.";
 
+        public const string MAP_WALL_HEIGHT = "Height of walls before height maps are applied. Minimum of 1.";
         public const string MAP_LENGTH = "Number of units across in the x-axis occupied by the map.";
         public const string MAP_WIDTH = "Number of units across in the z-axis occupied by the map.";
         public const string MAP_DENSITY = 

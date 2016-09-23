@@ -3,7 +3,7 @@ using System.Collections;
 
 namespace CaveGeneration.MeshGeneration
 {
-    class EnclosureBuilder : IMeshBuilder
+    sealed class EnclosureBuilder : IMeshBuilder
     {
         MeshData floorMesh;
         MeshData mesh;
