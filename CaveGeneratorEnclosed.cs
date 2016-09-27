@@ -2,6 +2,8 @@
 using CaveGeneration.MeshGeneration;
 using System.Collections;
 
+using Map = CaveGeneration.MapGeneration.Map;
+
 namespace CaveGeneration
 {
     /// <summary>
@@ -15,21 +17,23 @@ namespace CaveGeneration
         [SerializeField] Material wallMaterial;
         [SerializeField] Material floorMaterial;
 
-        protected override void PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
+        protected override MeshGenerator PrepareMeshGenerator(Map map)
         {
-            meshGenerator.GenerateEnclosed(map, floorHeightMap, mainHeightMap);
+            MeshGenerator meshGenerator = new MeshGenerator(Map.maxSubmapSize, map.Index.ToString());
+            meshGenerator.GenerateEnclosed(MapConverter.Convert(map), floorHeightMap, mainHeightMap);
+            return meshGenerator;
         }
 
-        protected override MapMeshes CreateMapMeshes(MeshGenerator meshGenerator)
+        protected override CaveMeshes CreateMapMeshes(MeshGenerator meshGenerator)
         {
-            Coord index = meshGenerator.index;
+            string index = meshGenerator.Index;
             Transform sector = ObjectFactory.CreateSector(index, Cave.transform).transform;
 
-            Mesh wallMesh = ObjectFactory.CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", index, true);
-            Mesh floorMesh = ObjectFactory.CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", index, true);
-            Mesh enclosureMesh = ObjectFactory.CreateComponent(meshGenerator.GetEnclosureMesh(), sector, enclosureMaterial, "Enclosure", index, false);
+            Mesh wallMesh = ObjectFactory.CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", true);
+            Mesh floorMesh = ObjectFactory.CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", true);
+            Mesh enclosureMesh = ObjectFactory.CreateComponent(meshGenerator.GetEnclosureMesh(), sector, enclosureMaterial, "Enclosure", false);
 
-            return new MapMeshes(wallMesh, floorMesh, enclosureMesh);
+            return new CaveMeshes(wallMesh, floorMesh, enclosureMesh);
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace CaveGeneration
+﻿namespace CaveGeneration.HeightMaps
 {
     public sealed class HeightMapFloor : HeightMapBuilder
     {

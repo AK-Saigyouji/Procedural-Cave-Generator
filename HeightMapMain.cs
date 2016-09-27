@@ -1,4 +1,4 @@
-﻿namespace CaveGeneration
+﻿namespace CaveGeneration.HeightMaps
 {
     /// <summary>
     /// Height map for the top section of a 3D cave, e.g. ceiling for the isometric cave generator or the enclosure for the 
