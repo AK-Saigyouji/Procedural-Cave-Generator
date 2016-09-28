@@ -9,7 +9,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 
 namespace CaveGeneration
 {
@@ -21,11 +20,12 @@ namespace CaveGeneration
         [SerializeField] bool debugMode;
 
         Map map;
-        Func<IList<Map>, MeshGenerator[]> PrepareMeshGenerators;
+        Func<IList<Map>, MeshGenerator[]> PrepareMeshGenerators; 
 
         protected GameObject Cave { get; private set; }
         protected IHeightMap floorHeightMap { get; private set; }
         protected IHeightMap mainHeightMap { get; private set; }
+        protected List<CaveMeshes> generatedMeshes { get; private set; }
 
         // This is defined at instance level to work around the inability to return values using Unity coroutines.
         MeshGenerator[] meshGenerators;
@@ -34,7 +34,7 @@ namespace CaveGeneration
         /// Is the cave generator currently generating a cave? Attempting to extract or generate a cave while a cave is 
         /// being generated will have no effect. 
         /// </summary>
-        public bool isGenerating { get; private set; }
+        public bool IsGenerating { get; private set; }
 
         /// <summary>
         /// Readonly grid representation of the most recently generated cave. Can be used to figure out where the empty spaces
@@ -44,9 +44,10 @@ namespace CaveGeneration
         public Grid Grid { get; private set; }
 
         /// <summary>
-        /// The meshes produced by the cave generator.
+        /// The meshes produced by the cave generator. By default it is not necessary to work directly with these meshes, but
+        /// changes made will be reflected in the assets created by the Create Prefab button. 
         /// </summary>
-        public IList<CaveMeshes> GeneratedMeshes { get; private set; }
+        public IList<CaveMeshes> GeneratedMeshes { get { return generatedMeshes.AsReadOnly(); } }
 
         /// <summary>
         /// Holds the core map parameters such as length, width, density etc. Use this to customize map
@@ -60,9 +61,9 @@ namespace CaveGeneration
         /// </summary>
         public void Generate()
         {
-            if (isGenerating)
+            if (IsGenerating)
             {
-                Debug.Log("A cave is already being generated, must finish before another can begin.");
+                EditorOnlyLog("A cave is already being generated, must finish before another can begin.");
                 return;
             }
             DestroyCurrentCave();
@@ -105,9 +106,9 @@ namespace CaveGeneration
         /// <returns>Most recently generated cave. Null if no cave has been generated or if it's already been extracted.</returns>
         public GameObject ExtractCave()
         {
-            if (isGenerating)
+            if (IsGenerating)
             {
-                Debug.Log("Cannot extract cave while it's being generated!");
+                EditorOnlyLog("Cannot extract cave while it's being generated!");
                 return null;
             }
             GameObject temp = Cave;
@@ -138,7 +139,7 @@ namespace CaveGeneration
         {
             Cave = ObjectFactory.CreateChild("Cave", transform);
             yield return GenerateMeshes(meshGenerators);
-            Grid = map.ToGrid();
+            Grid = new Grid(map);
         }
 
         void PrepareHeightMaps()
@@ -149,7 +150,7 @@ namespace CaveGeneration
 
         void Setup()
         {
-            isGenerating = true;
+            IsGenerating = true;
             Debug.Log("Generating cave...");
         }
 
@@ -158,15 +159,15 @@ namespace CaveGeneration
             map = null;
             meshGenerators = null;
             Debug.Log("Finished!");
-            isGenerating = false;
+            IsGenerating = false;
         }
 
         IEnumerator GenerateMeshes(IList<MeshGenerator> meshGenerators)
         {
-            GeneratedMeshes = new List<CaveMeshes>();
+            generatedMeshes = new List<CaveMeshes>();
             foreach (var meshGenerator in meshGenerators)
             {
-                GeneratedMeshes.Add(CreateMapMeshes(meshGenerator));
+                generatedMeshes.Add(CreateMapMeshes(meshGenerator));
                 yield return null;
             }
         }
@@ -213,7 +214,7 @@ namespace CaveGeneration
                 int seed = mapParameters.Seed.GetHashCode();
                 heightMap = heightMapBuilder.Build(seed, baseHeight);
             }
-            else
+            else 
             {
                 heightMap = new ConstantHeightMap(baseHeight);
             }
@@ -236,6 +237,18 @@ namespace CaveGeneration
         void OnValidate()
         {
             mapParameters.OnValidate();
+        }
+
+        /// <summary>
+        /// This uses Debug.Log to print a message, but only if running in the editor, thus avoiding the penalty 
+        /// in a built project. Debug methods are slow, and will run in a built project. 
+        /// </summary>
+        /// <param name="message"></param>
+        void EditorOnlyLog(string message)
+        {
+            #if UNITY_EDITOR
+                Debug.Log(message);
+            #endif
         }
     } 
 }

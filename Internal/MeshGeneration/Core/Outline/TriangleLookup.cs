@@ -1,7 +1,7 @@
 ﻿/* Originally, information about the triangles containing each vertex was handled by keeping an array, indexed by 
  * vertex indices, of lists of triangles. The problem with this approach is that lists have 
- * 40 bytes of overhead, and with each list containing an average of 10 bytes of data, this was resulting in wasteful 
- * allocation. This implementation using a multidimensional array is far messier, but trades the 40 bytes of overhead 
+ * 40 bytes of overhead, and with each list containing an average of 10 bytes of data, this resulted in wasteful 
+ * allocation. This implementation using a multidimensional array is messier, but trades the 40 bytes of overhead 
  * per vertex for an average of 8 bytes per vertex for a pair of byte arrays and wasted space 
  * in the multidimensional array. 
  */
@@ -13,7 +13,7 @@ using System.Collections.Generic;
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Highly optimized table for retrieving information about which triangles in a mesh contain a given vertex.
+    /// Table for retrieving information about which triangles in a mesh contain a given vertex.
     /// </summary>
     sealed class TriangleLookup
     {
@@ -31,11 +31,31 @@ namespace CaveGeneration.MeshGeneration
             triangleLookup = DetermineContainingTriangles(vertices, triangles);
         }
 
+        public bool DoVerticesShareMultipleTriangles(VertexIndex indexA, VertexIndex indexB)
+        {
+            int a = numTrianglesByIndex[indexA];
+            int b = numTrianglesByIndex[indexB];
+            int sharedTriangleCount = 0;
+            for (int x = 0; x < a; x++)
+            {
+                for (int y = 0; y < b; y++)
+                {
+                    if (triangleLookup[indexA, x] == triangleLookup[indexB, y])
+                    {
+                        sharedTriangleCount++;
+                        if (sharedTriangleCount > 1)
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         /// <summary>
         /// Get the list of triangles containing the given vertex. 
         /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
         public List<Triangle> GetTrianglesContainingVertex(VertexIndex index)
         {
             triangles.Clear();
@@ -49,8 +69,6 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// How many triangles contain the given vertex? 
         /// </summary>
-        /// <param name="index"></param>
-        /// <returns></returns>
         public int CountTrianglesContainingVertex(VertexIndex index)
         {
             return numTrianglesByIndex[index];

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace CaveGeneration.MeshGeneration
@@ -18,7 +17,7 @@ namespace CaveGeneration.MeshGeneration
         TriangleLookup triangleLookup;
         bool[] visited;
         List<VertexIndex> outlineTemp;
-        int[] currentTriangle = new int[3]; // Allocated at instance level to avoid allocations or expensive foreach loops
+        int[] currentTriangle = new int[3];
 
         const int MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX = 3;
 
@@ -131,33 +130,7 @@ namespace CaveGeneration.MeshGeneration
 
         bool IsOutlineEdge(VertexIndex vertexA, VertexIndex vertexB)
         {
-            if (vertexA == vertexB)
-                return false;
-
-            return !DoVerticesShareMultipleTriangles(vertexA, vertexB);
-        }
-
-        bool DoVerticesShareMultipleTriangles(VertexIndex vertexA, VertexIndex vertexB)
-        {
-            int sharedTriangleCount = 0;
-            List<Triangle> containingTriangles = triangleLookup.GetTrianglesContainingVertex(vertexA);
-            for (int i = 0; i < containingTriangles.Count; i++)
-            {
-                if (IsVertexContainedInTriangle(containingTriangles[i], vertexB))
-                {
-                    sharedTriangleCount++;
-                    if (sharedTriangleCount > 1)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-
-        bool IsVertexContainedInTriangle(Triangle triangle, VertexIndex vertex)
-        {
-            return triangles[triangle.a] == vertex || triangles[triangle.b] == vertex || triangles[triangle.c] == vertex;
+            return vertexA != vertexB && !triangleLookup.DoVerticesShareMultipleTriangles(vertexA, vertexB);
         }
 
         /// <summary>

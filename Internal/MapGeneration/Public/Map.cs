@@ -232,14 +232,6 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Extract a read-only Grid object from the map to represent the locations of walls and floors.
-        /// </summary>
-        public Grid ToGrid()
-        {
-            return new Grid(grid);
-        }
-
-        /// <summary>
         /// Get a 2D byte array of 0s and 1s corresponding to floors and walls respectively. 
         /// </summary>
         public byte[,] ToByteArray()

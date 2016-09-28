@@ -15,22 +15,17 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     sealed class VertexLookup
     {
-        VertexIndex[] currentRow;
-        VertexIndex[] previousRow;
+        VertexIndex?[,] currentRow;
+        VertexIndex?[,] previousRow;
 
+        int rowLength;
         const int perSquareCacheSize = 5;
 
         public VertexLookup(int rowLength)
         {
-            VertexIndex[] currentRow = new VertexIndex[rowLength * perSquareCacheSize];
-            VertexIndex[] previousRow = new VertexIndex[rowLength * perSquareCacheSize];
-            for (int i = 0; i < currentRow.Length; i++)
-            {
-                currentRow[i] = VertexIndex.VoidValue;
-                previousRow[i] = VertexIndex.VoidValue;
-            }
-            this.currentRow = currentRow;
-            this.previousRow = previousRow;
+            this.rowLength = rowLength;
+            currentRow = new VertexIndex?[perSquareCacheSize, rowLength];
+            previousRow = new VertexIndex?[perSquareCacheSize, rowLength];
         }
 
         /// <summary>
@@ -42,16 +37,17 @@ namespace CaveGeneration.MeshGeneration
         /// <returns>Bool representing whether the vertex was found.</returns>
         public bool TryGetCachedVertex(int point, int x, out VertexIndex vertexIndex)
         {
-            vertexIndex = VertexIndex.VoidValue;
+            VertexIndex? index = null;
             if (IsPointOnBottomOfSquare(point))
             {
-                vertexIndex = GetVertexFromBelow(point, x);
+                index = GetVertexFromBelow(point, x);
             }
-            if (IsVertexIndexVoid(vertexIndex) && IsPointOnLeftOfSquare(point) && x > 0)
+            if (!index.HasValue && IsPointOnLeftOfSquare(point) && x > 0)
             {
-                vertexIndex = GetVertexFromLeft(point, x);
+                index = GetVertexFromLeft(point, x);
             }
-            return !IsVertexIndexVoid(vertexIndex);
+            vertexIndex = index.HasValue ? index.Value : (VertexIndex)0;
+            return index.HasValue;
         }
 
         /// <summary>
@@ -64,22 +60,16 @@ namespace CaveGeneration.MeshGeneration
         {
             if (point < perSquareCacheSize)
             {
-                int positionInRow = perSquareCacheSize * x + point;
-                currentRow[positionInRow] = vertexIndex;
+                currentRow[point, x] = vertexIndex;
             }
         }
 
         /// <summary>
-        /// Call this every time a row is complete, i.e. when iterating the width/height of the map.
+        /// Call this every time a row is complete, i.e. when iterating the width of the map.
         /// </summary>
         public void RowComplete()
         {
             SwapRows();
-        }
-
-        bool IsVertexIndexVoid(VertexIndex index)
-        {
-            return index == VertexIndex.VoidValue;
         }
 
         bool IsPointOnBottomOfSquare(int point)
@@ -92,28 +82,29 @@ namespace CaveGeneration.MeshGeneration
             return point == 0 || point == 6 || point == 7;
         }
 
-        VertexIndex GetVertexFromBelow(int point, int x)
+        VertexIndex? GetVertexFromBelow(int point, int x)
         {
             int offset = -point + 6; // 6 -> 0, 5 -> 1, 4 -> 2
-            int positionInPreviousRow = perSquareCacheSize * x + offset;
-            return previousRow[positionInPreviousRow];
+            return previousRow[offset, x];
         }
 
-        VertexIndex GetVertexFromLeft(int point, int x)
+        VertexIndex? GetVertexFromLeft(int point, int x)
         {
             int offset = point == 6 ? 4 : 2 + point / 7; // 6 -> 4, 7 -> 3, 0 -> 2
-            int positionInPreviousSquare = perSquareCacheSize * (x - 1) + offset;
-            return currentRow[positionInPreviousSquare];
+            return currentRow[offset, x - 1];
         }
 
         void SwapRows()
         {
-            VertexIndex[] temp = currentRow;
+            var temp = currentRow;
             currentRow = previousRow;
             previousRow = temp;
-            for (int i = 0; i < currentRow.Length; i++)
+            for (int y = 0; y < perSquareCacheSize; y++)
             {
-                currentRow[i] = VertexIndex.VoidValue;
+                for (int x = 0; x < rowLength; x++)
+                {
+                    currentRow[y, x] = null;
+                }
             }
         }
     } 
