@@ -15,6 +15,10 @@ namespace CaveGeneration
         [SerializeField] Material wallMaterial;
         [SerializeField] Material floorMaterial;
 
+        public Material CeilingMaterial { get { return ceilingMaterial; } set { ceilingMaterial = value; } }
+        public Material WallMaterial { get { return wallMaterial; } set { wallMaterial = value; } }
+        public Material FloorMaterial { get { return floorMaterial; } set { floorMaterial = value; } }
+
         override protected MeshGenerator PrepareMeshGenerator(Map map)
         {
             MeshGenerator meshGenerator = new MeshGenerator(Map.maxSubmapSize, map.Index.ToString());
