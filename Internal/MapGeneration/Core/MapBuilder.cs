@@ -16,12 +16,18 @@ namespace CaveGeneration.MapGeneration
     {
         Map map;
 
+        int length;
+        int width;
+
         // Once computed, regions are cached until they're invalidated (nullified).
         List<TileRegion> floorRegions;
         List<TileRegion> wallRegions;
 
         // Reusable list of tiles with max capacity. Used to minimize allocations.
         List<Coord> tiles;
+
+        // Reusable 2d boolean array for each tile in map
+        bool[,] visited;
 
         const int SMOOTHING_ITERATIONS = 5;
         const int CELLULAR_THRESHOLD = 4;
@@ -33,6 +39,8 @@ namespace CaveGeneration.MapGeneration
         {
             map = new Map(length, width, squareSize);
             tiles = new List<Coord>(length * width);
+            this.length = length;
+            this.width = width;
         }
 
         /// <summary>
@@ -44,9 +52,9 @@ namespace CaveGeneration.MapGeneration
         {
             // Unity's Random seed cannot be set in a secondary thread, so System.Random is used instead.
             System.Random random = new System.Random(seed.GetHashCode());
-            for (int x = 0; x < map.Length; x++)
+            for (int y = 0; y < width; y++)
             {
-                for (int y = 0; y < map.Width; y++)
+                for (int x = 0; x < length; x++)
                 {
                     map[x, y] = GetRandomTile(mapDensity, x, y, random);
                 }
@@ -60,15 +68,15 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void Smooth()
         {
-            int interiorLength = map.Length - 1;
-            int interiorWidth = map.Width - 1;
+            int interiorLength = length - 1;
+            int interiorWidth = width - 1;
             Map oldMap = map;
             Map newMap = new Map(oldMap);
             for (int i = 0; i < SMOOTHING_ITERATIONS; i++)
             {
-                for (int x = 1; x < interiorLength; x++)
+                for (int y = 1; y < interiorWidth; y++)
                 {
-                    for (int y = 1; y < interiorWidth; y++)
+                    for (int x = 1; x < interiorLength; x++)
                     {
                         newMap[x, y] = GetNewTileBasedOnNeighbors(x, y);
                     }
@@ -87,11 +95,11 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void ExpandRegions(int radius)
         {
-            radius = Mathf.Min(radius, Mathf.Max(map.Length, map.Width)); 
+            radius = Mathf.Min(radius, Mathf.Max(length, width)); 
             Map expandedMap = new Map(map);
-            for (int x = 2; x < map.Length - 2; x++)
+            for (int y = 2; y < width - 2; y++)
             {
-                for (int y = 2; y < map.Width - 2; y++)
+                for (int x = 2; x < length - 2; x++)
                 {
                     if (map[x,y] == Tile.Floor)
                     {
@@ -132,7 +140,7 @@ namespace CaveGeneration.MapGeneration
         public void ConnectFloors(int tunnelRadius)
         {
             List<TileRegion> floors = floorRegions ?? GetRegions(Tile.Floor);
-            List<Room> rooms = floors.Select(region => new Room(region, map)).ToList();
+            List<Room> rooms = FloorRegionsToRooms(floors);
             List<RoomConnection> allRoomConnections = ComputeRoomConnections(rooms);
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
             foreach (RoomConnection connection in finalConnections)
@@ -149,14 +157,14 @@ namespace CaveGeneration.MapGeneration
         /// <param name="borderSize">How thick the border should be on each side.</param>
         public void ApplyBorder(int borderSize)
         {
-            Map borderedMap = new Map(map.Length + borderSize * 2, map.Width + borderSize * 2, map.SquareSize);
+            Map borderedMap = new Map(length + borderSize * 2, width + borderSize * 2, map.SquareSize);
             for (int x = 0; x < borderedMap.Length; x++)
             {
                 int xShifted = x - borderSize;
                 for (int y = 0; y < borderedMap.Width; y++)
                 {
                     int yShifted = y - borderSize;
-                    bool isInsideBorder = (0 <= xShifted && xShifted < map.Length) && (0 <= yShifted && yShifted < map.Width);
+                    bool isInsideBorder = (0 <= xShifted && xShifted < length) && (0 <= yShifted && yShifted < width);
                     borderedMap[x, y] = isInsideBorder ? map[xShifted, yShifted] : Tile.Wall;
                 }
             }
@@ -231,14 +239,14 @@ namespace CaveGeneration.MapGeneration
         List<TileRegion> GetRegions(Tile tileType)
         {
             List<TileRegion> regions = new List<TileRegion>();
-            bool[,] visited = new bool[map.Length, map.Width];
+            bool[,] visited = GetVisitedArray();
 
             if (tileType == Tile.Wall)
                 VisitBoundaryRegion(visited);
 
-            for (int x = 0; x < map.Length; x++)
+            for (int x = 0; x < length; x++)
             {
-                for (int y = 0; y < map.Width; y++)
+                for (int y = 0; y < width; y++)
                 {
                     if (IsNewTileOfType(visited, new Coord(x, y), tileType))
                     {
@@ -256,8 +264,8 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         void VisitBoundaryRegion(bool[,] visited)
         {
-            VisitColumns(visited, 0, 1, map.Length - 2, map.Length - 1);
-            VisitRows(visited, 0, 1, map.Width - 2, map.Width - 1);
+            VisitColumns(visited, 0, 1, length - 2, length - 1);
+            VisitRows(visited, 0, 1, width - 2, width - 1);
             Queue<Coord> queue = InitializeBoundaryQueue();
             GetTilesReachableFromQueue(queue, visited);
         }
@@ -266,7 +274,7 @@ namespace CaveGeneration.MapGeneration
         {
             foreach (int columnNumber in columns)
             {
-                for (int y = 0; y < map.Width; y++)
+                for (int y = 0; y < width; y++)
                 {
                     visited[columnNumber, y] = true;
                 }
@@ -277,7 +285,7 @@ namespace CaveGeneration.MapGeneration
         {
             foreach (int rowNumber in rows)
             {
-                for (int x = 0; x < map.Length; x++)
+                for (int x = 0; x < length; x++)
                 {
                     visited[x, rowNumber] = true;
                 }
@@ -291,21 +299,21 @@ namespace CaveGeneration.MapGeneration
         Queue<Coord> InitializeBoundaryQueue()
         {
             Queue<Coord> queue = new Queue<Coord>();
-            for (int x = 1; x < map.Length - 1; x++)
+            for (int x = 1; x < length - 1; x++)
             {
                 if (map[x, 1] == Tile.Wall) // left
                     queue.Enqueue(new Coord(x, 1));
 
-                if (map[x, map.Width - 2] == Tile.Wall) // right
-                    queue.Enqueue(new Coord(x, map.Width - 2));
+                if (map[x, width - 2] == Tile.Wall) // right
+                    queue.Enqueue(new Coord(x, width - 2));
             }
-            for (int y = 1; y < map.Width - 1; y++)
+            for (int y = 1; y < width - 1; y++)
             {
                 if (map[1, y] == Tile.Wall) // bottom
                     queue.Enqueue(new Coord(1, y));
 
-                if (map[map.Length - 2, y] == Tile.Wall) // top
-                    queue.Enqueue(new Coord(map.Length - 2, y));
+                if (map[length - 2, y] == Tile.Wall) // top
+                    queue.Enqueue(new Coord(length - 2, y));
             }
             return queue;
         }
@@ -321,6 +329,15 @@ namespace CaveGeneration.MapGeneration
             queue.Enqueue(new Coord(xStart, yStart));
             visited[xStart, yStart] = true;
             return GetTilesReachableFromQueue(queue, visited);
+        }
+
+        /// <summary>
+        /// Builds rooms out of floor regions.
+        /// </summary>
+        List<Room> FloorRegionsToRooms(List<TileRegion> floors)
+        {
+            bool[,] visited = GetVisitedArray();
+            return floors.Select(region => new Room(region, map, visited)).ToList();
         }
 
         TileRegion GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
@@ -425,6 +442,25 @@ namespace CaveGeneration.MapGeneration
             Map temp = a;
             a = b;
             b = temp;
+        }
+
+        bool[,] GetVisitedArray()
+        {
+            if (visited != null)
+            {
+                for (int y = 0; y < width; y++)
+                {
+                    for (int x = 0; x < length; x++)
+                    {
+                        visited[x, y] = false;
+                    }
+                }
+            }
+            else
+            {
+                visited = new bool[length, width];
+            }
+            return visited;
         }
 
         /// <summary>

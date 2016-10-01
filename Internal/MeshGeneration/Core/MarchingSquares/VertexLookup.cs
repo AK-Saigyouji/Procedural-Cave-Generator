@@ -11,14 +11,48 @@ namespace CaveGeneration.MeshGeneration
     /// <summary>
     /// Specialized lookup table for the map triangulator using O(map length) memory. Can store and lookup
     /// visited vertex indices row by row. Note that it requires squares to be triangulated row-wise, in increasing
-    /// order of x.
+    /// order of x, and each time a row is finished, RowComplete must be called.
     /// </summary>
     sealed class VertexLookup
     {
         VertexIndex?[,] currentRow;
         VertexIndex?[,] previousRow;
 
-        int rowLength;
+        // left side of a square corresponds to 0, 6, 7
+        readonly bool[] isOnLeft = new[]
+        {
+            true,   // topleft
+            false,  
+            false,
+            false,  
+            false,  
+            false,  
+            true,   // bottomleft
+            true    // left
+        };
+
+        // bottom of a square corresponds to 4, 5, 6
+        readonly bool[] isOnBottom = new[]
+        {
+            false,
+            false,
+            false,
+            false,
+            true,   // bottomright
+            true,   // bottom
+            true,   // bottomleft
+            false
+        };
+
+        // these two arrays convert a point on a square to the corresponding point to the left or below.
+
+        // 0, 7, 6 to 2, 3, 4 respectively (topleft, left, bottomleft to topright, right, bottomright)
+        readonly int[] leftOffset = new[] { 2, -1, -1, -1, -1, -1, 4, 3 };
+        // 4, 5, 6 to 2, 1, 0 respectively (bottomright, bottom, bottomleft to topright, top, topleft)
+        readonly int[] bottomOffset = new[] { -1, -1, -1, -1, 2, 1, 0, -1 };
+
+        readonly int rowLength;
+
         const int perSquareCacheSize = 5;
 
         public VertexLookup(int rowLength)
@@ -38,13 +72,13 @@ namespace CaveGeneration.MeshGeneration
         public bool TryGetCachedVertex(int point, int x, out VertexIndex vertexIndex)
         {
             VertexIndex? index = null;
-            if (IsPointOnBottomOfSquare(point))
+            if (isOnBottom[point])
             {
-                index = GetVertexFromBelow(point, x);
+                index = previousRow[bottomOffset[point], x]; 
             }
-            if (!index.HasValue && IsPointOnLeftOfSquare(point) && x > 0)
+            if (!index.HasValue && isOnLeft[point] && x > 0)
             {
-                index = GetVertexFromLeft(point, x);
+                index = currentRow[leftOffset[point], x - 1];
             }
             vertexIndex = index.HasValue ? index.Value : (VertexIndex)0;
             return index.HasValue;
@@ -55,7 +89,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         /// <param name="vertexIndex">The index associated with this vertex.</param>
         /// <param name="point">The location of the point on the square: an int from 0 to 7.</param>
-        /// <param name="x">Location in the current row.</param>
+        /// <param name="x">Location in the current row of squares.</param>
         public void CacheVertex(VertexIndex vertexIndex, int point, int x)
         {
             if (point < perSquareCacheSize)
@@ -70,28 +104,7 @@ namespace CaveGeneration.MeshGeneration
         public void RowComplete()
         {
             SwapRows();
-        }
-
-        bool IsPointOnBottomOfSquare(int point)
-        {
-            return point == 4 || point == 5 || point == 6;
-        }
-
-        bool IsPointOnLeftOfSquare(int point)
-        {
-            return point == 0 || point == 6 || point == 7;
-        }
-
-        VertexIndex? GetVertexFromBelow(int point, int x)
-        {
-            int offset = -point + 6; // 6 -> 0, 5 -> 1, 4 -> 2
-            return previousRow[offset, x];
-        }
-
-        VertexIndex? GetVertexFromLeft(int point, int x)
-        {
-            int offset = point == 6 ? 4 : 2 + point / 7; // 6 -> 4, 7 -> 3, 0 -> 2
-            return currentRow[offset, x - 1];
+            ResetBottomRow();
         }
 
         void SwapRows()
@@ -99,6 +112,10 @@ namespace CaveGeneration.MeshGeneration
             var temp = currentRow;
             currentRow = previousRow;
             previousRow = temp;
+        }
+
+        void ResetBottomRow()
+        {
             for (int y = 0; y < perSquareCacheSize; y++)
             {
                 for (int x = 0; x < rowLength; x++)

@@ -1,5 +1,5 @@
-﻿/* This class turns a Map, which is a grid of 0s and 1s, into a mesh (specifically, into vertices and triangles).
- * It does this using the Marching Squares algorithm. A square in this context refers to four points in the map
+﻿/* This class turns a WallGrid, which is a grid of 0s and 1s, into a mesh (specifically, into vertices and triangles).
+ * It does this using the Marching Squares algorithm. A square in this context refers to four points in the grid 
  * in the arrangement (x,y),(x+1,y),(x,y+1),(x+1,y+1). The algorithm iterates over all such squares, and builds triangles
  * based on which of the four corners are walls (giving rise to 16 configurations). The corners of the triangles are taken
  * from the four corners of the square plus the four midpoints of the square. 
@@ -94,16 +94,6 @@ namespace CaveGeneration.MeshGeneration
             return mesh;
         }
 
-        int[] ExtractTriangleArray()
-        {
-            int[] triangleArray = new int[triangles.Count];
-            for (int i = 0; i < triangleArray.Length; i++)
-            {
-                triangleArray[i] = triangles[i];
-            }
-            return triangleArray;
-        }
-
         void TriangulateAllSquares()
         {
             int numSquaresAcross = grid.Length - 1;
@@ -179,15 +169,25 @@ namespace CaveGeneration.MeshGeneration
             return globalPositions;
         }
 
+        int[] ExtractTriangleArray()
+        {
+            int[] triangleArray = new int[triangles.Count];
+            for (int i = 0; i < triangleArray.Length; i++)
+            {
+                triangleArray[i] = triangles[i];
+            }
+            return triangleArray;
+        }
+
         Vector2 GetLocalPosition(int squarePoint, int x, int y)
         {
             Vector2 offset = positionOffsets[squarePoint];
             return new Vector2(x + offset.x, y + offset.y);
         }
 
-        int ComputeConfiguration(WallGrid map, int x, int y)
+        int ComputeConfiguration(WallGrid grid, int x, int y)
         {
-            return map[x, y] + map[x + 1, y] * 2 + map[x + 1, y + 1] * 4 + map[x, y + 1] * 8;
+            return grid[x, y] + 2 * grid[x + 1, y] + 4 * grid[x + 1, y + 1] + 8 * grid[x, y + 1];
         }
     }
 }

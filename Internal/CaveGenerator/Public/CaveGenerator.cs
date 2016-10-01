@@ -243,7 +243,6 @@ namespace CaveGeneration
         /// This uses Debug.Log to print a message, but only if running in the editor, thus avoiding the penalty 
         /// in a built project. Debug methods are slow, and will run in a built project. 
         /// </summary>
-        /// <param name="message"></param>
         void EditorOnlyLog(string message)
         {
             #if UNITY_EDITOR

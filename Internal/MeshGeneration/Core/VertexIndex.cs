@@ -1,7 +1,7 @@
 ﻿/* In meshes, integers are used to represent a position in a vertex array. But since vertex arrays have length at most
  * 65535, integers waste 2 bytes each. By using unsigned shorts we can cut in half the GC allocations of any temporary arrays
- * used to hold vertex indices. It also makes intent more clear, since integer collections are used for many other
- * things as well. */
+ * used to hold vertex indices. It also makes intent more clear, since integer collections have many purposes.*/
+using System;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -9,7 +9,7 @@ namespace CaveGeneration.MeshGeneration
     /// Represents a vertex in an array of mesh vertices. Meshes can have up to 65535 vertices: thus VertexIndex goes up to
     /// 65535. Supports incrementation and direct comparison, as well as conversion between integers, but not arithmetic.
     /// </summary>
-    struct VertexIndex : System.IEquatable<VertexIndex>
+    struct VertexIndex : IEquatable<VertexIndex>, IComparable<VertexIndex>
     {
         readonly ushort value;
 
@@ -41,6 +41,11 @@ namespace CaveGeneration.MeshGeneration
         public static VertexIndex operator ++(VertexIndex index)
         {
             return index.value + 1;
+        }
+
+        public int CompareTo(VertexIndex other)
+        {
+            return value.CompareTo(other.value);
         }
 
         public static bool operator <(VertexIndex a, VertexIndex b)
