@@ -1,13 +1,13 @@
-﻿using UnityEngine;
-using System.Collections;
+﻿using System;
+using UnityEngine;
 
 namespace CaveGeneration.MapGeneration
 {
-    [System.Serializable]
     /// <summary>
     /// Convenience class for passing parameters for the map generator across interfaces. Properties can be set through
-    /// code or inspector.
+    /// code or inspector. To see description for each property, examine tooltips in the inspector for a cave generator.
     /// </summary>
+    [Serializable]
     public sealed class MapParameters
     {
         [Tooltip(Tooltips.MAP_LENGTH)]
@@ -148,7 +148,7 @@ namespace CaveGeneration.MapGeneration
         {
             if (UseRandomSeed)
             {
-                return System.Environment.TickCount.ToString();
+                return Environment.TickCount.ToString();
             }
             else
             {
@@ -220,17 +220,17 @@ namespace CaveGeneration.MapGeneration
         }
 
         // This method is used when assigning values to the cavegenerator through code.
-        void SetParameter<T>(ref T parameter, T value, T minimum, T maximum) where T: System.IComparable<T>
+        void SetParameter<T>(ref T parameter, T value, T minimum, T maximum) where T: IComparable<T>
         {
             bool tooSmall = value.CompareTo(minimum) == -1;
             bool tooBig = value.CompareTo(maximum) == 1;
             if (tooSmall)
             {
-                throw new System.ArgumentException("Parameter " + parameter + " must be at least " + minimum + ".");
+                throw new ArgumentOutOfRangeException("Parameter " + parameter + " must be at least " + minimum + ".");
             }
             else if (tooBig)
             {
-                throw new System.ArgumentException("Parameter " + parameter + " must be at most " + maximum + ".");
+                throw new ArgumentOutOfRangeException("Parameter " + parameter + " must be at most " + maximum + ".");
             }
             else
             {

@@ -3,6 +3,8 @@
  * in the arrangement (x,y),(x+1,y),(x,y+1),(x+1,y+1). The algorithm iterates over all such squares, and builds triangles
  * based on which of the four corners are walls (giving rise to 16 configurations). The corners of the triangles are taken
  * from the four corners of the square plus the four midpoints of the square. 
+ * 
+ * A specialized data structure is used to cache vertices during triangulation.
  */
 
 using UnityEngine;
@@ -66,6 +68,7 @@ namespace CaveGeneration.MeshGeneration
 
         const int MAX_VERTICES_IN_TRIANGULATION = 6;
 
+
         public MapTriangulator(WallGrid grid)
         {
             this.grid = grid;
@@ -104,7 +107,7 @@ namespace CaveGeneration.MeshGeneration
                 {
                     TriangulateSquare(x, y);
                 }
-                vertexCache.RowComplete();
+                vertexCache.FinalizeRow();
             }
         }
 

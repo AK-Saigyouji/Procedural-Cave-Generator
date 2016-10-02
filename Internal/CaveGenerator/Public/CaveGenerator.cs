@@ -125,7 +125,7 @@ namespace CaveGeneration
         /// <summary>
         /// Extracts meshes from prepared mesh generator, and builds them into game objects. 
         /// </summary>
-        abstract protected CaveMeshes CreateMapMeshes(MeshGenerator meshGenerator);
+        abstract protected CaveMeshes CreateMapMeshes(MeshGenerator meshGenerator, Transform sector);
 
         void GenerateMap()
         {
@@ -137,9 +137,23 @@ namespace CaveGeneration
 
         IEnumerator GenerateCaveFromMap()
         {
-            Cave = ObjectFactory.CreateChild("Cave", transform);
+            Cave = ObjectFactory.CreateChild(transform, "Cave");
             yield return GenerateMeshes(meshGenerators);
             Grid = new Grid(map);
+            EditorOnlyLog("Generation complete, activating game objects...");
+            yield return ActivateChildren();
+        }
+
+        // Sectors are disabled during generation to avoid engaging the Physx engine. They're re-enabled
+        // at the end here. In the future this logic could be altered to activate only some of the sectors.
+        // e.g. only the sector in which the player starts, leaving the rest disabled until the player gets close to them.
+        IEnumerator ActivateChildren()
+        {
+            foreach (Transform child in Cave.transform)
+            {
+                child.gameObject.SetActive(true);
+                yield return null;
+            }
         }
 
         void PrepareHeightMaps()
@@ -167,7 +181,8 @@ namespace CaveGeneration
             generatedMeshes = new List<CaveMeshes>();
             foreach (var meshGenerator in meshGenerators)
             {
-                generatedMeshes.Add(CreateMapMeshes(meshGenerator));
+                GameObject sector = ObjectFactory.CreateSector(meshGenerator.Index, Cave.transform, active: false);
+                generatedMeshes.Add(CreateMapMeshes(meshGenerator, sector.transform));
                 yield return null;
             }
         }

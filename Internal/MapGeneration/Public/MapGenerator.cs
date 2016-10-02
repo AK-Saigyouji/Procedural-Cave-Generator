@@ -15,9 +15,8 @@
 
         /// <summary>
         /// Generates a randomized Map object based on the map generator's properties. May take a significant amount of time
-        /// for large maps (particularly for width * length > 10e6). 
+        /// for large maps (particularly for width * length > 1e6). 
         /// </summary>
-        /// <returns>Returns the generated Map object</returns>
         public Map GenerateMap()
         {
             MapBuilder builder = new MapBuilder(map.Length, map.Width, map.SquareSize);

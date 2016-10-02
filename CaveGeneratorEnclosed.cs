@@ -28,11 +28,8 @@ namespace CaveGeneration
             return meshGenerator;
         }
 
-        protected override CaveMeshes CreateMapMeshes(MeshGenerator meshGenerator)
+        protected override CaveMeshes CreateMapMeshes(MeshGenerator meshGenerator, Transform sector)
         {
-            string index = meshGenerator.Index;
-            Transform sector = ObjectFactory.CreateSector(index, Cave.transform).transform;
-
             Mesh wallMesh = ObjectFactory.CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", true);
             Mesh floorMesh = ObjectFactory.CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", true);
             Mesh enclosureMesh = ObjectFactory.CreateComponent(meshGenerator.GetEnclosureMesh(), sector, enclosureMaterial, "Enclosure", false);

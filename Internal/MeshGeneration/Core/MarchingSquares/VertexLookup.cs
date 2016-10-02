@@ -101,7 +101,7 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// Call this every time a row is complete, i.e. when iterating the width of the map.
         /// </summary>
-        public void RowComplete()
+        public void FinalizeRow()
         {
             SwapRows();
             ResetBottomRow();
