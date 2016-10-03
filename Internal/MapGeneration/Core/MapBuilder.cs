@@ -9,7 +9,7 @@ using System.Linq;
 namespace CaveGeneration.MapGeneration
 {
     /// <summary>
-    /// Offers a variety of methods for configuring and generating a randomized Map object. Start with an initialization
+    /// Offers a variety of methods for configuring a randomized Map object. Start with an initialization
     /// method, and end with the build method to receive the map.
     /// </summary>
     sealed class MapBuilder
@@ -19,18 +19,11 @@ namespace CaveGeneration.MapGeneration
         int length;
         int width;
 
-        // Once computed, regions are cached until they're invalidated (nullified).
-        List<TileRegion> floorRegions;
-        List<TileRegion> wallRegions;
-
-        // Reusable list of tiles with max capacity. Used to minimize allocations.
-        List<Coord> tiles;
-
-        // Reusable 2d boolean array for each tile in map
-        bool[,] visited;
+        List<TileRegion> floorRegions; // Once computed, regions are cached until the map changes.
+        List<Coord> tiles; // Reusable list of tiles with capacity equal to size of map.
+        bool[,] visited; // Reusable 2d boolean array for each tile in map
 
         const int SMOOTHING_ITERATIONS = 5;
-        const int CELLULAR_THRESHOLD = 4;
 
         /// <summary>
         /// Begin building a new map by specifying its dimensions.
@@ -45,8 +38,8 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// Fills the map as follows: the outer most boundary is filled with wall tiles. The rest of the map is filled with
-        /// map tiles randomly based on the map density: e.g. if the map density is 0.45 then roughly 45% will be filled
-        /// with map tiles (excluding boundary) and the rest with floor tiles. 
+        /// wall tiles randomly based on the map density: e.g. if the map density is 0.45 then roughly 45% will be filled
+        /// with wall tiles (excluding boundary) and the rest with floor tiles. 
         /// </summary>
         public void InitializeRandomFill(float mapDensity, string seed)
         {
@@ -64,7 +57,7 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// Uses synchronous cellular automata to smooth out the map. Each cell becomes more like its neighbors,
-        /// turning noise into a smoother map consisting of more consistent regions.
+        /// turning noise into a smoother map filled with more consistent regions.
         /// </summary>
         public void Smooth()
         {
@@ -78,13 +71,13 @@ namespace CaveGeneration.MapGeneration
                 {
                     for (int x = 1; x < interiorLength; x++)
                     {
-                        newMap[x, y] = GetNewTileBasedOnNeighbors(x, y);
+                        map.SmoothAt(x, y);
                     }
                 }
                 map = newMap;
                 // This method requires copying the values at each step into a new map. By reusing the old one
-                // instead of creating a new one each time, we save (iteration - 1) * length * width bytes worth
-                // of memory from going to the garbage collector. 
+                // instead of creating a new one each time, we save (iterations - 1) * length * width bytes worth
+                // of memory from going to the garbage collector. Hence the swap.
                 Swap(ref oldMap, ref newMap);
             }
             ResetRegions();
@@ -118,8 +111,24 @@ namespace CaveGeneration.MapGeneration
         /// <param name="threshold">Number of tiles a region must have to not be removed.</param>
         public void RemoveSmallWallRegions(int threshold)
         {
-            wallRegions = GetRegions(Tile.Wall);
-            wallRegions = RemoveSmallRegions(threshold, Tile.Wall, wallRegions);
+            bool[,] visited = GetVisitedArray();
+            VisitBoundaryRegion(visited);
+
+            for (int x = 0; x < length; x++)
+            {
+                for (int y = 0; y < width; y++)
+                {
+                    if (IsNewTileOfType(visited, x, y, Tile.Wall))
+                    {
+                        List<Coord> region = GetRegion(x, y, visited);
+                        if (region.Count < threshold)
+                        {
+                            FillRegion(region, Tile.Floor);
+                        }
+                    }
+                }
+            }
+            ResetRegions();
         }
 
         /// <summary>
@@ -129,8 +138,7 @@ namespace CaveGeneration.MapGeneration
         /// <param name="threshold">Number of tiles a region must have to not be removed.</param>
         public void RemoveSmallFloorRegions(int threshold)
         {
-            floorRegions = GetRegions(Tile.Floor);
-            floorRegions = RemoveSmallRegions(threshold, Tile.Floor, floorRegions);
+            floorRegions = GetFloorRegions(threshold);
         }
 
         /// <summary>
@@ -139,7 +147,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void ConnectFloors(int tunnelRadius)
         {
-            List<TileRegion> floors = floorRegions ?? GetRegions(Tile.Floor);
+            List<TileRegion> floors = floorRegions ?? GetFloorRegions();
             List<Room> rooms = FloorRegionsToRooms(floors);
             List<RoomConnection> allRoomConnections = ComputeRoomConnections(rooms);
             List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
@@ -193,67 +201,33 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Get a tile that sides with the majority of its neigbors. Specifically, count the number of walls in its
-        /// 8 neighbors. If the majority are walls, get a wall. If the majority are floors, get a floor. If 
-        /// it's a tie, get the existing tile at that spot.
+        /// Get all the floor regions consisting of a number of tiles greater than the specified threshold, filling the 
+        /// rest in (i.e. turning them into walls).
         /// </summary>
-        Tile GetNewTileBasedOnNeighbors(int x, int y)
-        {
-            int neighborCount = map.GetSurroundingWallCount(x, y);
-            if (neighborCount > CELLULAR_THRESHOLD)
-            {
-                return Tile.Wall;
-            }
-            else if (neighborCount < CELLULAR_THRESHOLD)
-            {
-                return Tile.Floor;
-            }
-            else
-            {
-                return map[x, y];
-            }
-        }
-
-        List<TileRegion> RemoveSmallRegions(int threshold, Tile tileType, List<TileRegion> regions)
-        {
-            List<TileRegion> remainingRegions = new List<TileRegion>();
-            Tile otherType = tileType == Tile.Wall ? Tile.Floor : Tile.Wall;
-            foreach (TileRegion region in regions)
-            {
-                if (region.Count < threshold)
-                {
-                    FillRegion(region, otherType);
-                }
-                else
-                {
-                    remainingRegions.Add(region);
-                }
-            }
-            return remainingRegions;
-        }
-
-        /// <summary>
-        /// Gets all the regions of the corresponding tile type, with the exception of the outer region containing the map's
-        /// boundary.
-        /// </summary>
-        List<TileRegion> GetRegions(Tile tileType)
+        List<TileRegion> GetFloorRegions(int threshold = 0)
         {
             List<TileRegion> regions = new List<TileRegion>();
             bool[,] visited = GetVisitedArray();
-
-            if (tileType == Tile.Wall)
-                VisitBoundaryRegion(visited);
 
             for (int x = 0; x < length; x++)
             {
                 for (int y = 0; y < width; y++)
                 {
-                    if (IsNewTileOfType(visited, new Coord(x, y), tileType))
+                    if (IsNewTileOfType(visited, x, y, Tile.Floor))
                     {
-                        regions.Add(GetRegion(x, y, visited));
+                        List<Coord> region = GetRegion(x, y, visited);
+                        if (region.Count < threshold)
+                        {
+                            FillRegion(region, Tile.Wall);
+                        }
+                        else
+                        {
+                            regions.Add(new TileRegion(region));
+                        }
                     }
                 }
             }
+            ResetRegions();
             return regions;
         }
 
@@ -323,7 +297,7 @@ namespace CaveGeneration.MapGeneration
         /// of horizontal steps from one to the other (inclusive) passing through only the same tile type.
         /// </summary>
         /// <returns>The region of tiles containing the start point.</returns>
-        TileRegion GetRegion(int xStart, int yStart, bool[,] visited)
+        List<Coord> GetRegion(int xStart, int yStart, bool[,] visited)
         {
             Queue<Coord> queue = new Queue<Coord>();
             queue.Enqueue(new Coord(xStart, yStart));
@@ -340,12 +314,12 @@ namespace CaveGeneration.MapGeneration
             return floors.Select(region => new Room(region, map, visited)).ToList();
         }
 
-        TileRegion GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
+        List<Coord> GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
         {
             tiles.Clear();
             if (queue.Count == 0)
             {
-                return new TileRegion(tiles);
+                return tiles;
             }
             Tile tileType = map[queue.Peek()];
             while (queue.Count > 0)
@@ -354,33 +328,34 @@ namespace CaveGeneration.MapGeneration
                 tiles.Add(currentTile);
 
                 // Packing the following into a foreach loop would be cleaner, but results in a noticeable performance hit
-                Coord left = currentTile.left;
-                Coord right = currentTile.right;
-                Coord up = currentTile.up;
-                Coord down = currentTile.down;
+                int x = currentTile.x, y = currentTile.y;
+                int left = x - 1, right = x + 1, up = y + 1, down = y - 1;
 
-                if (IsNewTileOfType(visited, left, tileType))
-                    queue.Enqueue(left);
-                if (IsNewTileOfType(visited, right, tileType))
-                    queue.Enqueue(right);
-                if (IsNewTileOfType(visited, up, tileType))
-                    queue.Enqueue(up);
-                if (IsNewTileOfType(visited, down, tileType))
-                    queue.Enqueue(down);
+                if (IsNewTileOfType(visited, left, y, tileType))
+                    queue.Enqueue(new Coord(left, y));
+                if (IsNewTileOfType(visited, right, y, tileType))
+                    queue.Enqueue(new Coord(right, y));
+                if (IsNewTileOfType(visited, x, up, tileType))
+                    queue.Enqueue(new Coord(x, up));
+                if (IsNewTileOfType(visited, x, down, tileType))
+                    queue.Enqueue(new Coord(x, down));
             }
-            return new TileRegion(tiles);
+            return tiles;
         }
 
-        bool IsNewTileOfType(bool[,] visited, Coord tile, Tile tileType)
+        bool IsNewTileOfType(bool[,] visited, int x, int y, Tile tileType)
         {
-            if (visited[tile.x, tile.y])
+            if (visited[x, y])
                 return false;
 
-            visited[tile.x, tile.y] = true;
-            return map[tile] == tileType;
+            visited[x, y] = true;
+            return map[x, y] == tileType;
         }
 
-        void FillRegion(TileRegion region, Tile tileType)
+        /// <summary>
+        /// Fill each tile in the region with the given type.
+        /// </summary>
+        void FillRegion(List<Coord> region, Tile tileType)
         {
             for (int i = 0; i < region.Count; i++)
             {
@@ -469,8 +444,6 @@ namespace CaveGeneration.MapGeneration
         void ResetRegions()
         {
             floorRegions = null;
-            wallRegions = null;
         }
     }
-
 }

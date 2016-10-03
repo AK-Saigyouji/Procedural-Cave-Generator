@@ -97,6 +97,7 @@ namespace CaveGeneration
                 yield return Utility.Threading.ExecuteAndAwait(GenerateMap);
             }
             yield return GenerateCaveFromMap();
+            yield return ActivateChildren();
             TearDown();
         }
 
@@ -140,8 +141,6 @@ namespace CaveGeneration
             Cave = ObjectFactory.CreateChild(transform, "Cave");
             yield return GenerateMeshes(meshGenerators);
             Grid = new Grid(map);
-            EditorOnlyLog("Generation complete, activating game objects...");
-            yield return ActivateChildren();
         }
 
         // Sectors are disabled during generation to avoid engaging the Physx engine. They're re-enabled
@@ -149,6 +148,7 @@ namespace CaveGeneration
         // e.g. only the sector in which the player starts, leaving the rest disabled until the player gets close to them.
         IEnumerator ActivateChildren()
         {
+            EditorOnlyLog("Generation complete, activating game objects...");
             foreach (Transform child in Cave.transform)
             {
                 child.gameObject.SetActive(true);
@@ -255,8 +255,8 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// This uses Debug.Log to print a message, but only if running in the editor, thus avoiding the penalty 
-        /// in a built project. Debug methods are slow, and will run in a built project. 
+        /// This uses Debug.Log to print a message to the Unity console, but only if running in the editor, thus 
+        /// avoiding the significant performance hit in a built project.
         /// </summary>
         void EditorOnlyLog(string message)
         {

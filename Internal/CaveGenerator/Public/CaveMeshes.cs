@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿/* The primary purpose of this class is to provide a container for all the meshes for the an appropriate editor script
+ * to convert into mesh assets. */
+
+using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
