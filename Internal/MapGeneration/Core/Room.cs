@@ -49,7 +49,7 @@ namespace CaveGeneration.MapGeneration
             while (stack.Count > 0)
             {
                 Coord tile = stack.Pop();
-                foreach (Coord adj in GetAdjacentCoords(tile)) // adj = adjacent tile
+                foreach (Coord adj in GetAdjacentCoords(tile)) 
                 {
                     if (!visited[adj.x, adj.y] && FoundEdgeTile(tile, adj, map))
                     {
@@ -72,7 +72,7 @@ namespace CaveGeneration.MapGeneration
         {
             return map[target.x, target.y] == Tile.Floor 
                 && map.IsAdjacentToWallFast(target) 
-                && !IsValidJump(source, target, map);
+                && IsValidJump(source, target, map);
         }
 
         // An example of an invalid jump according to the following method is the following:
