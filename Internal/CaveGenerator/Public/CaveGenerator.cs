@@ -10,6 +10,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+#if UNITY_EDITOR
+using Stopwatch = System.Diagnostics.Stopwatch;
+#endif
+
 namespace CaveGeneration
 {
     public abstract class CaveGenerator : MonoBehaviour
@@ -19,16 +23,12 @@ namespace CaveGeneration
         [Tooltip(Tooltips.CAVE_GEN_DEBUG_MODE)]
         [SerializeField] bool debugMode;
 
-        Map map;
-        Func<IList<Map>, MeshGenerator[]> PrepareMeshGenerators; 
+        List<CaveMeshes> generatedMeshes;
+        MeshGenerator[] meshGenerators;
 
         protected GameObject Cave { get; private set; }
-        protected IHeightMap floorHeightMap { get; private set; }
-        protected IHeightMap mainHeightMap { get; private set; }
-        protected List<CaveMeshes> generatedMeshes { get; private set; }
-
-        // This is defined at instance level to work around the inability to return values using Unity coroutines.
-        MeshGenerator[] meshGenerators;
+        protected IHeightMap FloorHeightMap { get; private set; }
+        protected IHeightMap MainHeightMap { get; private set; }
 
         /// <summary>
         /// Is the cave generator currently generating a cave? Attempting to extract or generate a cave while a cave is 
@@ -45,7 +45,7 @@ namespace CaveGeneration
 
         /// <summary>
         /// The meshes produced by the cave generator. By default it is not necessary to work directly with these meshes, but
-        /// changes made will be reflected in the assets created by the Create Prefab button. 
+        /// changes made to the meshes will be reflected in the assets created by the Create Prefab button.
         /// </summary>
         public IList<CaveMeshes> GeneratedMeshes { get { return generatedMeshes.AsReadOnly(); } }
 
@@ -57,7 +57,7 @@ namespace CaveGeneration
 
         /// <summary>
         /// Main method for creating cave objects. Call ExtractCave to get a reference to the most recently generated cave.
-        /// If ExtractCave is not called, next call to GenerateCave will override the most recently generated cave.
+        /// If ExtractCave is not called, next call to GenerateCave will destroy the most recently generated cave.
         /// </summary>
         public void Generate()
         {
@@ -68,20 +68,18 @@ namespace CaveGeneration
             }
             DestroyCurrentCave();
             PrepareHeightMaps();
-            SelectMethodForMeshGeneratorPreparation();
             StartCoroutine(GenerateCaveAsync());
         }
 
-        // Must be called before map generation.
-        void SelectMethodForMeshGeneratorPreparation()
+        Func<IList<Map>, MeshGenerator[]> SelectMethodForMeshGeneratorPreparation()
         {
             if (debugMode)
             {
-                PrepareMeshGenerators = PrepareMeshGeneratorsSinglethreaded;
+                return PrepareMeshGeneratorsSinglethreaded;
             }
             else
             {
-                PrepareMeshGenerators = PrepareMeshGeneratorsMultithreaded;
+                return PrepareMeshGeneratorsMultithreaded;
             }
         }
 
@@ -90,13 +88,13 @@ namespace CaveGeneration
             Setup();
             if (debugMode)
             {
-                GenerateMap();
+                GenerateCoreData();
             }
             else
             {
-                yield return Utility.Threading.ExecuteAndAwait(GenerateMap);
+                yield return Utility.Threading.ExecuteAndAwait(GenerateCoreData);
             }
-            yield return GenerateCaveFromMap();
+            yield return BuildCave();
             yield return ActivateChildren();
             TearDown();
         }
@@ -128,19 +126,21 @@ namespace CaveGeneration
         /// </summary>
         abstract protected CaveMeshes CreateMapMeshes(MeshGenerator meshGenerator, Transform sector);
 
-        void GenerateMap()
+        void GenerateCoreData()
         {
             IMapGenerator mapGenerator = new MapGenerator(mapParameters);
-            map = mapGenerator.GenerateMap();
+            Map map = mapGenerator.GenerateMap();
             IList<Map> submaps = map.Subdivide();
+            var PrepareMeshGenerators = SelectMethodForMeshGeneratorPreparation();
             meshGenerators = PrepareMeshGenerators(submaps);
+            Grid = new Grid(map);
         }
 
-        IEnumerator GenerateCaveFromMap()
+        IEnumerator BuildCave()
         {
+            UnityEngine.Assertions.Assert.IsNotNull(meshGenerators, "GenerateCoreData must be called before BuildCave");
             Cave = ObjectFactory.CreateChild(transform, "Cave");
             yield return GenerateMeshes(meshGenerators);
-            Grid = new Grid(map);
         }
 
         // Sectors are disabled during generation to avoid engaging the Physx engine. They're re-enabled
@@ -148,7 +148,7 @@ namespace CaveGeneration
         // e.g. only the sector in which the player starts, leaving the rest disabled until the player gets close to them.
         IEnumerator ActivateChildren()
         {
-            EditorOnlyLog("Generation complete, activating game objects...");
+            EditorOnlyLog("Generation complete, activating sectors...");
             foreach (Transform child in Cave.transform)
             {
                 child.gameObject.SetActive(true);
@@ -158,8 +158,8 @@ namespace CaveGeneration
 
         void PrepareHeightMaps()
         {
-            floorHeightMap = GetHeightMap<HeightMapFloor>();
-            mainHeightMap = GetHeightMap<HeightMapMain>(mapParameters.WallHeight);
+            FloorHeightMap = GetHeightMap<HeightMapFloor>();
+            MainHeightMap = GetHeightMap<HeightMapMain>(mapParameters.WallHeight);
         }
 
         void Setup()
@@ -170,7 +170,6 @@ namespace CaveGeneration
 
         void TearDown()
         {
-            map = null;
             meshGenerators = null;
             Debug.Log("Finished!");
             IsGenerating = false;
@@ -258,11 +257,10 @@ namespace CaveGeneration
         /// This uses Debug.Log to print a message to the Unity console, but only if running in the editor, thus 
         /// avoiding the significant performance hit in a built project.
         /// </summary>
+        [System.Diagnostics.Conditional("UNITY_EDITOR")]
         void EditorOnlyLog(string message)
         {
-            #if UNITY_EDITOR
-                Debug.Log(message);
-            #endif
+            Debug.Log(message);
         }
     } 
 }

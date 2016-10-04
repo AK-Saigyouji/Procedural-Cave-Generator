@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace CaveGeneration.MeshGeneration
@@ -9,7 +10,7 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     sealed class Outline: IEnumerable<VertexIndex>
     {
-        public int Length { get { return indices.Length; } }
+        public int Length { get; private set; }
 
         VertexIndex[] indices;
         
@@ -20,18 +21,12 @@ namespace CaveGeneration.MeshGeneration
             {
                 indices[i] = indexList[i];
             }
+            Length = indices.Length;
         }
         
         public void Reverse()
         {
-            int length = indices.Length;
-            int midPoint = length / 2;
-            for (int i = 0; i < midPoint; i++)
-            {
-                VertexIndex temp = indices[i];
-                indices[i] = indices[length - i - 1];
-                indices[length - i - 1] = temp;
-            }
+            Array.Reverse(indices);
         }
 
         public IEnumerator<VertexIndex> GetEnumerator()

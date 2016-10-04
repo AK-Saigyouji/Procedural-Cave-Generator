@@ -5,7 +5,7 @@ namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// Convenience class for passing parameters for the map generator across interfaces. Properties can be set through
-    /// code or inspector. To see description for each property, examine tooltips in the inspector for a cave generator.
+    /// code or inspector.
     /// </summary>
     [Serializable]
     public sealed class MapParameters
@@ -219,7 +219,6 @@ namespace CaveGeneration.MapGeneration
             SetParameter(ref wallHeight, value, MINIMUM_WALL_HEIGHT, int.MaxValue);
         }
 
-        // This method is used when assigning values to the cavegenerator through code.
         void SetParameter<T>(ref T parameter, T value, T minimum, T maximum) where T: IComparable<T>
         {
             bool tooSmall = value.CompareTo(minimum) == -1;

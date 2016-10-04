@@ -24,6 +24,7 @@ namespace CaveGeneration.MapGeneration
         bool[,] visited; // Reusable 2d boolean array for each tile in map
 
         const int SMOOTHING_ITERATIONS = 5;
+        const int SMOOTHING_THRESHOLD = 4;
 
         /// <summary>
         /// Begin building a new map by specifying its dimensions.
@@ -63,22 +64,22 @@ namespace CaveGeneration.MapGeneration
         {
             int interiorLength = length - 1;
             int interiorWidth = width - 1;
-            Map oldMap = map;
-            Map newMap = new Map(oldMap);
+            Map currentMap = map;
+            Map newMap = new Map(currentMap);
             for (int i = 0; i < SMOOTHING_ITERATIONS; i++)
             {
                 for (int y = 1; y < interiorWidth; y++)
                 {
                     for (int x = 1; x < interiorLength; x++)
                     {
-                        map.SmoothAt(x, y);
+                        newMap[x, y] = GetSmoothedTile(currentMap, x, y);
                     }
                 }
                 map = newMap;
                 // This method requires copying the values at each step into a new map. By reusing the old one
                 // instead of creating a new one each time, we save (iterations - 1) * length * width bytes worth
                 // of memory from going to the garbage collector. Hence the swap.
-                Swap(ref oldMap, ref newMap);
+                Swap(ref currentMap, ref newMap);
             }
             ResetRegions();
         }
@@ -186,6 +187,23 @@ namespace CaveGeneration.MapGeneration
         public Map ToMap()
         {
             return map;
+        }
+
+        Tile GetSmoothedTile(Map map, int x, int y)
+        {
+            int neighbourCount = map.GetSurroundingWallCount(x, y);
+            if (neighbourCount > SMOOTHING_THRESHOLD)
+            {
+                return Tile.Wall;
+            }
+            else if (neighbourCount < SMOOTHING_THRESHOLD)
+            {
+                return Tile.Floor;
+            }
+            else
+            {
+                return map[x, y];
+            }
         }
 
         Tile GetRandomTile(float mapDensity, int x, int y, System.Random random)

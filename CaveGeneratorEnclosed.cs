@@ -24,7 +24,7 @@ namespace CaveGeneration
         protected override MeshGenerator PrepareMeshGenerator(Map map)
         {
             MeshGenerator meshGenerator = new MeshGenerator(Map.maxSubmapSize, map.Index.ToString());
-            meshGenerator.GenerateEnclosed(MapConverter.ToWallGrid(map), floorHeightMap, mainHeightMap);
+            meshGenerator.GenerateEnclosed(MapConverter.ToWallGrid(map), FloorHeightMap, MainHeightMap);
             return meshGenerator;
         }
 

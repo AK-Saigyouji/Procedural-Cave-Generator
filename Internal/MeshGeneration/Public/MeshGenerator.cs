@@ -1,7 +1,23 @@
 ﻿/* High level class overseeing the mesh generation system. The generate methods are all written in a thread-safe way, 
  * which is why a custom MeshData class is used instead of Unity's unsafe Mesh class. The Create methods are not thread-safe,
  * as they turn the MeshData classes into Meshes. Responsibility for generating individual meshes is delegated to specific
- * MeshBuilders. This is the only class exposed outside of the mesh generation system.
+ * MeshBuilders.
+ * 
+ * The core algorithm driving mesh generation is Marching Squares, which is implemented in the MapTriangulator class. 
+ * It turns a grid of 0s (floors) and 1s (walls) into a collection of triangles representing the walls, but with more 
+ * structure than simply putting a square at every 1. 
+ * 
+ * At the moment this class supports Enclosed and Isometric cave types. Isometric caves are designed with an isometric perspective
+ * in mind (hence the name) and thus have ceilings that are built over the walls, not the floors. Enclosed are completely 
+ * closed off caves designed with a 1st person perspective.
+ * 
+ * For isometric cave generation, the 1s are triangulated into a ceiling,
+ * the 0s are triangulated into a floor. Outlines of the ceiling are computed and quads are built to connect the ceiling
+ * and floor meshes, giving complete 3D geometry. Optional height maps then give the geometry added variation by translating
+ * the height of floors and ceilings. 
+ * 
+ * Enclosed cave generation is similar, but instead of triangulating a ceiling, a copy of the floor is made and inverted.
+ * Outlines must be inverted since walls face inward for the enclosed caves, rather than outward for the isometric cave.
  */
 
 using System.Collections.Generic;
@@ -40,11 +56,17 @@ namespace CaveGeneration.MeshGeneration
         /// 130 by 110 (top right), chunk size should be set to 150 as the seams run along x = 150 and y = 150. Leave null
         /// if not chunking a grid.</param>
         /// <param name="Index">Optional label, useful if using multiple mesh generators concurrently.</param>
-        public MeshGenerator(int? ChunkSize = null, string Index = "")
+        public MeshGenerator(int? ChunkSize, string Index)
         {
             chunkSize = ChunkSize;
-            this.Index = Index;
+            this.Index = Index ?? "";
         }
+
+        /// <summary>
+        /// Create a meshgenerator for an independent grid. If breaking a grid into multiple chunks, use constructor with 
+        /// chunksize. 
+        /// </summary>
+        public MeshGenerator() : this(null, null) { }
 
         /// <summary>
         /// Generate the data necessary to produce meshes for isometric type cave. Generates ceiling, wall and floor meshes.
@@ -64,7 +86,7 @@ namespace CaveGeneration.MeshGeneration
         {
             GenerateFloor(map, floorHeightMap);
             ComputeMeshOutlines(floorMesh);
-            ReverseOutlines();
+            ReverseOutlines(); 
             GenerateEnclosure(enclosureHeightMap);
             GenerateWallsFromEnclosure();
             PruneWallsAtGlobalSeams(map.Scale);

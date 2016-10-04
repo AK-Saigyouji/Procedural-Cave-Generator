@@ -1,11 +1,6 @@
-﻿/* This is the class that gets built up by a MapBuilder to represent a 2D grid consisting of walls and floors. Ideally
- * Map would strictly be about data and MapBuilder strictly about behaviour, but this is violated for performance reasons.
- * Indexers are noticeably slower than field access, so in a few places behaviour is executed in the Map class 
- * to take advantage of direct field access without violating encapsulation. Smoothing is the extreme example of this, as each
- * smoothing pass iterates over the entire grid, and for each points, accesses the grid 8 times. With 5 passes, this is
- * 40 * length * width accesses, making the performance difference between indexers and field access significant.
+﻿/* This is the class that gets built up by a MapBuilder to represent a 2D grid consisting of walls and floors. 
  * 
- * The other major design decision was the use of array type for the underlying grid. The three obvious choices
+ * A major design decision was the use of array type for the underlying grid. The three obvious choices
  * are a 2D array, a jagged array, and a flat array. Normally, jagged and flat arrays are noticeably faster than 2D
  * arrays. But given the way data is accessed, the cost associated with translating between 2d coordinates and position
  * in a flat array proved to strip flat arrays of any speedup they otherwise would have. As for jagged arrays, they would be
@@ -39,8 +34,6 @@ namespace CaveGeneration.MapGeneration
         public Coord Index { get; private set; }
 
         public static readonly int maxSubmapSize = 150; // Chunk size when the map is broken up.
-
-        const int SMOOTHING_THRESHOLD = 4;
 
         Tile[,] grid;
         int length;
@@ -267,25 +260,6 @@ namespace CaveGeneration.MapGeneration
                 }
             }
             return byteArray;
-        }
-
-        /// <summary>
-        /// The tile at the given coordinates will be more like its neighbours. In particular, if more than 4 if its neighbours
-        /// are walls, it will become a wall. If more than 4 are floors, it will become a floor. Otherwise, it stays the same.
-        /// Note that the coordinates must contained strictly within the boundaries of the map, i.e. cannot lie on the boundary.
-        /// </summary>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
-        public void SmoothAt(int x, int y)
-        {
-            int neighborCount = GetSurroundingWallCount(x, y);
-            if (neighborCount > SMOOTHING_THRESHOLD)
-            {
-                grid[x, y] = Tile.Wall;
-            }
-            else if (neighborCount < SMOOTHING_THRESHOLD)
-            {
-                grid[x, y] = Tile.Floor;
-            }
         }
     }
 }
