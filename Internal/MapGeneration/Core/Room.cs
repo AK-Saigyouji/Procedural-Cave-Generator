@@ -25,23 +25,62 @@ namespace CaveGeneration.MapGeneration
         {
             adjacentCoords = new Coord[8];
             allTiles = region;
-            edgeTiles = GetEdgeTiles(map, visited);
+            edgeTiles = ComputeOrderedEdgeTiles(map, visited);
             adjacentCoords = null;
         }
+
+        /* The following method has some subtleties to it that need to be explained. The purpose of it is to trace out the
+         * floor tiles in the room that are adjacent to a wall tile. The tricky part is ensuring that this is done
+         * in an orderly fashion, i.e. that it traces out a more or less continuous path (some error is fine, but a random
+         * ordering is not, as the ordering of the edge tiles is needed for an enormous optimization in the connectivity
+         * algorithm used elsewhere). 
+         * 
+         * The basic idea is to start on an edge tile, and then perform a depth-first search along edge tiles. The difficulty
+         * comes from two situations. First, consider this example:
+         * 
+         * x x o
+         * x x o
+         * 1 2 o
+         * o o o
+         * 
+         * x represents wall, o represents floor, numbers represent the path travelled (and the order). If we only 
+         * look at horizontal neighbors, the search will terminate at 2, because no adjacent floor is adjacent to a wall.
+         * So we need to look at diagonal neighbors. That leads to the following problem:
+         * 
+         * x x x x
+         * x x o x
+         * x 3 x x
+         * 1 2 x x
+         * 
+         * The remaining o is not connected to the path so far, but it's diagonally adjacent to the 3. This is handled
+         * by explicitly checking for this situation: in order to take a diagonal jump, one of the 
+         * two adjacent tiles must be a floor. i.e. one of these situations:
+         * 
+         * x x x x     x x x x      x x x x
+         * x x o x     x o o x      x o o x
+         * x 3 o x     x 3 x x      x 3 o x
+         * 1 2 x x     1 2 x x      1 2 x x
+         *
+         * The final complexity is the possibility of the path jumping, leading to irregularities in the edges. Example:
+         * 
+         * x x o o o 8 x
+         * x x 4 5 6 7 x
+         * 1 2 3 x x o x
+         * o o o x x o x
+         * 
+         * Ultimately this level of error is accepted as is. */
 
         /// <summary>
         /// Determines the floor tiles that are on the boundary between floors and walls. The floor tiles are returned
         /// in roughly 'sorted' order: iterating through the tile region should trace out a roughly continuous path 
         /// around the room.
         /// </summary>
-        TileRegion GetEdgeTiles(Map map, bool[,] visited)
+        TileRegion ComputeOrderedEdgeTiles(Map map, bool[,] visited)
         {
+            UnityEngine.Assertions.Assert.AreNotEqual(allTiles.Count, 0, "Room is empty!");
             List<Coord> edgeTiles = new List<Coord>(allTiles.Count);
             Stack<Coord> stack = new Stack<Coord>();
-
-            if (allTiles.Count == 0) return new TileRegion(new List<Coord>());
-
-            Coord firstTile = allTiles[0];
+            Coord firstTile = GetEdgeTile(map);
             stack.Push(firstTile);
             edgeTiles.Add(firstTile);
             visited[firstTile.x, firstTile.y] = true;
@@ -62,6 +101,12 @@ namespace CaveGeneration.MapGeneration
             return new TileRegion(edgeTiles);
         }
 
+        Coord GetEdgeTile(Map map)
+        {
+            // Note that in practice, this should return the very first item in alltiles, but that may change in the future.
+            return allTiles.First(tile => map.IsAdjacentToWallFast(tile.x, tile.y));
+        }
+
         /// <summary>
         /// Have we found a valid edge tile for this room?
         /// </summary>
@@ -70,16 +115,11 @@ namespace CaveGeneration.MapGeneration
         /// <param name="target">The new tile.</param>
         bool FoundEdgeTile(Coord source, Coord target, Map map)
         {
-            return map[target.x, target.y] == Tile.Floor 
-                && map.IsAdjacentToWallFast(target) 
+            int x = target.x, y = target.y;
+            return map[x, y] == Tile.Floor 
+                && map.IsAdjacentToWallFast(x, y) 
                 && IsValidJump(source, target, map);
         }
-
-        // An example of an invalid jump according to the following method is the following:
-        // 1 0
-        // 0 1
-        // If we jump from one zero to the other, then it's possible we changed rooms because rooms are defined by horizontal
-        // reachability only. 
 
         /// <summary>
         /// Is the adjacent tile in question immediately reachable? In particular, is the other tile a diagonal jump
@@ -95,20 +135,21 @@ namespace CaveGeneration.MapGeneration
 
         Coord[] GetAdjacentCoords(Coord tile)
         {
-            // re-use the same array defined at the instance level to avoid a huge number of allocations
+            // Re-use the same array defined at the instance level to avoid allocating a new array each time
+            // The entire array gets populated each call, so we don't need to clear it.
             Coord[] adjacentCoords = this.adjacentCoords;
 
-            Coord left = tile.left;
-            Coord right = tile.right;
+            int x = tile.x, y = tile.y;
+            int left = x - 1, right = x + 1, up = y + 1, down = y - 1;
 
-            adjacentCoords[0] = tile.up;
-            adjacentCoords[1] = tile.down;
-            adjacentCoords[2] = right;
-            adjacentCoords[3] = left;
-            adjacentCoords[4] = left.up;
-            adjacentCoords[5] = left.down;
-            adjacentCoords[6] = right.up;
-            adjacentCoords[7] = right.down;
+            adjacentCoords[0] = new Coord(x, up);
+            adjacentCoords[1] = new Coord(x, down);
+            adjacentCoords[2] = new Coord(right, y);
+            adjacentCoords[3] = new Coord(left, y);
+            adjacentCoords[4] = new Coord(left, up);
+            adjacentCoords[5] = new Coord(left, down);
+            adjacentCoords[6] = new Coord(right, up);
+            adjacentCoords[7] = new Coord(right, down);
             return adjacentCoords;
         }
 
@@ -118,3 +159,11 @@ namespace CaveGeneration.MapGeneration
         }
     }
 }
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

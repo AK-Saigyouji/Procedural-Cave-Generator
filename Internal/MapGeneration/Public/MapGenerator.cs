@@ -1,4 +1,9 @@
-﻿namespace CaveGeneration.MapGeneration
+﻿#if UNITY_EDITOR
+using Stopwatch = System.Diagnostics.Stopwatch;
+using CaveGeneration.Utility;
+#endif
+
+namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// Generates a randomized cave-like Map object with the property that every floor tile is reachable from every other
@@ -10,6 +15,7 @@
 
         public MapGenerator(MapParameters parameters)
         {
+            if (parameters == null) throw new System.ArgumentNullException("parameters", "MapParameters must not be null!");
             map = parameters;
         }
 

@@ -1,24 +1,30 @@
-﻿using System.Collections;
+﻿/* The main motivation for creating this class was to avoid having objects of type "List<List<Coord>>" or "List<Coord[]>" 
+ * in the code. Thus the class exposes exposes functionality that is a struct subset of what would be provided by 
+ * by an array of Coords. */
+
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 
 namespace CaveGeneration.MapGeneration
 {
     /// <summary>
-    /// A simple class corresponding to a collection of tiles in the map.
+    /// A simple, readonly collection of tiles in the map.
     /// </summary>
     sealed class TileRegion : IEnumerable<Coord>
     {
         Coord[] tiles;
-        public int Count { get { return tiles.Length; } }
+        public int Count;
 
         public TileRegion(List<Coord> tiles)
         {
-            this.tiles = new Coord[tiles.Count];
+            Coord[] tilesCopy = new Coord[tiles.Count];
             for (int i = 0; i < tiles.Count; i++)
             {
-                this.tiles[i] = tiles[i];
+                tilesCopy[i] = tiles[i];
             }
+            this.tiles = tilesCopy;
+            Count = tiles.Count;
         }
 
         public Coord this[int index]

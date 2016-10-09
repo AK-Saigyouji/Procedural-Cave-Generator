@@ -12,6 +12,7 @@ using UnityEngine;
 
 #if UNITY_EDITOR
 using Stopwatch = System.Diagnostics.Stopwatch;
+using CaveGeneration.Utility;
 #endif
 
 namespace CaveGeneration
@@ -57,7 +58,7 @@ namespace CaveGeneration
 
         /// <summary>
         /// Main method for creating cave objects. Call ExtractCave to get a reference to the most recently generated cave.
-        /// If ExtractCave is not called, next call to GenerateCave will destroy the most recently generated cave.
+        /// If ExtractCave is not called, next call to Generate will destroy the most recently generated cave.
         /// </summary>
         public void Generate()
         {
@@ -69,34 +70,6 @@ namespace CaveGeneration
             DestroyCurrentCave();
             PrepareHeightMaps();
             StartCoroutine(GenerateCaveAsync());
-        }
-
-        Func<IList<Map>, MeshGenerator[]> SelectMethodForMeshGeneratorPreparation()
-        {
-            if (debugMode)
-            {
-                return PrepareMeshGeneratorsSinglethreaded;
-            }
-            else
-            {
-                return PrepareMeshGeneratorsMultithreaded;
-            }
-        }
-
-        IEnumerator GenerateCaveAsync()
-        {
-            Setup();
-            if (debugMode)
-            {
-                GenerateCoreData();
-            }
-            else
-            {
-                yield return Utility.Threading.ExecuteAndAwait(GenerateCoreData);
-            }
-            yield return BuildCave();
-            yield return ActivateChildren();
-            TearDown();
         }
 
         /// <summary>
@@ -113,6 +86,22 @@ namespace CaveGeneration
             GameObject temp = Cave;
             Cave = null;
             return temp;
+        }
+
+        IEnumerator GenerateCaveAsync()
+        {
+            Setup();
+            if (debugMode)
+            {
+                GenerateCoreData();
+            }
+            else
+            {
+                yield return Utility.Threading.ExecuteAndAwait(GenerateCoreData);
+            }
+            yield return BuildCave();
+            yield return ActivateChildren();
+            TearDown();
         }
 
         /// <summary>
@@ -138,9 +127,21 @@ namespace CaveGeneration
 
         IEnumerator BuildCave()
         {
-            UnityEngine.Assertions.Assert.IsNotNull(meshGenerators, "GenerateCoreData must be called before BuildCave");
+            UnityEngine.Assertions.Assert.IsNotNull(meshGenerators, "GenerateCoreData must be called before BuildCave.");
             Cave = ObjectFactory.CreateChild(transform, "Cave");
             yield return GenerateMeshes(meshGenerators);
+        }
+
+        Func<IList<Map>, MeshGenerator[]> SelectMethodForMeshGeneratorPreparation()
+        {
+            if (debugMode)
+            {
+                return PrepareMeshGeneratorsSinglethreaded;
+            }
+            else
+            {
+                return PrepareMeshGeneratorsMultithreaded;
+            }
         }
 
         // Sectors are disabled during generation to avoid engaging the Physx engine. They're re-enabled
@@ -180,7 +181,7 @@ namespace CaveGeneration
             generatedMeshes = new List<CaveMeshes>();
             foreach (var meshGenerator in meshGenerators)
             {
-                GameObject sector = ObjectFactory.CreateSector(meshGenerator.Index, Cave.transform, active: false);
+                GameObject sector = ObjectFactory.CreateSector(meshGenerator.Index, parent: Cave.transform, active: false);
                 generatedMeshes.Add(CreateMapMeshes(meshGenerator, sector.transform));
                 yield return null;
             }
@@ -203,7 +204,7 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Singlethreaded version of PrepareMeshGenerators. Useful for debugging and profiling.
+        /// Singlethreaded version of PrepareMeshGenerators. Useful primarily for debugging and profiling.
         /// </summary>
         MeshGenerator[] PrepareMeshGeneratorsSinglethreaded(IList<Map> submaps)
         {

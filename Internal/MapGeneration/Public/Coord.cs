@@ -22,42 +22,52 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Get the coord one unit to the left of this one. (x,y) -> (x-1,y).
         /// </summary>
-        public Coord left { get { return new Coord(x - 1, y); } }
+        public Coord Left        { get { return new Coord(x - 1, y    ); } }
 
         /// <summary>
         /// Get the coord one unit to the right of this one. (x,y) -> (x+1,y).
         /// </summary>
-        public Coord right { get { return new Coord(x + 1, y); } }
+        public Coord Right       { get { return new Coord(x + 1, y    ); } }
 
         /// <summary>
         /// Get the coord one unit above this one. (x,y) -> (x,y+1).
         /// </summary>
-        public Coord up { get { return new Coord(x, y + 1); } }
+        public Coord Up          { get { return new Coord(x    , y + 1); } }
 
         /// <summary>
         /// Get the coord one unit below this one. (x,y) -> (x,y-1).
         /// </summary>
-        public Coord down { get { return new Coord(x, y - 1); } }
+        public Coord Down        { get { return new Coord(x    , y - 1); } }
 
         /// <summary>
         /// Get the coord one unit to the top left. (x,y) -> (x-1,y+1).
         /// </summary>
-        public Coord topLeft { get { return new Coord(x - 1, y + 1); } }
+        public Coord TopLeft     { get { return new Coord(x - 1, y + 1); } }
 
         /// <summary>
-        /// Get the coord one unit to the top left. (x,y) -> (x+1,y+1).
+        /// Get the coord one unit to the top right. (x,y) -> (x+1,y+1).
         /// </summary>
-        public Coord topRight { get { return new Coord(x + 1, y + 1); } }
+        public Coord TopRight    { get { return new Coord(x + 1, y + 1); } }
 
         /// <summary>
-        /// Get the coord one unit to the top left. (x,y) -> (x+1,y-1).
+        /// Get the coord one unit to the bottom right. (x,y) -> (x+1,y-1).
         /// </summary>
-        public Coord bottomRight { get { return new Coord(x + 1, y - 1); } }
+        public Coord BottomRight { get { return new Coord(x + 1, y - 1); } }
 
         /// <summary>
-        /// Get the coord one unit to the top left. (x,y) -> (x-1,y-1).
+        /// Get the coord one unit to the bottom left. (x,y) -> (x-1,y-1).
         /// </summary>
-        public Coord bottomLeft { get { return new Coord(x - 1, y - 1); } }
+        public Coord BottomLeft  { get { return new Coord(x - 1, y - 1); } }
+
+        /// <summary>
+        /// (0,0).
+        /// </summary>
+        public static readonly Coord zero = new Coord(0, 0);
+
+        /// <summary>
+        /// (1,1).
+        /// </summary>
+        public static readonly Coord one  = new Coord(1, 1);
 
         /// <summary>
         /// Get the Euclidean distance between this coordinate and the given one.
@@ -92,7 +102,7 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Generate a list of coordinates representing a path beween the given coordinates (inclusive). 
         /// </summary>
-        /// <returns>List of Coords between start and end (inclusive).</returns>
+        /// <returns>List of Coords between this and the other coord (inclusive).</returns>
         public List<Coord> CreateLineTo(Coord other)
         {
             Vector2 startVector = new Vector2(x, y);
@@ -106,7 +116,7 @@ namespace CaveGeneration.MapGeneration
             for (int i = 0; i <= numIterations; i++)
             {
                 Vector2 nextVector = startVector + i * incrementor;
-                line.Add(new Coord((int)nextVector.x, (int)nextVector.y));
+                line.Add((Coord)nextVector);
             }
 
             return line;
@@ -119,7 +129,7 @@ namespace CaveGeneration.MapGeneration
 
         public static bool operator !=(Coord tileA, Coord tileB)
         {
-            return !(tileA == tileB);
+            return tileA.x != tileB.x || tileA.y != tileB.y;
         }
 
         public override bool Equals(object obj)
@@ -139,7 +149,7 @@ namespace CaveGeneration.MapGeneration
 
         public override int GetHashCode()
         {
-            // Since Coord is a pair of 16 bit objects, 32 bits is exactly enough for bijective mapping between 
+            // Since Coord is a pair of 16 bit objects, 32 bits is exactly enough for a bijective mapping between 
             // Coords and hash codes.
             return (x << 16) ^ y;
         }

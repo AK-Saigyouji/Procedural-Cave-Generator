@@ -28,7 +28,8 @@ namespace CaveGeneration.MeshGeneration
             Scale = scale;
             Length = walls.GetLength(0);
             Width = walls.GetLength(1);
-            this.walls = walls;
+            this.walls = new byte[Length, Width];
+            System.Array.Copy(walls, this.walls, walls.Length);
         }
 
         public byte this[int x, int y]

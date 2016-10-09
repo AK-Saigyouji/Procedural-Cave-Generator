@@ -51,19 +51,16 @@ namespace CaveGeneration.MeshGeneration
         // 4, 5, 6 to 2, 1, 0 respectively (bottomright, bottom, bottomleft to topright, top, topleft)
         readonly int[] bottomOffset = new[] { -1, -1, -1, -1, 2, 1, 0, -1 };
 
-        readonly int rowLength;
-
         const int perSquareCacheSize = 5;
 
         public VertexLookup(int rowLength)
         {
-            this.rowLength = rowLength;
             currentRow = new VertexIndex?[perSquareCacheSize, rowLength];
             previousRow = new VertexIndex?[perSquareCacheSize, rowLength];
         }
 
         /// <summary>
-        /// Retrieve the vertex from the cache, if it exists. 
+        /// Retrieve the vertex from the cache, if it exists.
         /// </summary>
         /// <param name="vertexIndex">The index associated with this vertex.</param>
         /// <param name="point">The location of the point on the square: an int from 0 to 7.</param>
@@ -116,13 +113,7 @@ namespace CaveGeneration.MeshGeneration
 
         void ResetBottomRow()
         {
-            for (int y = 0; y < perSquareCacheSize; y++)
-            {
-                for (int x = 0; x < rowLength; x++)
-                {
-                    currentRow[y, x] = null;
-                }
-            }
+            System.Array.Clear(currentRow, 0, currentRow.Length);
         }
     } 
 }

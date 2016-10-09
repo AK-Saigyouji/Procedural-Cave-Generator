@@ -44,13 +44,7 @@ namespace CaveGeneration
 
         internal Grid(Map map) : this(map.Length, map.Width)
         {
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    tiles[x, y] = (Tile)(byte)map[x, y]; 
-                }
-            }
+            System.Array.Copy(map.ToByteArray(), tiles, tiles.Length);
         }
 
         public Grid(byte[,] tiles) : this(tiles.GetLength(0), tiles.GetLength(1))
@@ -59,13 +53,7 @@ namespace CaveGeneration
             {
                 throw new System.ArgumentException("Tiles must be 0 (floors) and 1 (walls).", "tiles");
             }
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    this.tiles[x, y] = (Tile)tiles[x, y];
-                }
-            }
+            System.Array.Copy(tiles, this.tiles, tiles.Length);
         }
 
         public Tile this[int x, int y]
@@ -87,7 +75,7 @@ namespace CaveGeneration
                     accumulator |= tiles[x, y];
                 }
             }
-            return accumulator == 0 || accumulator == 1;
+            return accumulator < 2;
         }
     } 
 }

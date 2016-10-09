@@ -6,12 +6,13 @@
  * in a flat array proved to strip flat arrays of any speedup they otherwise would have. As for jagged arrays, they would be
  * faster here, but they come with two penalties. The first is readability, as they would be accessed grid[y][x] (reversed
  * coordinates). The second is the extra memory consumption of jagged arrays associated with the overhead for each 
- * array, which adds up as the grid may have to be copied several times. Thus ultimately the 2D array was chosen
- * as the best option.*/
+ * array, which adds up as the grid may have to be copied several times. Thus ultimately the 2D array was chosen.*/
 
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+
+using Array = System.Array;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -23,7 +24,7 @@ namespace CaveGeneration.MapGeneration
 
     /// <summary>
     /// The 2D grid-based Map. Points in the map are given by integer pairs like a 2d array. Each point is either 
-    /// a floor or wall tile. Offers a variety of methods tailored to generating a map.
+    /// a floor or wall tile. Offers a variety of methods tailored to map construction.
     /// </summary>
     public sealed class Map
     {
@@ -56,14 +57,7 @@ namespace CaveGeneration.MapGeneration
 
         public Map(Tile[,] tiles, int squareSize) : this(tiles.GetLength(0), tiles.GetLength(1), squareSize)
         {
-            Tile[,] grid = this.grid;
-            for (int x = 0; x < length; x++)
-            {
-                for (int y = 0; y < width; y++)
-                {
-                    grid[x, y] = tiles[x, y];
-                }
-            }
+            Array.Copy(tiles, grid, grid.Length);
         }
 
         public Tile this[int x, int y]
@@ -76,6 +70,20 @@ namespace CaveGeneration.MapGeneration
         {
             get { return grid[tile.x, tile.y]; }
             set { grid[tile.x, tile.y] = value; }
+        }
+
+        /// <summary>
+        /// Copies the values from the other map. Maps must have the same dimensions (length and width).
+        /// </summary>
+        /// <exception cref="System.ArgumentException"></exception>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        public void Copy(Map other)
+        {
+            if (other == null) throw new System.ArgumentNullException();
+            if (length != other.length || width != other.width)
+                throw new System.ArgumentException("Cannot copy map with different dimensions!");
+
+            Array.Copy(other.grid, this.grid, grid.Length);
         }
 
         /// <summary>
@@ -149,6 +157,7 @@ namespace CaveGeneration.MapGeneration
         /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
         /// so use only if this tile is in the interior of the map.
         /// </summary>
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
         public bool IsAdjacentToWallFast(int x, int y)
         {
             Tile[,] grid = this.grid;
@@ -157,13 +166,35 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
+        /// Is the tile adjacent to a wall tile? Assumes tile is a valid map tile (use Contains method to check if 
+        /// not sure).
+        /// </summary>
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        public bool IsAdjacentToFloor(int x, int y)
+        {
+            return GetAdjacentTiles(x, y).Any(adjTile => grid[x, y] == Tile.Floor);
+        }
+
+        /// <summary>
+        /// Is the tile adjacent to a wall tile? Assumes tile is a valid map tile (use Contains method to check if 
+        /// not sure).
+        /// </summary>
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        public bool IsAdjacentToFloor(Coord tile)
+        {
+            return IsAdjacentToFloor(tile.x, tile.y);
+        }
+
+        /// <summary>
         /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
         /// so use only if this tile is in the interior of the map.
         /// </summary>
         /// <exception cref="System.IndexOutOfRangeException"></exception>
-        public bool IsAdjacentToWallFast(Coord tile)
+        public bool IsAdjacentToFloorFast(int x, int y)
         {
-            return IsAdjacentToWallFast(tile.x, tile.y);
+            Tile[,] grid = this.grid;
+            return grid[x - 1, y] == Tile.Floor || grid[x + 1, y] == Tile.Floor
+                || grid[x, y + 1] == Tile.Floor || grid[x, y - 1] == Tile.Floor;
         }
 
         /// <summary>
@@ -191,27 +222,43 @@ namespace CaveGeneration.MapGeneration
         public int GetSurroundingWallCount(int x, int y)
         {
             Tile[,] grid = this.grid;
-            return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1] // top-left, top, top-right
-                + (int)grid[x - 1, y] + (int)grid[x + 1, y]                                // middle-left, middle-right
-                + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1]; // bottom-left, bottom, bottom-right
+            return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]  // top-left, top, top-right
+                 + (int)grid[x - 1, y    ] +                       (int)grid[x + 1, y    ]  // middle-left, middle-right
+                 + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1]; // bottom-left, bottom, bottom-right
         }
 
+        /// <summary>
+        /// Do the coordinates correspond to the boundary of the map? The boundary is defined as valid points in the map
+        /// such that at least one of left, right, up or down step off the map.
+        /// </summary>
         public bool IsBoundaryTile(int x, int y)
         {
             return (x == 0 || x == length - 1) && (0 <= y && y <= width - 1) // vertical boundary
                 || (y == 0 || y == width - 1) && (0 <= x && x <= length - 1); // horizontal boundary
         }
 
+        /// <summary>
+        /// Do the coordinates correspond to the boundary of the map? The boundary is defined as valid points in the map
+        /// such that at least one of left, right, up or down step off the map.
+        /// </summary>
         public bool IsBoundaryTile(Coord coord)
         {
             return IsBoundaryTile(coord.x, coord.y);
         }
 
+        /// <summary>
+        /// Are the coordinates in the interior of the map? The interior is defined as valid points in the map not lying
+        /// on the boundary. In particular, all eight neighbouring points of an interior point are valid map coordinates.
+        /// </summary>
         public bool IsInteriorTile(int x, int y)
         {
             return (0 < x && x < length - 1) && (0 < y && y < width - 1);
         }
 
+        /// <summary>
+        /// Are the coordinates in the interior of the map? The interior is defined as valid points in the map not lying
+        /// on the boundary. In particular, all eight neighbouring points of an interior point are valid map coordinates.
+        /// </summary>
         public bool IsInteriorTile(Coord tile)
         {
             return IsInteriorTile(tile.x, tile.y);
@@ -237,13 +284,13 @@ namespace CaveGeneration.MapGeneration
         public IEnumerable<Coord> GetAdjacentTiles(Coord tile)
         {
             if (tile.x > 0)
-                yield return tile.left;
+                yield return tile.Left;
             if (tile.x + 1 < length)
-                yield return tile.right;
+                yield return tile.Right;
             if (tile.y > 0)
-                yield return tile.down;
+                yield return tile.Down;
             if (tile.y + 1 < width)
-                yield return tile.up;
+                yield return tile.Up;
         }
 
         /// <summary>
@@ -252,14 +299,32 @@ namespace CaveGeneration.MapGeneration
         public byte[,] ToByteArray()
         {
             byte[,] byteArray = new byte[length, width];
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    byteArray[x, y] = (byte)grid[x, y];
-                }
-            }
+            Array.Copy(grid, byteArray, grid.Length);
             return byteArray;
+        }
+
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        public bool IsFloor(int x, int y)
+        {
+            return grid[x, y] == Tile.Floor;
+        }
+
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        public bool IsFloor(Coord tile)
+        {
+            return grid[tile.x, tile.y] == Tile.Floor;
+        }
+
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        public bool IsWall(int x, int y)
+        {
+            return grid[x, y] == Tile.Wall;
+        }
+
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        public bool IsWall(Coord tile)
+        {
+            return grid[tile.x,tile.y] == Tile.Wall;
         }
     }
 }

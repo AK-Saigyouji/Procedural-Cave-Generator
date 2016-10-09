@@ -4,8 +4,7 @@
  * based on which of the four corners are walls (giving rise to 16 configurations). The corners of the triangles are taken
  * from the four corners of the square plus the four midpoints of the square. 
  * 
- * A specialized data structure is used to cache vertices during triangulation.
- */
+ * A specialized data structure is used to cache vertices during triangulation.*/
 
 using UnityEngine;
 using System.Collections.Generic;

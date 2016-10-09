@@ -8,13 +8,12 @@
  * structure than simply putting a square at every 1. 
  * 
  * At the moment this class supports Enclosed and Isometric cave types. Isometric caves are designed with an isometric perspective
- * in mind (hence the name) and thus have ceilings that are built over the walls, not the floors. Enclosed are completely 
- * closed off caves designed with a 1st person perspective.
+ * in mind (hence the name) and thus have ceilings that are built over the walls, not the floors. Enclosed caves are completely 
+ * closed off caves designed with a 1st person perspective in mind.
  * 
- * For isometric cave generation, the 1s are triangulated into a ceiling,
- * the 0s are triangulated into a floor. Outlines of the ceiling are computed and quads are built to connect the ceiling
- * and floor meshes, giving complete 3D geometry. Optional height maps then give the geometry added variation by translating
- * the height of floors and ceilings. 
+ * For isometric cave generation, the 1s are triangulated into a ceiling, and the 0s are triangulated into a floor. 
+ * Outlines of the ceiling are computed and quads are built to connect the ceiling and floor meshes, giving complete 3D 
+ * geometry. Optional height maps then give the geometry added variation by translating the height of floors and ceilings. 
  * 
  * Enclosed cave generation is similar, but instead of triangulating a ceiling, a copy of the floor is made and inverted.
  * Outlines must be inverted since walls face inward for the enclosed caves, rather than outward for the isometric cave.
@@ -26,8 +25,8 @@ using UnityEngine;
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Produces meshes and colliders for Map objects. Break large maps into smaller maps before generating meshes.
-    /// Maps should not be larger than 200 by 200.
+    /// Produces meshes and colliders for grids. Break grids larger than 200 by 200 into smaller grids before feeding
+    /// into a mesh generator.
     /// </summary>
     public sealed class MeshGenerator
     {
@@ -43,8 +42,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public string Index { get; set; }
 
-        int? chunkSize;
-
+        int? chunkSize; 
 
         /// <summary>
         /// If breaking up a single grid into multiple chunks, set chunksize properly to ensure meshes can be stitched 
@@ -64,75 +62,98 @@ namespace CaveGeneration.MeshGeneration
 
         /// <summary>
         /// Create a meshgenerator for an independent grid. If breaking a grid into multiple chunks, use constructor with 
-        /// chunksize. 
+        /// chunksize instead.
         /// </summary>
         public MeshGenerator() : this(null, null) { }
 
         /// <summary>
         /// Generate the data necessary to produce meshes for isometric type cave. Generates ceiling, wall and floor meshes.
         /// </summary>
-        public void GenerateIsometric(WallGrid map, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        /// <exception cref="System.ArgumentException"></exception>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <param name="grid">Grid specifying walls and floors, must have length and width at most 200.</param>
+        public void GenerateIsometric(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            GenerateCeiling(map, ceilingHeightMap);
+            ValidateGrid(grid);
+            GenerateCeiling(grid, ceilingHeightMap);
             ComputeMeshOutlines(ceilingMesh);
             GenerateWallsFromCeiling();
-            GenerateFloor(map, floorHeightMap);
+            GenerateFloor(grid, floorHeightMap);
         }
 
         /// <summary>
         /// Generate the data necessary to produce meshes for enclosed cave. Generates floor, wall and enclosure meshes.
         /// </summary>
-        public void GenerateEnclosed(WallGrid map, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
+        /// <exception cref="System.ArgumentException"></exception>
+        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <param name="grid">Grid specifying walls and floors, must have length and width at most 200.</param>
+        public void GenerateEnclosed(WallGrid grid, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
         {
-            GenerateFloor(map, floorHeightMap);
+            ValidateGrid(grid);
+            GenerateFloor(grid, floorHeightMap);
             ComputeMeshOutlines(floorMesh);
             ReverseOutlines(); 
             GenerateEnclosure(enclosureHeightMap);
             GenerateWallsFromEnclosure();
-            PruneWallsAtGlobalSeams(map.Scale);
+            PruneWallsAtGlobalSeams(grid.Scale);
         }
 
         /// <summary>
-        /// Get the mesh for the ceiling component. Check the docstring for the type of cave you generated to ensure
-        /// it produces this type of mesh.
+        /// Get the mesh for the ceiling component. Types of caves producing this mesh: Isometric.
         /// </summary>
+        /// <exception cref="System.InvalidOperationException"></exception>
         public Mesh GetCeilingMesh()
         {
-            return ceilingMesh.CreateMesh();
+            return GetMesh(ceilingMesh);
         }
 
         /// <summary>
-        /// Get the mesh for the wall component. Check the docstring for the type of cave you generated to ensure
-        /// it produces this type of mesh.
+        /// Get the mesh for the wall component. Types of caves producing this mesh: Isometric, Enclosed.
         /// </summary>
+        /// <exception cref="System.InvalidOperationException"></exception>
         public Mesh GetWallMesh()
         {
-            return wallMesh.CreateMesh();
+            return GetMesh(wallMesh);
         }
 
         /// <summary>
-        /// Get the mesh for the floor component. Check the docstring for the type of cave you generated to ensure
-        /// it produces this type of mesh.
+        /// Get the mesh for the floor component. Types of caves producing this mesh: Isometric, Enclosed.
         /// </summary>
+        /// <exception cref="System.InvalidOperationException"></exception>
         public Mesh GetFloorMesh()
         {
-            return floorMesh.CreateMesh();
+            return GetMesh(floorMesh);
         }
 
         /// <summary>
-        /// Get the mesh for the enclosure component. Check the docstring for the type of cave you generated to ensure
-        /// it produces this type of mesh.
+        /// Get the mesh for the enclosure component. Types of caves producing this mesh: Enclosed.
         /// </summary>
+        /// <exception cref="System.InvalidOperationException"></exception>
         public Mesh GetEnclosureMesh()
         {
-            return enclosureMesh.CreateMesh();
+            return GetMesh(enclosureMesh);
+        }
+
+        Mesh GetMesh(MeshData meshData)
+        {
+            if (meshData == null)
+                throw new System.InvalidOperationException("Use a generate method on mesh generator before using get methods.");
+
+            return meshData.CreateMesh();
+        }
+
+        void ValidateGrid(WallGrid grid)
+        {
+            if (grid == null) throw new System.ArgumentNullException("Null grid passed to mesh generator!");
+            if (grid.Length > 200 || grid.Width > 200)
+                throw new System.ArgumentException("Grid too large for mesh generator. Max size is 200 by 200.");
         }
 
         // Because of the fact that enclosed caves build walls around floors instead of walls, the floors along the boundary
         // of the map get walls built around them. This method removes those walls. 
         void PruneWallsAtGlobalSeams(int scale)
         {
-            if (chunkSize.HasValue) // Global seams exist
+            if (DoGlobalSeamsExist()) 
             {
                 int modulo = scale * chunkSize.Value;
                 WallPruner.PruneModulo(wallMesh, modulo);
@@ -181,6 +202,11 @@ namespace CaveGeneration.MeshGeneration
             {
                 outline.Reverse();
             }
+        }
+
+        bool DoGlobalSeamsExist()
+        {
+            return chunkSize.HasValue;
         }
     }
 }
