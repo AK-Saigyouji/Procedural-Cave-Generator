@@ -166,13 +166,13 @@ namespace CaveGeneration
         void Setup()
         {
             IsGenerating = true;
-            Debug.Log("Generating cave...");
+            EditorOnlyLog("Generating cave...");
         }
 
         void TearDown()
         {
             meshGenerators = null;
-            Debug.Log("Finished!");
+            EditorOnlyLog("Finished!");
             IsGenerating = false;
         }
 

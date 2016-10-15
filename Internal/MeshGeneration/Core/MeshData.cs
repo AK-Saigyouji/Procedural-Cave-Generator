@@ -1,33 +1,33 @@
 ﻿using UnityEngine;
+using MeshTangentExtension;
 
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Holds core data necessary to build a mesh. Creating MeshData and 
-    /// assigning data is threadsafe, unlike the Mesh class in the Unity API. Note that for performance reasons
-    /// accessing data does not produce copies, so be careful about altering state.
+    /// Holds core data necessary to build a mesh. Can use outside of the main thread, unlike the Mesh class in the Unity API.
+    /// Note that for performance reasons accessing data does not produce copies, so be careful about altering state.
     /// </summary>
     sealed class MeshData
     {
         public Vector3[] vertices { get; set; }
         public Vector2[] uv { get; set; }
         public int[] triangles { get; set; }
-        public Vector3[] normals { get; set; }
-        public Vector4[] tangents { get; set; }
 
         /// <summary>
-        /// Convert MeshData into Mesh. Not threadsafe. Must have assigned vertex, triangle and uv arrays, or an 
-        /// InvalidOperationException will be thrown.
+        /// Convert MeshData into Mesh. Must have assigned vertex, triangle and uv arrays. Must be called on the main thread,
+        /// as it uses Unity's Mesh class.
         /// </summary>
+        /// <exception cref="System.InvalidOperationException"></exception>
         public Mesh CreateMesh()
         {
             ValidateState();
             Mesh mesh = new Mesh();
             mesh.vertices = vertices;
             mesh.triangles = triangles;
-            mesh.RecalculateNormals();
             mesh.uv = uv;
-            mesh.tangents = TangentSolver.DetermineTangents(vertices, uv, triangles, mesh.normals);
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents(vertices, triangles, uv, mesh.normals);
+            mesh.UploadMeshData(true);
             return mesh;
         }
 

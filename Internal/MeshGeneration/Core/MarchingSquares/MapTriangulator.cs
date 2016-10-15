@@ -1,10 +1,10 @@
-﻿/* This class turns a WallGrid, which is a grid of 0s and 1s, into a mesh (specifically, into vertices and triangles).
+﻿/* This class turns a WallGrid, which is a grid of 0s and 1s, into vertices and triangles for a Mesh.
  * It does this using the Marching Squares algorithm. A square in this context refers to four points in the grid 
  * in the arrangement (x,y),(x+1,y),(x,y+1),(x+1,y+1). The algorithm iterates over all such squares, and builds triangles
  * based on which of the four corners are walls (giving rise to 16 configurations). The corners of the triangles are taken
  * from the four corners of the square plus the four midpoints of the square. 
  * 
- * A specialized data structure is used to cache vertices during triangulation.*/
+ * A specialized data structure is used to cache vertices during triangulation to avoid doubling up on vertices. */
 
 using UnityEngine;
 using System.Collections.Generic;
@@ -43,37 +43,23 @@ namespace CaveGeneration.MeshGeneration
             new int[] {0, 2, 4, 6}
         };
 
-        // Lookup table for determining the position of the 8 points in the square relative to the bottom-left corner,
-        // not taking into account scaling associated with the map.
-        static Vector2[] positionOffsets = new Vector2[]
-        {
-            new Vector2(0f, 1f),
-            new Vector2(0.5f, 1f),
-            new Vector2(1f, 1f),
-            new Vector2(1f, 0.5f),
-            new Vector2(1f, 0f),
-            new Vector2(0.5f, 0f),
-            new Vector2(0f, 0f),
-            new Vector2(0f, 0.5f)
-        };
-
-        VertexIndex[] vertexIndices; // Reusable array to hold the vertices in each square as they're processed.
         WallGrid grid;
-        VertexLookup vertexCache;
 
-        // These hold all vertices and triangles as they're computed.
-        List<Vector2> localVertices;
+        VertexIndex[] vertexIndices; // Reusable array to hold one square's vertices at a time.
+        VertexLookup vertexCache; 
+
+        // These temporary lists hold all vertices and triangles as they're computed.
+        List<LocalPosition> localVertices;
         List<VertexIndex> triangles;
 
         const int MAX_VERTICES_IN_TRIANGULATION = 6;
 
-
         public MapTriangulator(WallGrid grid)
         {
             this.grid = grid;
-            vertexIndices = new VertexIndex[MAX_VERTICES_IN_TRIANGULATION];
             int maxPossibleVertices = grid.Length * grid.Width;
-            localVertices = new List<Vector2>(maxPossibleVertices);
+            vertexIndices = new VertexIndex[MAX_VERTICES_IN_TRIANGULATION];
+            localVertices = new List<LocalPosition>(maxPossibleVertices);
             triangles = new List<VertexIndex>(maxPossibleVertices * 6);
             vertexCache = new VertexLookup(grid.Length);
         }
@@ -85,7 +71,8 @@ namespace CaveGeneration.MeshGeneration
         public MeshData Triangulate()
         {
             TriangulateAllSquares();
-            return BuildMeshData();
+            MeshData mesh = BuildMeshData();
+            return mesh;
         }
 
         MeshData BuildMeshData()
@@ -135,7 +122,7 @@ namespace CaveGeneration.MeshGeneration
             if (!vertexCache.TryGetCachedVertex(point, x, out vertexIndex))
             {
                 vertexIndex = localVertices.Count;
-                Vector2 localPosition = GetLocalPosition(point, x, y);
+                LocalPosition localPosition = new LocalPosition(x, y, point);
                 localVertices.Add(localPosition);
             }
             vertexCache.CacheVertex(vertexIndex, point, x);
@@ -158,7 +145,7 @@ namespace CaveGeneration.MeshGeneration
             triangles.Add(c);
         }
 
-        Vector3[] LocalToGlobalPositions(List<Vector2> localPositions)
+        Vector3[] LocalToGlobalPositions(List<LocalPosition> localPositions)
         {
             Vector3 basePosition = grid.Position;
             int scale = grid.Scale;
@@ -166,7 +153,7 @@ namespace CaveGeneration.MeshGeneration
             Vector3[] globalPositions = new Vector3[localPositions.Count];
             for (int i = 0; i < globalPositions.Length; i++)
             {
-                globalPositions[i] = basePosition + new Vector3(localPositions[i].x, 0f, localPositions[i].y) * scale;
+                globalPositions[i] = basePosition + localPositions[i].ToVector3() * scale;
             }
             return globalPositions;
         }
@@ -179,12 +166,6 @@ namespace CaveGeneration.MeshGeneration
                 triangleArray[i] = triangles[i];
             }
             return triangleArray;
-        }
-
-        Vector2 GetLocalPosition(int squarePoint, int x, int y)
-        {
-            Vector2 offset = positionOffsets[squarePoint];
-            return new Vector2(x + offset.x, y + offset.y);
         }
 
         int ComputeConfiguration(WallGrid grid, int x, int y)
