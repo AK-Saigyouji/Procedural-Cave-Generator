@@ -7,7 +7,7 @@ namespace CaveGeneration.MeshGeneration
     /// Represents data associated with the map from which meshes should be built, including position, scale and location of
     /// walls.
     /// </summary>
-    public class WallGrid
+    public sealed class WallGrid
     {
         public int Scale { get; private set; }
         public Vector3 Position { get; private set; }
@@ -28,8 +28,7 @@ namespace CaveGeneration.MeshGeneration
             Scale = scale;
             Length = walls.GetLength(0);
             Width = walls.GetLength(1);
-            this.walls = new byte[Length, Width];
-            System.Array.Copy(walls, this.walls, walls.Length);
+            this.walls = (byte[,])walls.Clone();
         }
 
         public byte this[int x, int y]

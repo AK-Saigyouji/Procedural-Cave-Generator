@@ -10,9 +10,6 @@
 
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
-
-using Array = System.Array;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -49,17 +46,6 @@ namespace CaveGeneration.MapGeneration
             Position = Vector3.zero;
         }
 
-        public Map(Map map) : this(map.grid, map.SquareSize)
-        {
-            Index = map.Index;
-            Position = map.Position;
-        }
-
-        public Map(Tile[,] tiles, int squareSize) : this(tiles.GetLength(0), tiles.GetLength(1), squareSize)
-        {
-            Array.Copy(tiles, grid, grid.Length);
-        }
-
         public Tile this[int x, int y]
         {
             get { return grid[x, y]; }
@@ -83,7 +69,18 @@ namespace CaveGeneration.MapGeneration
             if (length != other.length || width != other.width)
                 throw new System.ArgumentException("Cannot copy map with different dimensions!");
 
-            Array.Copy(other.grid, this.grid, grid.Length);
+            Copy(other.grid);
+        }
+
+        void Copy(Tile[,] other)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    grid[x, y] = other[x, y];
+                }
+            }
         }
 
         /// <summary>
@@ -134,26 +131,6 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Is the tile adjacent to a wall tile? Assumes tile is a valid map tile (use Contains method to check if 
-        /// not sure).
-        /// </summary>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
-        public bool IsAdjacentToWall(int x, int y)
-        {
-            return GetAdjacentTiles(x, y).Any(adjTile => grid[x, y] == Tile.Wall);
-        }
-
-        /// <summary>
-        /// Is the tile adjacent to a wall tile? Assumes tile is a valid map tile (use Contains method to check if 
-        /// not sure).
-        /// </summary>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
-        public bool IsAdjacentToWall(Coord tile)
-        {
-            return IsAdjacentToWall(tile.x, tile.y);
-        }
-
-        /// <summary>
         /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
         /// so use only if this tile is in the interior of the map.
         /// </summary>
@@ -163,26 +140,6 @@ namespace CaveGeneration.MapGeneration
             Tile[,] grid = this.grid;
             return grid[x - 1, y] == Tile.Wall || grid[x + 1, y] == Tile.Wall 
                 || grid[x, y + 1] == Tile.Wall || grid[x, y - 1] == Tile.Wall;
-        }
-
-        /// <summary>
-        /// Is the tile adjacent to a wall tile? Assumes tile is a valid map tile (use Contains method to check if 
-        /// not sure).
-        /// </summary>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
-        public bool IsAdjacentToFloor(int x, int y)
-        {
-            return GetAdjacentTiles(x, y).Any(adjTile => grid[x, y] == Tile.Floor);
-        }
-
-        /// <summary>
-        /// Is the tile adjacent to a wall tile? Assumes tile is a valid map tile (use Contains method to check if 
-        /// not sure).
-        /// </summary>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
-        public bool IsAdjacentToFloor(Coord tile)
-        {
-            return IsAdjacentToFloor(tile.x, tile.y);
         }
 
         /// <summary>
@@ -265,42 +222,11 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Gets the horizontally adjacent tiles. Examples:
-        /// (1,3) -> (0,3), (2,3), (1,4), (1,2) (assumes map is at least 3 by 5).
-        /// (0,0) -> (0,1), (1,0) (assumes map is at least 2 by 2).
-        /// (0,1) -> (1,1), (0,0), (0,2) (assumes map is at least (2 by 3).
-        /// </summary>
-        public IEnumerable<Coord> GetAdjacentTiles(int x, int y)
-        {
-            return GetAdjacentTiles(new Coord(x, y));
-        }
-
-        /// <summary>
-        /// Gets the horizontally adjacent tiles. Examples:
-        /// (1,3) -> (0,3), (2,3), (1,4), (1,2) (assumes map is at least 3 by 5).
-        /// (0,0) -> (0,1), (1,0) (assumes map is at least 2 by 2).
-        /// (0,1) -> (1,1), (0,0), (0,2) (assumes map is at least (2 by 3).
-        /// </summary>
-        public IEnumerable<Coord> GetAdjacentTiles(Coord tile)
-        {
-            if (tile.x > 0)
-                yield return tile.Left;
-            if (tile.x + 1 < length)
-                yield return tile.Right;
-            if (tile.y > 0)
-                yield return tile.Down;
-            if (tile.y + 1 < width)
-                yield return tile.Up;
-        }
-
-        /// <summary>
         /// Get a 2D byte array of 0s and 1s corresponding to floors and walls respectively. 
         /// </summary>
         public byte[,] ToByteArray()
         {
-            byte[,] byteArray = new byte[length, width];
-            Array.Copy(grid, byteArray, grid.Length);
-            return byteArray;
+            return (byte[,])grid.Clone();
         }
 
         /// <exception cref="System.IndexOutOfRangeException"></exception>

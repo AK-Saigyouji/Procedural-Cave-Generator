@@ -42,18 +42,26 @@ namespace CaveGeneration
             tiles = new Tile[length, width];
         }
 
-        internal Grid(Map map) : this(map.Length, map.Width)
+        internal Grid(Map map)
         {
-            System.Array.Copy(map.ToByteArray(), tiles, tiles.Length);
+            if (map == null) throw new System.ArgumentNullException("map");
+
+            length = map.Length;
+            width = map.Width;
+            tiles = new Tile[length, width];
+            Copy(map.ToByteArray());
         }
 
-        public Grid(byte[,] tiles) : this(tiles.GetLength(0), tiles.GetLength(1))
+        public Grid(byte[,] tiles)
         {
+            if (tiles == null) throw new System.ArgumentNullException("tiles");
             if (!AreValidTiles(tiles))
-            {
                 throw new System.ArgumentException("Tiles must be 0 (floors) and 1 (walls).", "tiles");
-            }
-            System.Array.Copy(tiles, this.tiles, tiles.Length);
+
+            length = tiles.GetLength(0);
+            width = tiles.GetLength(1);
+            this.tiles = new Tile[length, width];
+            Copy(tiles);
         }
 
         public Tile this[int x, int y]
@@ -76,6 +84,17 @@ namespace CaveGeneration
                 }
             }
             return accumulator < 2;
+        }
+
+        void Copy(byte[,] tiles)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    this.tiles[x, y] = (Tile)tiles[x, y];
+                }
+            }
         }
     } 
 }
