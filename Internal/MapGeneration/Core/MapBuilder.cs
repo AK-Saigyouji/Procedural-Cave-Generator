@@ -158,10 +158,8 @@ namespace CaveGeneration.MapGeneration
         public void ConnectFloors(int tunnelRadius)
         {
             List<TileRegion> floors = floorRegions ?? GetFloorRegions();
-            List<Room> rooms = FloorRegionsToRooms(floors);
-            List<RoomConnection> allRoomConnections = ComputeRoomConnections(rooms);
-            List<RoomConnection> finalConnections = MinimumSpanningTree.GetMinimalConnectionsDiscrete(allRoomConnections, rooms.Count);
-            finalConnections.ForEach(connection => CreatePassage(connection, tunnelRadius));
+            var finalConnections = Connectivity.MapConnector.GetConnections(map, floors);
+            System.Array.ForEach(finalConnections, connection => CreatePassage(connection, tunnelRadius));
             ResetRegions();
         }
 
@@ -330,15 +328,6 @@ namespace CaveGeneration.MapGeneration
             return GetTilesReachableFromQueue(queue, visited);
         }
 
-        /// <summary>
-        /// Builds rooms out of floor regions.
-        /// </summary>
-        List<Room> FloorRegionsToRooms(List<TileRegion> floors)
-        {
-            bool[,] visited = GetVisitedArray();
-            return floors.Select(region => new Room(region, map, visited)).ToList();
-        }
-
         List<Coord> GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
         {
             tiles.Clear();
@@ -388,28 +377,7 @@ namespace CaveGeneration.MapGeneration
             }
         }
 
-        /// <summary>
-        /// Generate a RoomConnection object between every two rooms in the map, where the connection stores information
-        /// about the shortest distance between the two rooms and the tiles corresponding to this distance.
-        /// </summary>
-        /// <param name="rooms">All rooms in the Map.</param>
-        /// <returns>A list of every connection between rooms in the map.</returns>
-        List<RoomConnection> ComputeRoomConnections(List<Room> rooms)
-        {
-            List<RoomConnection> connections = new List<RoomConnection>();
-            for (int i = 0; i < rooms.Count; i++)
-            {
-                for (int j = i + 1; j < rooms.Count; j++)
-                {
-                    RoomConnection connection = new RoomConnection(rooms[i], rooms[j], i, j);
-                    connections.Add(connection);
-                    connection.FindShortConnection();
-                }
-            }
-            return connections;
-        }
-
-        void CreatePassage(RoomConnection connection, int tunnelingRadius)
+        void CreatePassage(Connectivity.ConnectionInfo connection, int tunnelingRadius)
         {
             tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
             List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);

@@ -1,4 +1,6 @@
-﻿namespace CaveGeneration.MapGeneration
+﻿/* This is a general implementation of the UnionFind (also known as Disjoint Set) data structure.*/
+
+namespace CaveGeneration.MapGeneration.Connectivity
 {
     public sealed class UnionFind
     {
