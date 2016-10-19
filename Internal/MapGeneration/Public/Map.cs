@@ -84,6 +84,16 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
+        /// Create a new map with the same values, leaving the original unaltered.
+        /// </summary>
+        public Map Clone()
+        {
+            Map clone = new Map(length, width, SquareSize);
+            clone.Copy(this);
+            return clone;
+        }
+
+        /// <summary>
         /// Divide the map into smaller Map chunks.
         /// </summary>
         /// <returns>Returns a readonly list of smaller Map objects.</returns>
@@ -227,6 +237,24 @@ namespace CaveGeneration.MapGeneration
         public byte[,] ToByteArray()
         {
             return (byte[,])grid.Clone();
+        }
+
+        /// <summary>
+        /// Get a 2D bool array indicating the location of tiles of the given type. e.g. ToBoolArray(Tile.Floor) will
+        /// return a 2D bool array, with dimensions (Length, Width) with true at (x, y) if and only if the map
+        /// has a floor tile at (x, y).
+        /// </summary>
+        public bool[,] ToBoolArray(Tile tileType)
+        {
+            bool[,] bools = new bool[length, width];
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    bools[x, y] = grid[x, y] == tileType;
+                }
+            }
+            return bools;
         }
 
         /// <exception cref="System.IndexOutOfRangeException"></exception>

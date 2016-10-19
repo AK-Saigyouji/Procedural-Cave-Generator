@@ -8,7 +8,7 @@
  * that connects all rooms while minimizing the amount of tunneling that needs to be done. 
  *
  * Run-time analysis:
- * This component of the map generator (and in fact, the whole cavegenerator) has the worst worst-case run-time.
+ * This component of the map generator (and in fact, of the whole cavegenerator) has the worst worst-case run-time.
  * This part explains the run-time of this algorithm ultimately in terms of the number of tiles in the map, which
  * is equal to length * width. We'll denote this number as n. The rest of the cavegenerator
  * is linear in the number of tiles.

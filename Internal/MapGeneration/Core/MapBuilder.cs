@@ -8,6 +8,9 @@ using System.Linq;
 
 namespace CaveGeneration.MapGeneration
 {
+    using MapConnector = Connectivity.MapConnector;
+    using ConnectionInfo = Connectivity.ConnectionInfo;
+
     /// <summary>
     /// Offers a variety of methods for configuring a randomized Map object. Start with an initialization
     /// method, and end with the build method to receive the map.
@@ -19,11 +22,6 @@ namespace CaveGeneration.MapGeneration
         int length;
         int width;
 
-        Map spareMap; // Some methods require a second temporary map.
-        List<TileRegion> floorRegions; // Once computed, regions are cached until the map changes.
-        List<Coord> tiles; // Reusable list of tiles with capacity equal to size of map.
-        bool[,] visited; // Reusable 2d boolean array for each tile in map
-
         const int SMOOTHING_ITERATIONS = 5;
         const int SMOOTHING_THRESHOLD = 4;
 
@@ -33,8 +31,6 @@ namespace CaveGeneration.MapGeneration
         public MapBuilder(int length, int width, int squareSize)
         {
             map = new Map(length, width, squareSize);
-            spareMap = new Map(length, width, squareSize);
-            tiles = new List<Coord>(length * width);
             this.length = length;
             this.width = width;
         }
@@ -55,7 +51,6 @@ namespace CaveGeneration.MapGeneration
                     map[x, y] = GetRandomTile(mapDensity, x, y, random);
                 }
             }
-            ResetRegions();
         }
 
         /// <summary>
@@ -67,7 +62,7 @@ namespace CaveGeneration.MapGeneration
             int interiorLength = length - 1;
             int interiorWidth = width - 1;
             Map currentMap = map;
-            Map tempMap = GetMapCopy(map);
+            Map tempMap = map.Clone();
             for (int i = 0; i < SMOOTHING_ITERATIONS; i++)
             {
                 for (int y = 1; y < interiorWidth; y++)
@@ -79,8 +74,6 @@ namespace CaveGeneration.MapGeneration
                 }
                 Swap(ref currentMap, ref tempMap);
             }
-            RestoreMapReferences(currentMap, tempMap);
-            ResetRegions();
         }
 
         /// <summary>
@@ -92,7 +85,7 @@ namespace CaveGeneration.MapGeneration
             if (radius <= 0) return;
             radius = Mathf.Min(radius, Mathf.Max(length, width));
             Map currentMap = map;
-            Map tempMap = GetMapCopy(map);
+            Map tempMap = map.Clone();
             for (int iteration = 0; iteration < radius; iteration++)
             {
                 for (int y = 1; y < width - 1; y++)
@@ -107,8 +100,6 @@ namespace CaveGeneration.MapGeneration
                 }
                 Swap(ref currentMap, ref tempMap);
             }
-            RestoreMapReferences(currentMap, tempMap);
-            ResetRegions();
         }
 
         /// <summary>
@@ -120,14 +111,14 @@ namespace CaveGeneration.MapGeneration
         {
             if (threshold <= 0) return;
 
-            bool[,] visited = GetVisitedArray();
+            bool[,] visited = map.ToBoolArray(Tile.Floor); 
             VisitBoundaryRegion(visited);
 
-            for (int x = 0; x < length; x++)
+            for (int y = 0; y < width; y++)
             {
-                for (int y = 0; y < width; y++)
+                for (int x = 0; x < length; x++)
                 {
-                    if (IsNewTileOfType(visited, x, y, Tile.Wall))
+                    if (!visited[x,y])
                     {
                         List<Coord> region = GetRegion(x, y, visited);
                         if (region.Count < threshold)
@@ -137,7 +128,6 @@ namespace CaveGeneration.MapGeneration
                     }
                 }
             }
-            ResetRegions();
         }
 
         /// <summary>
@@ -148,7 +138,7 @@ namespace CaveGeneration.MapGeneration
         public void RemoveSmallFloorRegions(int threshold)
         {
             if (threshold <= 0) return;
-            floorRegions = GetFloorRegions(threshold);
+            GetFloorRegions(threshold);
         }
 
         /// <summary>
@@ -157,10 +147,9 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void ConnectFloors(int tunnelRadius)
         {
-            List<TileRegion> floors = floorRegions ?? GetFloorRegions();
-            var finalConnections = Connectivity.MapConnector.GetConnections(map, floors);
+            List<TileRegion> floors = GetFloorRegions();
+            ConnectionInfo[] finalConnections = MapConnector.GetConnections(map, floors);
             System.Array.ForEach(finalConnections, connection => CreatePassage(connection, tunnelRadius));
-            ResetRegions();
         }
 
         /// <summary>
@@ -172,18 +161,17 @@ namespace CaveGeneration.MapGeneration
         {
             if (borderSize <= 0) return;
             Map borderedMap = new Map(length + borderSize * 2, width + borderSize * 2, map.SquareSize);
-            for (int x = 0; x < borderedMap.Length; x++)
+            for (int y = 0; y < borderedMap.Width; y++)
             {
-                int xShifted = x - borderSize;
-                for (int y = 0; y < borderedMap.Width; y++)
+                int yShifted = y - borderSize;
+                for (int x = 0; x < borderedMap.Length; x++)
                 {
-                    int yShifted = y - borderSize;
+                    int xShifted = x - borderSize;
                     bool isInsideBorder = (0 <= xShifted && xShifted < length) && (0 <= yShifted && yShifted < width);
                     borderedMap[x, y] = isInsideBorder ? map[xShifted, yShifted] : Tile.Wall;
                 }
             }
             map = borderedMap;
-            ResetRegions();
         }
 
         /// <summary>
@@ -194,6 +182,10 @@ namespace CaveGeneration.MapGeneration
             return map;
         }
 
+        /// <summary>
+        /// Retrieve the majority tile type of the neighbours of the coord passed in, unless it's a draw (4 walls,
+        /// 4 floors) in which case it'll return the value of the map at that point.
+        /// </summary>
         Tile GetSmoothedTile(Map map, int x, int y)
         {
             int neighbourCount = map.GetSurroundingWallCount(x, y);
@@ -230,13 +222,13 @@ namespace CaveGeneration.MapGeneration
         List<TileRegion> GetFloorRegions(int threshold = 0)
         {
             List<TileRegion> regions = new List<TileRegion>();
-            bool[,] visited = GetVisitedArray();
+            bool[,] visited = map.ToBoolArray(Tile.Wall);
 
-            for (int x = 0; x < length; x++)
+            for (int y = 0; y < width; y++)
             {
-                for (int y = 0; y < width; y++)
+                for (int x = 0; x < length; x++)
                 {
-                    if (IsNewTileOfType(visited, x, y, Tile.Floor))
+                    if (!visited[x, y])
                     {
                         List<Coord> region = GetRegion(x, y, visited);
                         if (region.Count < threshold)
@@ -250,7 +242,6 @@ namespace CaveGeneration.MapGeneration
                     }
                 }
             }
-            ResetRegions();
             return regions;
         }
 
@@ -328,14 +319,24 @@ namespace CaveGeneration.MapGeneration
             return GetTilesReachableFromQueue(queue, visited);
         }
 
+        List<Coord> GetRegionFast(int xStart, int yStart, bool[,] visited)
+        {
+            Queue<Coord> queue = new Queue<Coord>();
+            queue.Enqueue(new Coord(xStart, yStart));
+            visited[xStart, yStart] = true;
+            return GetTilesReachableFromQueue(queue, visited);
+        }
+
+        // There are several assumptions built into this method that will cause problems if not met. 
+        // Most substantially, it is assumed that the elements of queue all correspond to a single tile type,
+        // and that the visited array has already set to true every element of the opposite type. e.g.
+        // if queue has a single Coord (2,3) and map[2,3] = Tile.Wall, then for each (x,y) such that map[x,y] = Tile.Floor,
+        // visited[x,y] = true. 
         List<Coord> GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
         {
-            tiles.Clear();
-            if (queue.Count == 0)
-            {
-                return tiles;
-            }
-            Tile tileType = map[queue.Peek()];
+            // This list ends up consuming a lot of memory from resizing (~ 10 times the entire map) but maintaining a 
+            // cached list and clearing it each time increased the run-time of this method by a factor of 4. 
+            List<Coord> tiles = new List<Coord>();
             while (queue.Count > 0)
             {
                 Coord currentTile = queue.Dequeue();
@@ -345,25 +346,28 @@ namespace CaveGeneration.MapGeneration
                 int x = currentTile.x, y = currentTile.y;
                 int left = x - 1, right = x + 1, up = y + 1, down = y - 1;
 
-                if (IsNewTileOfType(visited, left, y, tileType))
+                if (!visited[left, y])
+                {
                     queue.Enqueue(new Coord(left, y));
-                if (IsNewTileOfType(visited, right, y, tileType))
+                    visited[left, y] = true;
+                }
+                if (!visited[right, y])
+                {
                     queue.Enqueue(new Coord(right, y));
-                if (IsNewTileOfType(visited, x, up, tileType))
+                    visited[right, y] = true;
+                }
+                if (!visited[x, up])
+                {
                     queue.Enqueue(new Coord(x, up));
-                if (IsNewTileOfType(visited, x, down, tileType))
+                    visited[x, up] = true;
+                }
+                if (!visited[x, down])
+                {
                     queue.Enqueue(new Coord(x, down));
+                    visited[x, down] = true;
+                }
             }
             return tiles;
-        }
-
-        bool IsNewTileOfType(bool[,] visited, int x, int y, Tile tileType)
-        {
-            if (visited[x, y])
-                return false;
-
-            visited[x, y] = true;
-            return map[x, y] == tileType;
         }
 
         /// <summary>
@@ -377,7 +381,7 @@ namespace CaveGeneration.MapGeneration
             }
         }
 
-        void CreatePassage(Connectivity.ConnectionInfo connection, int tunnelingRadius)
+        void CreatePassage(ConnectionInfo connection, int tunnelingRadius)
         {
             tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
             List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
@@ -390,7 +394,8 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Replace nearby tiles with floors. Does not affect boundary tiles.
         /// </summary>
-        /// <param name="radius">The radius of replacement: e.g. if 1, will replace the 8 adjacent tiles.</param>
+        /// <param name="radius">The radius of replacement: e.g. if 1, will replace the 8 adjacent tiles. If 2,
+        /// will replace those 8 and their 16 immediate neighbours, etc.</param>
         void ClearNeighbors(Map map, int xCenter, int yCenter, int radius)
         {
             // These computations ensure that only interior (non-boundary) tiles are affected.
@@ -412,46 +417,6 @@ namespace CaveGeneration.MapGeneration
             Map temp = a;
             a = b;
             b = temp;
-        }
-
-        bool[,] GetVisitedArray()
-        {
-            if (visited != null)
-            {
-                System.Array.Clear(visited, 0, visited.Length);
-            }
-            else
-            {
-                visited = new bool[length, width];
-            }
-            return visited;
-        }
-
-        /// <summary>
-        /// Copies the passed map to the spare map and returns it. Can be used to get a map copy without allocations.
-        /// </summary>
-        Map GetMapCopy(Map original)
-        {
-            spareMap.Copy(original);
-            return spareMap;
-        }
-
-        /// <summary>
-        /// Ensures the instance-level map references are referring to the correct maps at the end of a method
-        /// involving reference-swapping with a temporary map obtained with GetMapCopy.
-        /// </summary>
-        void RestoreMapReferences(Map main, Map spare)
-        {
-            map = main;
-            spareMap = spare;
-        }
-
-        /// <summary>
-        /// Used when a method renders existing region information invalid. 
-        /// </summary>
-        void ResetRegions()
-        {
-            floorRegions = null;
         }
     }
 }
