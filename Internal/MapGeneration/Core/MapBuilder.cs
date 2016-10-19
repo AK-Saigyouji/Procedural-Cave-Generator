@@ -4,7 +4,6 @@
 
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -44,13 +43,8 @@ namespace CaveGeneration.MapGeneration
         {
             // Unity's Random seed cannot be set in a secondary thread, so System.Random is used instead.
             var random = new System.Random(seed.GetHashCode());
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    map[x, y] = GetRandomTile(mapDensity, x, y, random);
-                }
-            }
+            map.TransformBoundary((x, y) => Tile.Wall);
+            map.TransformInterior((x, y) => random.NextDouble() < mapDensity ? Tile.Wall : Tile.Floor);
         }
 
         /// <summary>
@@ -59,19 +53,11 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void Smooth()
         {
-            int interiorLength = length - 1;
-            int interiorWidth = width - 1;
             Map currentMap = map;
             Map tempMap = map.Clone();
             for (int i = 0; i < SMOOTHING_ITERATIONS; i++)
             {
-                for (int y = 1; y < interiorWidth; y++)
-                {
-                    for (int x = 1; x < interiorLength; x++)
-                    {
-                        tempMap[x, y] = GetSmoothedTile(currentMap, x, y);
-                    }
-                }
+                tempMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y));
                 Swap(ref currentMap, ref tempMap);
             }
         }
@@ -83,21 +69,12 @@ namespace CaveGeneration.MapGeneration
         public void ExpandRegions(int radius)
         {
             if (radius <= 0) return;
-            radius = Mathf.Min(radius, Mathf.Max(length, width));
+            radius = Mathf.Min(radius, Mathf.Max(length, width)); // Reduce work done for unreasonable radius input
             Map currentMap = map;
             Map tempMap = map.Clone();
             for (int iteration = 0; iteration < radius; iteration++)
             {
-                for (int y = 1; y < width - 1; y++)
-                {
-                    for (int x = 1; x < length - 1; x++)
-                    {
-                        if (currentMap.IsAdjacentToFloorFast(x, y))
-                        {
-                            tempMap[x, y] = Tile.Floor;
-                        }
-                    }
-                }
+                tempMap.TransformInterior((x, y) => currentMap.IsAdjacentToFloorFast(x, y) ? Tile.Floor : Tile.Wall);
                 Swap(ref currentMap, ref tempMap);
             }
         }
@@ -113,21 +90,17 @@ namespace CaveGeneration.MapGeneration
 
             bool[,] visited = map.ToBoolArray(Tile.Floor); 
             VisitBoundaryRegion(visited);
-
-            for (int y = 0; y < width; y++)
+            map.ForEach((x, y) =>
             {
-                for (int x = 0; x < length; x++)
+                if (!visited[x, y])
                 {
-                    if (!visited[x,y])
+                    List<Coord> region = GetRegion(x, y, visited);
+                    if (region.Count < threshold)
                     {
-                        List<Coord> region = GetRegion(x, y, visited);
-                        if (region.Count < threshold)
-                        {
-                            FillRegion(region, Tile.Floor);
-                        }
+                        FillRegion(region, Tile.Floor);
                     }
                 }
-            }
+            });
         }
 
         /// <summary>
@@ -161,16 +134,12 @@ namespace CaveGeneration.MapGeneration
         {
             if (borderSize <= 0) return;
             Map borderedMap = new Map(length + borderSize * 2, width + borderSize * 2, map.SquareSize);
-            for (int y = 0; y < borderedMap.Width; y++)
+            borderedMap.Transform((x, y) =>
             {
                 int yShifted = y - borderSize;
-                for (int x = 0; x < borderedMap.Length; x++)
-                {
-                    int xShifted = x - borderSize;
-                    bool isInsideBorder = (0 <= xShifted && xShifted < length) && (0 <= yShifted && yShifted < width);
-                    borderedMap[x, y] = isInsideBorder ? map[xShifted, yShifted] : Tile.Wall;
-                }
-            }
+                int xShifted = x - borderSize;
+                return map.Contains(xShifted, yShifted) ? map[xShifted, yShifted] : Tile.Wall;
+            });
             map = borderedMap;
         }
 
@@ -203,18 +172,6 @@ namespace CaveGeneration.MapGeneration
             }
         }
 
-        Tile GetRandomTile(float mapDensity, int x, int y, System.Random random)
-        {
-            if (random.NextDouble() < mapDensity || map.IsBoundaryTile(x, y))
-            {
-                return Tile.Wall;
-            }
-            else
-            {
-                return Tile.Floor;
-            }
-        }
-
         /// <summary>
         /// Get all the floor regions consisting of a number of tiles greater than the specified threshold, filling the 
         /// rest in (i.e. turning them into walls).
@@ -223,25 +180,21 @@ namespace CaveGeneration.MapGeneration
         {
             List<TileRegion> regions = new List<TileRegion>();
             bool[,] visited = map.ToBoolArray(Tile.Wall);
-
-            for (int y = 0; y < width; y++)
+            map.ForEach((x, y) =>
             {
-                for (int x = 0; x < length; x++)
+                if (!visited[x, y])
                 {
-                    if (!visited[x, y])
+                    List<Coord> region = GetRegion(x, y, visited);
+                    if (region.Count < threshold)
                     {
-                        List<Coord> region = GetRegion(x, y, visited);
-                        if (region.Count < threshold)
-                        {
-                            FillRegion(region, Tile.Wall);
-                        }
-                        else
-                        {
-                            regions.Add(new TileRegion(region));
-                        }
+                        FillRegion(region, Tile.Wall);
+                    }
+                    else
+                    {
+                        regions.Add(new TileRegion(region));
                     }
                 }
-            }
+            });
             return regions;
         }
 
@@ -385,10 +338,8 @@ namespace CaveGeneration.MapGeneration
         {
             tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
             List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
-            foreach (Coord tile in line)
-            {
-                ClearNeighbors(map, tile.x, tile.y, tunnelingRadius);
-            }
+            line.ForEach(tile => ClearNeighbors(map, tile, tunnelingRadius));
+
         }
 
         /// <summary>
@@ -410,6 +361,11 @@ namespace CaveGeneration.MapGeneration
                     map[x, y] = Tile.Floor;
                 }
             }
+        }
+
+        void ClearNeighbors(Map map, Coord center, int radius)
+        {
+            ClearNeighbors(map, center.x, center.y, radius);
         }
 
         void Swap(ref Map a, ref Map b)

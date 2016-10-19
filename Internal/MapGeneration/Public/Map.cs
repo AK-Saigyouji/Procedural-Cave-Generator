@@ -8,6 +8,7 @@
  * coordinates). The second is the extra memory consumption of jagged arrays associated with the overhead for each 
  * array, which adds up as the grid may have to be copied several times. Thus ultimately the 2D array was chosen.*/
 
+using System;
 using UnityEngine;
 using System.Collections.Generic;
 
@@ -279,6 +280,96 @@ namespace CaveGeneration.MapGeneration
         public bool IsWall(Coord tile)
         {
             return grid[tile.x,tile.y] == Tile.Wall;
+        }
+
+        /// <summary>
+        /// Perform an action for each tile.
+        /// </summary>
+        public void ForEach(Action<int, int> action)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    action(x, y);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Perform an action for each boundary tile.
+        /// </summary>
+        public void ForEachBoundary(Action<int, int> action)
+        {
+            for (int x = 0; x < length; x++)
+            {
+                action(x, 0);
+                action(x, width - 1);
+            }
+            for (int y = 1; y < width - 1; y++)
+            {
+                action(0, y);
+                action(length - 1, y);
+            }
+        }
+
+        /// <summary>
+        /// Perform an action for each interior tile.
+        /// </summary>
+        public void ForEachInterior(Action<int, int> action)
+        {
+            for (int y = 1; y < width - 1; y++)
+            {
+                for (int x = 1; x < length - 1; x++)
+                {
+                    action(x, y);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reassigns every tile in the map using the provided function.
+        /// </summary>
+        public void Transform(Func<int, int, Tile> transformation)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    grid[x, y] = transformation(x, y);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reassigns every boundary tile in the map using the provided function.
+        /// </summary>
+        public void TransformBoundary(Func<int, int, Tile> transformation)
+        {
+            for (int x = 0; x < length; x++)
+            {
+                grid[x, 0] = transformation(x, 0);
+                grid[x, width - 1] = transformation(x, width - 1);
+            }
+            for (int y = 1; y < width - 1; y++)
+            {
+                grid[0, y] = transformation(0, y);
+                grid[length - 1, y] = transformation(length - 1, y);
+            }
+        }
+
+        /// <summary>
+        /// Reassigns every interior tile in the map using the provided function.
+        /// </summary>
+        public void TransformInterior(Func<int, int, Tile> transformation)
+        {
+            for (int y = 1; y < width - 1; y++)
+            {
+                for (int x = 1; x < length - 1; x++)
+                {
+                    grid[x,y] = transformation(x, y);
+                }
+            }
         }
     }
 }
