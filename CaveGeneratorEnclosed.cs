@@ -18,20 +18,20 @@ namespace CaveGeneration
         [SerializeField] Material floorMaterial;
 
         public Material EnclosureMaterial { get { return enclosureMaterial; } set { enclosureMaterial = value; } }
-        public Material WallMaterial { get { return wallMaterial; } set { wallMaterial = value; } }
-        public Material FloorMaterial { get { return floorMaterial; } set { floorMaterial = value; } }
+        public Material WallMaterial      { get { return wallMaterial; }      set { wallMaterial = value; } }
+        public Material FloorMaterial     { get { return floorMaterial; }     set { floorMaterial = value; } }
 
-        protected override MeshGenerator PrepareMeshGenerator(Map map)
+        protected override MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            MeshGenerator meshGenerator = new MeshGenerator(Map.maxSubmapSize, map.Index.ToString());
-            meshGenerator.GenerateEnclosed(MapConverter.ToWallGrid(map), FloorHeightMap, MainHeightMap);
+            WallGrid wallGrid = MapConverter.ToWallGrid(map);
+            meshGenerator.GenerateEnclosed(wallGrid, FloorHeightMap, MainHeightMap);
             return meshGenerator;
         }
 
         protected override CaveMeshes CreateMapMeshes(MeshGenerator meshGenerator, Transform sector)
         {
-            Mesh wallMesh = ObjectFactory.CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", true);
-            Mesh floorMesh = ObjectFactory.CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", true);
+            Mesh wallMesh      = ObjectFactory.CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", true);
+            Mesh floorMesh     = ObjectFactory.CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", true);
             Mesh enclosureMesh = ObjectFactory.CreateComponent(meshGenerator.GetEnclosureMesh(), sector, enclosureMaterial, "Enclosure", false);
 
             return new CaveMeshes(wallMesh, floorMesh, enclosureMesh);

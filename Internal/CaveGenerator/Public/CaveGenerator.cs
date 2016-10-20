@@ -45,10 +45,12 @@ namespace CaveGeneration
         public Grid Grid { get; private set; }
 
         /// <summary>
-        /// The meshes produced by the cave generator. By default it is not necessary to work directly with these meshes, but
-        /// changes made to the meshes will be reflected in the assets created by the Create Prefab button.
+        /// The meshes produced by the cave generator. By default it is not necessary to work directly with these meshes.
         /// </summary>
-        public IList<CaveMeshes> GeneratedMeshes { get { return generatedMeshes.AsReadOnly(); } }
+        public IList<CaveMeshes> GeneratedMeshes
+        {
+            get { return generatedMeshes != null ? generatedMeshes.AsReadOnly() : null; }
+        }
 
         /// <summary>
         /// Holds the core map parameters such as length, width, density etc. Use this to customize map
@@ -108,7 +110,7 @@ namespace CaveGeneration
         /// Generate all the data in the MeshGenerator in preparation for the creation of meshes. This method may
         /// get executed outside of the main thread, so don't touch the Unity API when implementing.
         /// </summary>
-        abstract protected MeshGenerator PrepareMeshGenerator(Map map);
+        abstract protected MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map);
 
         /// <summary>
         /// Extracts meshes from prepared mesh generator, and builds them into game objects. 
@@ -119,7 +121,7 @@ namespace CaveGeneration
         {
             IMapGenerator mapGenerator = new MapGenerator(mapParameters);
             Map map = mapGenerator.GenerateMap();
-            IList<Map> submaps = map.Subdivide();
+            IList<Map> submaps = MapSplitter.Subdivide(map);
             var PrepareMeshGenerators = SelectMethodForMeshGeneratorPreparation();
             meshGenerators = PrepareMeshGenerators(submaps);
             Grid = new Grid(map);
@@ -127,7 +129,7 @@ namespace CaveGeneration
 
         IEnumerator BuildCave()
         {
-            UnityEngine.Assertions.Assert.IsNotNull(meshGenerators, "GenerateCoreData must be called before BuildCave.");
+            if (meshGenerators == null) throw new InvalidOperationException("GenerateCoreData must be called before BuildCave.");
             Cave = ObjectFactory.CreateChild(transform, "Cave");
             yield return GenerateMeshes(meshGenerators);
         }
@@ -196,24 +198,33 @@ namespace CaveGeneration
             Action[] actions = new Action[meshGenerators.Length];
             for (int i = 0; i < meshGenerators.Length; i++)
             {
+                Map currentMap = submaps[i];
+                MeshGenerator meshGenerator = InitializeMeshGenerator(currentMap);
                 int indexCopy = i; // using i directly would result in each action using the same value of i
-                actions[i] = (() => meshGenerators[indexCopy] = PrepareMeshGenerator(submaps[indexCopy]));
+                actions[i] = (() => meshGenerators[indexCopy] = PrepareMeshGenerator(meshGenerator, currentMap));
             }
             Utility.Threading.ParallelExecute(actions);
             return meshGenerators;
         }
 
         /// <summary>
-        /// Singlethreaded version of PrepareMeshGenerators. Useful primarily for debugging and profiling.
+        /// Singlethreaded version of PrepareMeshGenerators. Useful primarily for debugging and profiling. 
         /// </summary>
         MeshGenerator[] PrepareMeshGeneratorsSinglethreaded(IList<Map> submaps)
         {
             MeshGenerator[] meshGenerators = new MeshGenerator[submaps.Count];
             for (int i = 0; i < meshGenerators.Length; i++)
             {
-                meshGenerators[i] = PrepareMeshGenerator(submaps[i]);
+                Map currentMap = submaps[i];
+                MeshGenerator meshGenerator = InitializeMeshGenerator(currentMap);
+                meshGenerators[i] = PrepareMeshGenerator(meshGenerator, currentMap);
             }
             return meshGenerators;
+        }
+
+        MeshGenerator InitializeMeshGenerator(Map map)
+        {
+            return new MeshGenerator(MapSplitter.CHUNK_SIZE, map.Index.ToString());
         }
 
         /// <summary>

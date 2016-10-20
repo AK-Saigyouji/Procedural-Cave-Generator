@@ -1,4 +1,4 @@
-﻿/* Height map builders are MonoBehaviours that produce an IHeightMap object based on parameters set in the inspector. */
+﻿/* Height map builders are MonoBehaviours that produce an IHeightMap object based on parameters set in the inspector.*/
 
 using UnityEngine;
 

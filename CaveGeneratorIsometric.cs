@@ -16,20 +16,20 @@ namespace CaveGeneration
         [SerializeField] Material floorMaterial;
 
         public Material CeilingMaterial { get { return ceilingMaterial; } set { ceilingMaterial = value; } }
-        public Material WallMaterial { get { return wallMaterial; } set { wallMaterial = value; } }
-        public Material FloorMaterial { get { return floorMaterial; } set { floorMaterial = value; } }
+        public Material WallMaterial    { get { return wallMaterial; }    set { wallMaterial = value; } }
+        public Material FloorMaterial   { get { return floorMaterial; }   set { floorMaterial = value; } }
 
-        override protected MeshGenerator PrepareMeshGenerator(Map map)
+        protected override MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            MeshGenerator meshGenerator = new MeshGenerator(Map.maxSubmapSize, map.Index.ToString());
-            meshGenerator.GenerateIsometric(MapConverter.ToWallGrid(map), FloorHeightMap, MainHeightMap);
+            WallGrid wallGrid = MapConverter.ToWallGrid(map);
+            meshGenerator.GenerateIsometric(wallGrid, FloorHeightMap, MainHeightMap);
             return meshGenerator;
         }
 
         protected override CaveMeshes CreateMapMeshes(MeshGenerator meshGenerator, Transform sector)
         {
-            Mesh wallMesh = ObjectFactory.CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", true);
-            Mesh floorMesh = ObjectFactory.CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", true);
+            Mesh wallMesh    = ObjectFactory.CreateComponent(meshGenerator.GetWallMesh(), sector, wallMaterial, "Wall", true);
+            Mesh floorMesh   = ObjectFactory.CreateComponent(meshGenerator.GetFloorMesh(), sector, floorMaterial, "Floor", true);
             Mesh ceilingMesh = ObjectFactory.CreateComponent(meshGenerator.GetCeilingMesh(), sector, ceilingMaterial, "Ceiling", false);
 
             return new CaveMeshes(ceilingMesh, wallMesh, floorMesh);

@@ -32,8 +32,6 @@ namespace CaveGeneration.MapGeneration
         public Vector3 Position { get; private set; } 
         public Coord Index { get; private set; }
 
-        public static readonly int maxSubmapSize = 150; // Chunk size when the map is broken up.
-
         Tile[,] grid;
         int length;
         int width;
@@ -44,7 +42,12 @@ namespace CaveGeneration.MapGeneration
             this.length = length;
             this.width = width;
             SquareSize = squareSize;
-            Position = Vector3.zero;
+        }
+
+        public Map(int length, int width, int squareSize, Coord index, Vector3 position) : this(length, width, squareSize)
+        {
+            Index = index;
+            Position = position;
         }
 
         public Tile this[int x, int y]
@@ -92,53 +95,6 @@ namespace CaveGeneration.MapGeneration
             Map clone = new Map(length, width, SquareSize);
             clone.Copy(this);
             return clone;
-        }
-
-        /// <summary>
-        /// Divide the map into smaller Map chunks.
-        /// </summary>
-        /// <returns>Returns a readonly list of smaller Map objects.</returns>
-        public IList<Map> Subdivide()
-        {
-            List<Map> maps = new List<Map>();
-            int xNumComponents = Mathf.CeilToInt(length / (float)maxSubmapSize);
-            int yNumComponents = Mathf.CeilToInt(width / (float)maxSubmapSize);
-            for (int x = 0; x < xNumComponents; x++)
-            {
-                for (int y = 0; y < yNumComponents; y++)
-                {
-                    Map subMap = GenerateSubMap(x * maxSubmapSize, y * maxSubmapSize, maxSubmapSize);
-                    subMap.Index = new Coord(x, y);
-                    maps.Add(subMap);
-                }
-            }
-            return maps.AsReadOnly();
-        }
-
-        Map GenerateSubMap(int xStart, int yStart, int submapSize)
-        {
-            int xEnd = ComputeSubMapLengthEndPoint(xStart, submapSize);
-            int yEnd = ComputeSubMapWidthEndPoint(yStart, submapSize);
-            Map subMap = new Map(xEnd - xStart, yEnd - yStart, SquareSize);
-            for (int x = xStart; x < xEnd; x++)
-            {
-                for (int y = yStart; y < yEnd; y++)
-                {
-                    subMap[x - xStart, y - yStart] = grid[x, y];
-                }
-            }
-            subMap.Position = new Vector3(xStart * SquareSize, 0f, yStart * SquareSize);
-            return subMap;
-        }
-
-        int ComputeSubMapLengthEndPoint(int xStart, int submapSize)
-        {
-            return (xStart + submapSize >= length) ? length : xStart + submapSize + 1;
-        }
-
-        int ComputeSubMapWidthEndPoint(int yStart, int submapSize)
-        {
-            return (yStart + submapSize >= width) ? width : yStart + submapSize + 1;
         }
 
         /// <summary>
