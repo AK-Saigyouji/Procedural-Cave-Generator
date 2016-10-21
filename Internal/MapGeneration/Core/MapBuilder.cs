@@ -87,20 +87,7 @@ namespace CaveGeneration.MapGeneration
         public void RemoveSmallWallRegions(int threshold)
         {
             if (threshold <= 0) return;
-
-            bool[,] visited = map.ToBoolArray(Tile.Floor); 
-            VisitBoundaryRegion(visited);
-            map.ForEach((x, y) =>
-            {
-                if (!visited[x, y])
-                {
-                    List<Coord> region = GetRegion(x, y, visited);
-                    if (region.Count < threshold)
-                    {
-                        FillRegion(region, Tile.Floor);
-                    }
-                }
-            });
+            BFS.RemoveSmallRegions(map, Tile.Wall, threshold);
         }
 
         /// <summary>
@@ -111,7 +98,7 @@ namespace CaveGeneration.MapGeneration
         public void RemoveSmallFloorRegions(int threshold)
         {
             if (threshold <= 0) return;
-            GetFloorRegions(threshold);
+            BFS.RemoveSmallRegions(map, Tile.Floor, threshold);
         }
 
         /// <summary>
@@ -120,7 +107,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public void ConnectFloors(int tunnelRadius)
         {
-            List<TileRegion> floors = GetFloorRegions();
+            List<TileRegion> floors = BFS.GetRegions(map, Tile.Floor);
             ConnectionInfo[] finalConnections = MapConnector.GetConnections(map, floors);
             System.Array.ForEach(finalConnections, connection => CreatePassage(connection, tunnelRadius));
         }
@@ -169,168 +156,6 @@ namespace CaveGeneration.MapGeneration
             else
             {
                 return map[x, y];
-            }
-        }
-
-        /// <summary>
-        /// Get all the floor regions consisting of a number of tiles greater than the specified threshold, filling the 
-        /// rest in (i.e. turning them into walls).
-        /// </summary>
-        List<TileRegion> GetFloorRegions(int threshold = 0)
-        {
-            List<TileRegion> regions = new List<TileRegion>();
-            bool[,] visited = map.ToBoolArray(Tile.Wall);
-            map.ForEach((x, y) =>
-            {
-                if (!visited[x, y])
-                {
-                    List<Coord> region = GetRegion(x, y, visited);
-                    if (region.Count < threshold)
-                    {
-                        FillRegion(region, Tile.Wall);
-                    }
-                    else
-                    {
-                        regions.Add(new TileRegion(region));
-                    }
-                }
-            });
-            return regions;
-        }
-
-        /// <summary>
-        /// Visits all tiles corresponding to walls connected to the outermost boundary of the map. Doing this ensures
-        /// that every remaining point in the map has four neighbors, removing the need for four boundary checks every time a 
-        /// new tile is visited.
-        /// </summary>
-        void VisitBoundaryRegion(bool[,] visited)
-        {
-            VisitColumns(visited, 0, 1, length - 2, length - 1);
-            VisitRows(visited, 0, 1, width - 2, width - 1);
-            Queue<Coord> queue = InitializeBoundaryQueue();
-            GetTilesReachableFromQueue(queue, visited);
-        }
-
-        void VisitColumns(bool[,] visited, params int[] columns)
-        {
-            foreach (int columnNumber in columns)
-            {
-                for (int y = 0; y < width; y++)
-                {
-                    visited[columnNumber, y] = true;
-                }
-            }
-        }
-
-        void VisitRows(bool[,] visited, params int[] rows)
-        {
-            foreach (int rowNumber in rows)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    visited[x, rowNumber] = true;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Prepares a queue of coordinates corresponding to all the wall tiles exactly 1 unit away from the boundary. A BFS
-        /// from this queue will find all the wall tiles connected to the boundary. 
-        /// </summary>
-        Queue<Coord> InitializeBoundaryQueue()
-        {
-            Queue<Coord> queue = new Queue<Coord>();
-            for (int x = 1; x < length - 1; x++)
-            {
-                if (map.IsWall(x, 1)) // left
-                    queue.Enqueue(new Coord(x, 1));
-
-                if (map.IsWall(x, width - 2)) // right
-                    queue.Enqueue(new Coord(x, width - 2));
-            }
-            for (int y = 1; y < width - 1; y++)
-            {
-                if (map.IsWall(1, y)) // bottom
-                    queue.Enqueue(new Coord(1, y));
-
-                if (map.IsWall(length - 2, y)) // top
-                    queue.Enqueue(new Coord(length - 2, y));
-            }
-            return queue;
-        }
-
-        /// <summary>
-        /// Get the region containing the start point. Two tiles are considered to be in the same region if there is a sequence
-        /// of horizontal steps from one to the other (inclusive) passing through only the same tile type.
-        /// </summary>
-        /// <returns>The region of tiles containing the start point.</returns>
-        List<Coord> GetRegion(int xStart, int yStart, bool[,] visited)
-        {
-            Queue<Coord> queue = new Queue<Coord>();
-            queue.Enqueue(new Coord(xStart, yStart));
-            visited[xStart, yStart] = true;
-            return GetTilesReachableFromQueue(queue, visited);
-        }
-
-        List<Coord> GetRegionFast(int xStart, int yStart, bool[,] visited)
-        {
-            Queue<Coord> queue = new Queue<Coord>();
-            queue.Enqueue(new Coord(xStart, yStart));
-            visited[xStart, yStart] = true;
-            return GetTilesReachableFromQueue(queue, visited);
-        }
-
-        // There are several assumptions built into this method that will cause problems if not met. 
-        // Most substantially, it is assumed that the elements of queue all correspond to a single tile type,
-        // and that the visited array has already set to true every element of the opposite type. e.g.
-        // if queue has a single Coord (2,3) and map[2,3] = Tile.Wall, then for each (x,y) such that map[x,y] = Tile.Floor,
-        // visited[x,y] = true. 
-        List<Coord> GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
-        {
-            // This list ends up consuming a lot of memory from resizing (~ 10 times the entire map) but maintaining a 
-            // cached list and clearing it each time increased the run-time of this method by a factor of 4. 
-            List<Coord> tiles = new List<Coord>();
-            while (queue.Count > 0)
-            {
-                Coord currentTile = queue.Dequeue();
-                tiles.Add(currentTile);
-
-                // Packing the following into a foreach loop would be cleaner, but results in a noticeable performance hit
-                int x = currentTile.x, y = currentTile.y;
-                int left = x - 1, right = x + 1, up = y + 1, down = y - 1;
-
-                if (!visited[left, y])
-                {
-                    queue.Enqueue(new Coord(left, y));
-                    visited[left, y] = true;
-                }
-                if (!visited[right, y])
-                {
-                    queue.Enqueue(new Coord(right, y));
-                    visited[right, y] = true;
-                }
-                if (!visited[x, up])
-                {
-                    queue.Enqueue(new Coord(x, up));
-                    visited[x, up] = true;
-                }
-                if (!visited[x, down])
-                {
-                    queue.Enqueue(new Coord(x, down));
-                    visited[x, down] = true;
-                }
-            }
-            return tiles;
-        }
-
-        /// <summary>
-        /// Fill each tile in the region with the given type.
-        /// </summary>
-        void FillRegion(List<Coord> region, Tile tileType)
-        {
-            for (int i = 0; i < region.Count; i++)
-            {
-                map[region[i]] = tileType;
             }
         }
 
