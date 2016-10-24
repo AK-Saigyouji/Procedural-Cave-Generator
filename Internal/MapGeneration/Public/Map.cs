@@ -122,7 +122,7 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Are the coordinates valid for this map?
+        /// Does the map contain these coordinates? Equivalently, will map[x,y] return a tile?
         /// </summary>
         public bool Contains(int x, int y)
         {
@@ -130,7 +130,7 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Is the Coord valid for this map?
+        /// Does the map contain these coordinates? Equivalently, will map[coord] return a tile?
         /// </summary>
         public bool Contains(Coord coord)
         {
@@ -138,8 +138,8 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// The number of walls adjacent to the given point. Both horizontal and diagonal tiles count, but the tile itself 
-        /// does not. Note that the input coordinates must be contained in the interior of the map (not on the boundary);
+        /// The number of walls adjacent to the given point. Both horizontal/vertical and diagonal tiles count.
+        /// Note that the input coordinates must be contained in the interior of the map (not on the boundary);
         /// </summary>
         /// <returns>Number of walls surrounding the given tile, between 0 and 8 inclusive.</returns>
         /// <exception cref="System.IndexOutOfRangeException"></exception>

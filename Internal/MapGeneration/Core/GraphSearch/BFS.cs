@@ -9,7 +9,7 @@ namespace CaveGeneration.MapGeneration
     {
         /// <summary>
         /// Get a list of all the connected regions in the map of the given type. Two tiles are part of the same
-        /// region if one can be reached from the other by a sequence of horizontal steps. 
+        /// region if one can be reached from the other by a sequence of horizontal and vertical steps. 
         /// </summary>
         public static List<TileRegion> GetRegions(Map map, Tile tileType)
         {
@@ -31,7 +31,7 @@ namespace CaveGeneration.MapGeneration
         /// Remove regions of the given type in the map whose tile count falls below the indicated threshold.
         /// e.g. if threshold = 50 and tileType = Tile.Wall, every region of walls with fewer than 50 tiles will be 
         /// replaced with floor tiles. A region is defined as a collection of tiles of a given type such that every
-        /// tile is reachable from every other by a series of horizontal steps.
+        /// tile is reachable from every other by a series of horizontal and vertical steps.
         /// </summary>
         public static void RemoveSmallRegions(Map map, Tile tileType, int threshold)
         {

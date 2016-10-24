@@ -60,6 +60,7 @@ namespace CaveGeneration.MapGeneration
                 tempMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y));
                 Swap(ref currentMap, ref tempMap);
             }
+            map = currentMap;
         }
 
         /// <summary>
@@ -77,6 +78,7 @@ namespace CaveGeneration.MapGeneration
                 tempMap.TransformInterior((x, y) => currentMap.IsAdjacentToFloorFast(x, y) ? Tile.Floor : Tile.Wall);
                 Swap(ref currentMap, ref tempMap);
             }
+            map = currentMap;
         }
 
         /// <summary>
