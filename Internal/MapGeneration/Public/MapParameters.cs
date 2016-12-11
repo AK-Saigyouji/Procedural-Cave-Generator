@@ -103,26 +103,26 @@ namespace CaveGeneration.MapGeneration
             set { SetWallHeight(value); }
         }
 
-        const int MINIMUM_LENGTH = 5;
-        const int MINIMUM_WIDTH = 5;
-        const int MINIMUM_BORDER_SIZE = 0;
-        const int MINIMUM_SQUARE_SIZE = 1;
+        const int MINIMUM_LENGTH          = 5;
+        const int MINIMUM_WIDTH           = 5;
+        const int MINIMUM_BORDER_SIZE     = 0;
+        const int MINIMUM_SQUARE_SIZE     = 1;
         const int MINIMUM_FLOOR_EXPANSION = 0;
-        const int MINIMUM_WALL_HEIGHT = 1;
-        const float MINIMUM_MAP_DENSITY = 0.3f;
-        const float MAXIMUM_MAP_DENSITY = 0.7f;
+        const int MINIMUM_WALL_HEIGHT     = 1;
+        const float MINIMUM_MAP_DENSITY   = 0.3f;
+        const float MAXIMUM_MAP_DENSITY   = 0.7f;
 
-        const string DEFAULT_SEED = "";
-        const int DEFAULT_LENGTH = 75;
-        const int DEFAULT_WIDTH = 75;
-        const float DEFAULT_DENSITY = 0.5f;
-        const bool DEFAULT_SEED_STATUS = true;
-        const int DEFAULT_BORDER_SIZE = 0;
+        const string DEFAULT_SEED         = "";
+        const float DEFAULT_DENSITY       = 0.5f;
+        const bool DEFAULT_SEED_STATUS    = true;
+        const int DEFAULT_LENGTH          = 75;
+        const int DEFAULT_WIDTH           = 75;
+        const int DEFAULT_BORDER_SIZE     = 0;
         const int DEFAULT_FLOOR_EXPANSION = 0;
-        const int DEFAULT_SQUARE_SIZE = 1;
-        const int DEFAULT_WALL_THRESHOLD = 50;
+        const int DEFAULT_SQUARE_SIZE     = 1;
+        const int DEFAULT_WALL_THRESHOLD  = 50;
         const int DEFAULT_FLOOR_THRESHOLD = 50;
-        const int DEFAULT_WALL_HEIGHT = 3;
+        const int DEFAULT_WALL_HEIGHT     = 3;
 
         public MapParameters()
         {

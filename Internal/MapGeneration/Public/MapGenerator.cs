@@ -32,6 +32,7 @@ namespace CaveGeneration.MapGeneration
             builder.ConnectFloors(map.FloorExpansion);
             builder.ExpandRegions(map.FloorExpansion);
             builder.RemoveSmallWallRegions(map.MinWallSize);
+            builder.Smooth();
             builder.ApplyBorder(map.BorderSize);
             return builder.ToMap();
         }

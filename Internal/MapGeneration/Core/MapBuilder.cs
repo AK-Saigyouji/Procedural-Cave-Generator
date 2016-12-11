@@ -49,13 +49,16 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// Uses synchronous cellular automata to smooth out the map. Each cell becomes more like its neighbors,
-        /// turning noise into a smoother map filled with more consistent regions.
+        /// turning noise into regions and smoothing out sharp edges.
         /// </summary>
-        public void Smooth()
+        /// <param name="iterations">The number of smoothing passes to perform. The default is sufficient to
+        /// turn completely random noise into smooth caverns. Can set to a lower number if map is already 
+        /// well-structured but a bit jagged. Setting higher not recommended.</param>
+        public void Smooth(int iterations = SMOOTHING_ITERATIONS)
         {
             Map currentMap = map;
             Map tempMap = map.Clone();
-            for (int i = 0; i < SMOOTHING_ITERATIONS; i++)
+            for (int i = 0; i < iterations; i++)
             {
                 tempMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y));
                 Swap(ref currentMap, ref tempMap);
@@ -71,14 +74,12 @@ namespace CaveGeneration.MapGeneration
         {
             if (radius <= 0) return;
             radius = Mathf.Min(radius, Mathf.Max(length, width)); // Reduce work done for unreasonable radius input
-            Map currentMap = map;
             Map tempMap = map.Clone();
-            for (int iteration = 0; iteration < radius; iteration++)
+            map.ForEachInterior((x, y) => 
             {
-                tempMap.TransformInterior((x, y) => currentMap.IsAdjacentToFloorFast(x, y) ? Tile.Floor : Tile.Wall);
-                Swap(ref currentMap, ref tempMap);
-            }
-            map = currentMap;
+                if (map.IsFloor(x, y)) ClearNeighbours(tempMap, x, y, radius);
+            });
+            map = tempMap;
         }
 
         /// <summary>
@@ -165,7 +166,7 @@ namespace CaveGeneration.MapGeneration
         {
             tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
             List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
-            line.ForEach(tile => ClearNeighbors(map, tile, tunnelingRadius));
+            line.ForEach(tile => ClearNeighbours(map, tile, tunnelingRadius));
 
         }
 
@@ -174,25 +175,34 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         /// <param name="radius">The radius of replacement: e.g. if 1, will replace the 8 adjacent tiles. If 2,
         /// will replace those 8 and their 16 immediate neighbours, etc.</param>
-        void ClearNeighbors(Map map, int xCenter, int yCenter, int radius)
+        void ClearNeighbours(Map map, Coord center, int radius)
         {
             // These computations ensure that only interior (non-boundary) tiles are affected.
-            int xMin = Mathf.Max(1, xCenter - radius);
-            int yMin = Mathf.Max(1, yCenter - radius);
-            int xMax = Mathf.Min(length - 2, xCenter + radius);
-            int yMax = Mathf.Min(width - 2, yCenter + radius);
+            int xMin = Mathf.Max(1, center.x - radius);
+            int yMin = Mathf.Max(1, center.y - radius);
+            int xMax = Mathf.Min(length - 2, center.x + radius);
+            int yMax = Mathf.Min(width - 2, center.y + radius);
+            // Look at each x,y in a square surrounding the center, but only remove those that fall within
+            // the circle of given radius. 
+            int squaredRadius = radius * radius;
             for (int x = xMin; x <= xMax; x++)
             {
                 for (int y = yMin; y <= yMax; y++)
                 {
-                    map[x, y] = Tile.Floor;
+                    Coord testCoord = new Coord(x, y);
+                    if (IsInCircle(center, testCoord, squaredRadius)) map[x, y] = Tile.Floor;
                 }
             }
         }
 
-        void ClearNeighbors(Map map, Coord center, int radius)
+        void ClearNeighbours(Map map, int xCenter, int yCenter, int radius)
         {
-            ClearNeighbors(map, center.x, center.y, radius);
+            ClearNeighbours(map, new Coord(xCenter, yCenter), radius);
+        }
+
+        bool IsInCircle(Coord center, Coord testCoord, int squaredRadius)
+        {
+            return center.SquaredDistance(testCoord) <= squaredRadius;
         }
 
         void Swap(ref Map a, ref Map b)
