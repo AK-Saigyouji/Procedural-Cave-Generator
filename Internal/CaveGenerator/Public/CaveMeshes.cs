@@ -1,4 +1,4 @@
-﻿/* The primary purpose of this class is to provide a container for all the meshes for the an appropriate editor script
+﻿/* The primary purpose of this class is to provide a container for all the meshes for an appropriate editor script
  * to convert into mesh assets. */
 
 using UnityEngine;
@@ -19,6 +19,6 @@ namespace CaveGeneration.MeshGeneration
             this.meshes = meshes.ToList().AsReadOnly();
         }
 
-        public IEnumerable<Mesh> Meshes { get { return meshes; } }
+        public IList<Mesh> Meshes { get { return meshes; } }
     } 
 }

@@ -4,15 +4,15 @@ using System.Collections;
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Represents data associated with the map from which meshes should be built, including position, scale and location of
-    /// walls.
+    /// Readonly representation of data associated with the map from which meshes should be built, 
+    /// including position, scale and location of walls. Floors are 0s, walls are 1s.
     /// </summary>
     public sealed class WallGrid
     {
-        public int Scale { get; private set; }
+        public int     Scale    { get; private set; }
+        public int     Length   { get; private set; }
+        public int     Width    { get; private set; }
         public Vector3 Position { get; private set; }
-        public int Length { get; private set; }
-        public int Width { get; private set; }
 
         readonly byte[,] walls;
 

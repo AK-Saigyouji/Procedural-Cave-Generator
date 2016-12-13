@@ -35,7 +35,7 @@ namespace CaveGeneration
         public static GameObject CreateSector(string sectorIndex, Transform parent, bool active)
         {
             string name = "Sector " + sectorIndex ?? string.Empty;
-            GameObject sector =  CreateChild(parent, name);
+            GameObject sector = CreateChild(parent, name);
             sector.SetActive(active);
             return sector;
         }
@@ -52,7 +52,7 @@ namespace CaveGeneration
 
         static string GetComponentName(string component, string index)
         {
-            return component + " " + index;
+            return string.Format("{0} {1}", component, index);
         }
 
         static void AddMeshCollider(GameObject gameObject, Mesh mesh)

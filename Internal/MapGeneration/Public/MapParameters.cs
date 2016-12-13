@@ -10,6 +10,8 @@ namespace CaveGeneration.MapGeneration
     [Serializable]
     public sealed class MapParameters
     {
+        public bool IsReadOnly { get; private set; }
+
         [Tooltip(Tooltips.MAP_LENGTH)]
         [SerializeField] int length;
         public int Length
@@ -128,6 +130,26 @@ namespace CaveGeneration.MapGeneration
         {
             Reset();
         }
+
+        /// <summary>
+        /// Create a copy of the given map parameters.
+        /// </summary>
+        public MapParameters(MapParameters parameters, bool isReadOnly = true)
+        {
+            length = parameters.length;
+            width = parameters.width;
+            initialMapDensity = parameters.initialMapDensity;
+            floorExpansion = parameters.floorExpansion;
+            useRandomSeed = parameters.useRandomSeed;
+            seed = parameters.seed;
+            borderSize = parameters.borderSize;
+            squareSize = parameters.squareSize;
+            minWallSize = parameters.minWallSize;
+            minFloorSize = parameters.minFloorSize;
+            wallHeight = parameters.wallHeight;
+
+            IsReadOnly = isReadOnly;
+        }
         
         void Reset()
         {
@@ -221,15 +243,21 @@ namespace CaveGeneration.MapGeneration
 
         void SetParameter<T>(ref T parameter, T value, T minimum, T maximum) where T: IComparable<T>
         {
+            if (IsReadOnly)
+            {
+                throw new InvalidOperationException("Readonly map parameters cannot be changed.");
+            }
             bool tooSmall = value.CompareTo(minimum) == -1;
             bool tooBig = value.CompareTo(maximum) == 1;
             if (tooSmall)
             {
-                throw new ArgumentOutOfRangeException("Parameter " + parameter + " must be at least " + minimum + ".");
+                const string smallErrorFormat = "Parameter {0} must be at least {1}.";
+                throw new ArgumentOutOfRangeException(string.Format(smallErrorFormat, parameter, minimum));
             }
             else if (tooBig)
             {
-                throw new ArgumentOutOfRangeException("Parameter " + parameter + " must be at most " + maximum + ".");
+                const string largeErrorFormat = "Parameter {0} must be at most {1}.";
+                throw new ArgumentOutOfRangeException(string.Format(largeErrorFormat, parameter, maximum));
             }
             else
             {

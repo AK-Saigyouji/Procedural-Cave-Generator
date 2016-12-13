@@ -1,4 +1,4 @@
-﻿/* This abstract class is the main driver for the entire cave generation algorithm. It accepts the parameters and delegates
+﻿/* This is the main driver for the entire cave generation algorithm. It accepts the parameters and delegates
  * responsibility to the appropriate subsystems, in particular the map generator and mesh generator. When implementing
  * a cave generator, it is necessary to override the methods responsible for interfacing with the mesh generator. */
 
@@ -9,6 +9,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 #if UNITY_EDITOR
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -24,6 +25,8 @@ namespace CaveGeneration
         [Tooltip(Tooltips.CAVE_GEN_DEBUG_MODE)]
         [SerializeField] bool debugMode;
 
+        CollisionTester collisionTester;
+        MapParameters prevParameters; // Readonly parameters associated with most recently generated cave.
         List<CaveMeshes> generatedMeshes;
         MeshGenerator[] meshGenerators;
 
@@ -38,13 +41,6 @@ namespace CaveGeneration
         public bool IsGenerating { get; private set; }
 
         /// <summary>
-        /// Readonly grid representation of the most recently generated cave. Can be used to figure out where the empty spaces
-        /// are in order to procedurally generate content. Do note that the curved geometry of the cave does not lend itself 
-        /// to an exact grid representation, so this is only an approximation.
-        /// </summary>
-        public Grid Grid { get; private set; }
-
-        /// <summary>
         /// The meshes produced by the cave generator. By default it is not necessary to work directly with these meshes.
         /// </summary>
         public IList<CaveMeshes> GeneratedMeshes
@@ -56,13 +52,20 @@ namespace CaveGeneration
         /// Holds the core map parameters such as length, width, density etc. Use this to customize map
         /// properties through code.
         /// </summary>
-        public MapParameters MapParameters { get { return mapParameters; } }
+        public MapParameters MapParameters
+        {
+            get { return mapParameters; }
+            set { mapParameters = new MapParameters(value, isReadOnly: false); }
+        }
 
         /// <summary>
         /// Main method for creating cave objects. Call ExtractCave to get a reference to the most recently generated cave.
-        /// If ExtractCave is not called, next call to Generate will destroy the most recently generated cave.
+        /// If ExtractCave is not called, next call to Generate will destroy the most recently generated cave. Note
+        /// that this method is asynchronous so control will be returned before the cave is created. Supply a callback
+        /// to ensure generation is finished before attempting to consume the results.
         /// </summary>
-        public void Generate()
+        /// <param name="callback"> Optional function to call when generation is finished.</param>
+        public void Generate(Action<CaveGenerator> callback = null)
         {
             if (IsGenerating)
             {
@@ -71,26 +74,28 @@ namespace CaveGeneration
             }
             DestroyCurrentCave();
             PrepareHeightMaps();
-            StartCoroutine(GenerateCaveAsync());
+            StartCoroutine(GenerateCaveAsync(callback));
         }
 
         /// <summary>
-        /// Gets the most recently generated cave. Will also prevent it from being destroyed by the next call to generate cave.
+        /// Gets the most recently generated cave.
         /// </summary>
-        /// <returns>Most recently generated cave. Null if no cave has been generated or if it's already been extracted.</returns>
-        public GameObject ExtractCave()
+        public Cave ExtractCave()
         {
             if (IsGenerating)
             {
                 EditorOnlyLog("Cannot extract cave while it's being generated!");
                 return null;
             }
-            GameObject temp = Cave;
+            if (Cave == null) return null;
+
+            Cave cave = new Cave(Cave, collisionTester, prevParameters);
+            Cave.transform.parent = null;
             Cave = null;
-            return temp;
+            return cave;
         }
 
-        IEnumerator GenerateCaveAsync()
+        IEnumerator GenerateCaveAsync(Action<CaveGenerator> callback)
         {
             Setup();
             if (debugMode)
@@ -104,6 +109,7 @@ namespace CaveGeneration
             yield return BuildCave();
             yield return ActivateChildren();
             TearDown();
+            if (callback != null) callback(this);
         }
 
         /// <summary>
@@ -119,17 +125,18 @@ namespace CaveGeneration
 
         void GenerateCoreData()
         {
+            prevParameters = new MapParameters(mapParameters);
             IMapGenerator mapGenerator = new MapGenerator(mapParameters);
             Map map = mapGenerator.GenerateMap();
             IList<Map> submaps = MapSplitter.Subdivide(map);
             var PrepareMeshGenerators = SelectMethodForMeshGeneratorPreparation();
             meshGenerators = PrepareMeshGenerators(submaps);
-            Grid = new Grid(map);
+            collisionTester = new CollisionTester(new FloorTester(MapConverter.ToWallGrid(map)));
         }
 
         IEnumerator BuildCave()
         {
-            if (meshGenerators == null) throw new InvalidOperationException("GenerateCoreData must be called before BuildCave.");
+            Assert.IsNotNull(meshGenerators);
             Cave = ObjectFactory.CreateChild(transform, "Cave");
             yield return GenerateMeshes(meshGenerators);
         }
