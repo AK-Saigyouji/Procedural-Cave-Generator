@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using MeshTangentExtension;
 
 namespace CaveGeneration.MeshGeneration
@@ -31,19 +32,31 @@ namespace CaveGeneration.MeshGeneration
             return mesh;
         }
 
+        /// <summary>
+        /// Create a deep copy of this MeshData.
+        /// </summary>
+        public MeshData Clone()
+        {
+            MeshData mesh = new MeshData();
+            mesh.vertices = (Vector3[])vertices.Clone();
+            mesh.triangles = (int[])triangles.Clone();
+            mesh.uv = (Vector2[])uv.Clone();
+            return mesh;
+        }
+
         void ValidateState()
         {
             if (vertices == null)
             {
-                throw new System.InvalidOperationException("MeshData is missing vertices!");
+                throw new InvalidOperationException("MeshData is missing vertices!");
             }
             if (triangles == null)
             {
-                throw new System.InvalidOperationException("MeshData is missing triangles!");
+                throw new InvalidOperationException("MeshData is missing triangles!");
             }
             if (uv == null)
             {
-                throw new System.InvalidOperationException("MeshData is missing texture uvs!");
+                throw new InvalidOperationException("MeshData is missing texture uvs!");
             }
         }
     } 

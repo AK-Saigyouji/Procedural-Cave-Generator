@@ -1,30 +1,27 @@
 ﻿/* When generating caves, height maps are optional. This originally resulted in messy code as a result of passing nulls across
  * interfaces. This class was created to address that issue by representing the absence of a height map. It can be consumed 
- * like a normal height map (in which case it returns a constant value) but also identifies 
- * itself through the exposed IsSimple property, allowing for a more optimized approach.*/
-
-using IHeightMap = CaveGeneration.MeshGeneration.IHeightMap;
+ * like a normal height map, returning a constant number; */
 
 namespace CaveGeneration.HeightMaps
 {
-    sealed class ConstantHeightMap : IHeightMap
+    sealed class ConstantHeightMap : MeshGeneration.IHeightMap
     {
-        public int BaseHeight { get; private set; }
-        public bool IsSimple { get; private set; }
-        public float MaxHeight { get { return BaseHeight; } }
+        public float MinHeight { get { return height; } }
+        public float MaxHeight { get { return height; } }
+
+        float height;
 
         /// <summary>
-        /// A trivial height map that has a constant base height with no variation provided by get height.
+        /// A height map that has the same value for all coordinates..
         /// </summary>
-        public ConstantHeightMap(int baseHeight)
+        public ConstantHeightMap(float minHeight)
         {
-            BaseHeight = baseHeight;
-            IsSimple = true;
+            height = minHeight;
         }
 
         public float GetHeight(float x, float y)
         {
-            return 0;
+            return height;
         }
     }
 }

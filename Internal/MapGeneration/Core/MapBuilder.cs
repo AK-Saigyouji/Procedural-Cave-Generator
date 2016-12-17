@@ -39,10 +39,10 @@ namespace CaveGeneration.MapGeneration
         /// wall tiles randomly based on the map density: e.g. if the map density is 0.45 then roughly 45% will be filled
         /// with wall tiles (excluding boundary) and the rest with floor tiles. 
         /// </summary>
-        public void InitializeRandomFill(float mapDensity, string seed)
+        public void InitializeRandomFill(float mapDensity, int seed)
         {
             // Unity's Random seed cannot be set in a secondary thread, so System.Random is used instead.
-            var random = new System.Random(seed.GetHashCode());
+            var random = new System.Random(seed);
             map.TransformBoundary((x, y) => Tile.Wall);
             map.TransformInterior((x, y) => random.NextDouble() < mapDensity ? Tile.Wall : Tile.Floor);
         }
@@ -145,7 +145,7 @@ namespace CaveGeneration.MapGeneration
         /// Retrieve the majority tile type of the neighbours of the coord passed in, unless it's a draw (4 walls,
         /// 4 floors) in which case it'll return the value of the map at that point.
         /// </summary>
-        Tile GetSmoothedTile(Map map, int x, int y)
+        static Tile GetSmoothedTile(Map map, int x, int y)
         {
             int neighbourCount = map.GetSurroundingWallCount(x, y);
             if (neighbourCount > SMOOTHING_THRESHOLD)
@@ -165,7 +165,7 @@ namespace CaveGeneration.MapGeneration
         void CreatePassage(ConnectionInfo connection, int tunnelingRadius)
         {
             tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
-            List<Coord> line = connection.tileA.CreateLineTo(connection.tileB);
+            List<Coord> line = connection.tileA.GetLineTo(connection.tileB);
             line.ForEach(tile => ClearNeighbours(map, tile, tunnelingRadius));
 
         }
@@ -173,15 +173,13 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Replace nearby tiles with floors. Does not affect boundary tiles.
         /// </summary>
-        /// <param name="radius">The radius of replacement: e.g. if 1, will replace the 8 adjacent tiles. If 2,
-        /// will replace those 8 and their 16 immediate neighbours, etc.</param>
-        void ClearNeighbours(Map map, Coord center, int radius)
+        static void ClearNeighbours(Map map, Coord center, int radius)
         {
             // These computations ensure that only interior (non-boundary) tiles are affected.
             int xMin = Mathf.Max(1, center.x - radius);
             int yMin = Mathf.Max(1, center.y - radius);
-            int xMax = Mathf.Min(length - 2, center.x + radius);
-            int yMax = Mathf.Min(width - 2, center.y + radius);
+            int xMax = Mathf.Min(map.Length - 2, center.x + radius);
+            int yMax = Mathf.Min(map.Width - 2, center.y + radius);
             // Look at each x,y in a square surrounding the center, but only remove those that fall within
             // the circle of given radius. 
             int squaredRadius = radius * radius;
@@ -190,22 +188,22 @@ namespace CaveGeneration.MapGeneration
                 for (int y = yMin; y <= yMax; y++)
                 {
                     Coord testCoord = new Coord(x, y);
-                    if (IsInCircle(center, testCoord, squaredRadius)) map[x, y] = Tile.Floor;
+                    if (IsInCircle(testCoord, center, squaredRadius)) map[x, y] = Tile.Floor;
                 }
             }
         }
 
-        void ClearNeighbours(Map map, int xCenter, int yCenter, int radius)
+        static void ClearNeighbours(Map map, int xCenter, int yCenter, int radius)
         {
             ClearNeighbours(map, new Coord(xCenter, yCenter), radius);
         }
 
-        bool IsInCircle(Coord center, Coord testCoord, int squaredRadius)
+        static bool IsInCircle(Coord testCoord, Coord center, int squaredRadius)
         {
             return center.SquaredDistance(testCoord) <= squaredRadius;
         }
 
-        void Swap(ref Map a, ref Map b)
+        static void Swap(ref Map a, ref Map b)
         {
             Map temp = a;
             a = b;

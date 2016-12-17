@@ -46,14 +46,10 @@ namespace CaveGeneration.MapGeneration
         }
 
         [Tooltip(Tooltips.MAP_SEED)]
-        [SerializeField] string seed;
-        public string Seed
+        [SerializeField] int seed;
+        public int Seed
         {
-            get
-            {
-                seed = GetSeed();
-                return seed;
-            }
+            get { return useRandomSeed ? CreateRandomSeed() : seed; }
             set { seed = value; }
         }
 
@@ -111,12 +107,12 @@ namespace CaveGeneration.MapGeneration
         const int MINIMUM_SQUARE_SIZE     = 1;
         const int MINIMUM_FLOOR_EXPANSION = 0;
         const int MINIMUM_WALL_HEIGHT     = 1;
-        const float MINIMUM_MAP_DENSITY   = 0.3f;
-        const float MAXIMUM_MAP_DENSITY   = 0.7f;
+        const float MINIMUM_MAP_DENSITY   = 0f;
+        const float MAXIMUM_MAP_DENSITY   = 1f;
 
-        const string DEFAULT_SEED         = "";
         const float DEFAULT_DENSITY       = 0.5f;
         const bool DEFAULT_SEED_STATUS    = true;
+        const int DEFAULT_SEED = 0;
         const int DEFAULT_LENGTH          = 75;
         const int DEFAULT_WIDTH           = 75;
         const int DEFAULT_BORDER_SIZE     = 0;
@@ -136,74 +132,50 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public MapParameters(MapParameters parameters, bool isReadOnly = true)
         {
-            length = parameters.length;
-            width = parameters.width;
+            length            = parameters.length;
+            width             = parameters.width;
             initialMapDensity = parameters.initialMapDensity;
-            floorExpansion = parameters.floorExpansion;
-            useRandomSeed = parameters.useRandomSeed;
-            seed = parameters.seed;
-            borderSize = parameters.borderSize;
-            squareSize = parameters.squareSize;
-            minWallSize = parameters.minWallSize;
-            minFloorSize = parameters.minFloorSize;
-            wallHeight = parameters.wallHeight;
+            floorExpansion    = parameters.floorExpansion;
+            useRandomSeed     = parameters.useRandomSeed;
+            seed              = parameters.seed;
+            borderSize        = parameters.borderSize;
+            squareSize        = parameters.squareSize;
+            minWallSize       = parameters.minWallSize;
+            minFloorSize      = parameters.minFloorSize;
+            wallHeight        = parameters.wallHeight;
 
             IsReadOnly = isReadOnly;
         }
         
         void Reset()
         {
-            length = DEFAULT_LENGTH;
-            width = DEFAULT_WIDTH;
+            length            = DEFAULT_LENGTH;
+            width             = DEFAULT_WIDTH;
             initialMapDensity = DEFAULT_DENSITY;
-            floorExpansion = DEFAULT_FLOOR_EXPANSION;
-            useRandomSeed = DEFAULT_SEED_STATUS;
-            seed = DEFAULT_SEED;
-            borderSize = DEFAULT_BORDER_SIZE;
-            squareSize = DEFAULT_SQUARE_SIZE;
-            minWallSize = DEFAULT_WALL_THRESHOLD;
-            minFloorSize = DEFAULT_FLOOR_THRESHOLD;
-            wallHeight = DEFAULT_WALL_HEIGHT;
-        }
-
-        string GetSeed()
-        {
-            if (UseRandomSeed)
-            {
-                return Environment.TickCount.ToString();
-            }
-            else
-            {
-                return seed;
-            }
+            floorExpansion    = DEFAULT_FLOOR_EXPANSION;
+            useRandomSeed     = DEFAULT_SEED_STATUS;
+            seed              = DEFAULT_SEED;
+            borderSize        = DEFAULT_BORDER_SIZE;
+            squareSize        = DEFAULT_SQUARE_SIZE;
+            minWallSize       = DEFAULT_WALL_THRESHOLD;
+            minFloorSize      = DEFAULT_FLOOR_THRESHOLD;
+            wallHeight        = DEFAULT_WALL_HEIGHT;
         }
 
         public void OnValidate()
         {
-            if (length < MINIMUM_LENGTH)
-            {
-                length = MINIMUM_LENGTH;
-            }
-            if (width < MINIMUM_WIDTH)
-            {
-                width = MINIMUM_WIDTH;
-            }
-            if (floorExpansion < MINIMUM_FLOOR_EXPANSION)
-            {
-                floorExpansion = MINIMUM_FLOOR_EXPANSION;
-            }
-            if (squareSize < MINIMUM_SQUARE_SIZE)
-            {
-                squareSize = MINIMUM_SQUARE_SIZE;
-            }
-            if (borderSize < MINIMUM_BORDER_SIZE)
-            {
-                borderSize = MINIMUM_BORDER_SIZE;
-            }
-            if (wallHeight < MINIMUM_WALL_HEIGHT)
-            {
-                wallHeight = MINIMUM_WALL_HEIGHT;
-            }
+            length            = Mathf.Max(length, MINIMUM_WIDTH);
+            width             = Mathf.Max(width, MINIMUM_WIDTH);
+            floorExpansion    = Mathf.Max(floorExpansion, MINIMUM_FLOOR_EXPANSION);
+            squareSize        = Mathf.Max(squareSize, MINIMUM_SQUARE_SIZE);
+            borderSize        = Mathf.Max(borderSize, MINIMUM_BORDER_SIZE);
+            wallHeight        = Mathf.Max(wallHeight, MINIMUM_WALL_HEIGHT);
+            initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
+        }
+
+        int CreateRandomSeed()
+        {
+            return Guid.NewGuid().GetHashCode();
         }
 
         void SetLength(int value)

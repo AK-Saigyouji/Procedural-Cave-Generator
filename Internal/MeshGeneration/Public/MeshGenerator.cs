@@ -19,11 +19,17 @@
  * Outlines must be inverted since walls face inward for the enclosed caves, rather than outward for the isometric cave.
  */
 
-using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace CaveGeneration.MeshGeneration
 {
+    public enum CaveType
+    {
+        Isometric,
+        Enclosed
+    }
+
     /// <summary>
     /// Produces meshes and colliders for grids. Break grids larger than 200 by 200 into smaller grids before feeding
     /// into a mesh generator.
@@ -33,14 +39,10 @@ namespace CaveGeneration.MeshGeneration
         MeshData ceilingMesh;
         MeshData wallMesh;
         MeshData floorMesh;
-        MeshData enclosureMesh;
 
-        IList<Outline> outlines;
+        Outline[] outlines;
 
-        /// <summary>
-        /// Label passed in during construction.
-        /// </summary>
-        public string Index { get; set; }
+        public string Index { get; private set; }
 
         int? chunkSize; 
 
@@ -67,84 +69,62 @@ namespace CaveGeneration.MeshGeneration
         public MeshGenerator() : this(null, null) { }
 
         /// <summary>
-        /// Generate the data necessary to produce meshes for isometric type cave. Generates ceiling, wall and floor meshes.
+        /// Generate the data necessary to produce meshes for a cave in a manner that is safe to run outside the
+        /// primary thread. Call ExtractMeshes to build and retrieve the meshes.
         /// </summary>
         /// <exception cref="System.ArgumentException"></exception>
         /// <exception cref="System.ArgumentNullException"></exception>
-        /// <param name="grid">Grid specifying walls and floors, must have length and width at most 200.</param>
-        public void GenerateIsometric(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        /// <param name="grid">Grid specifying walls and floors. Must have length and width at most 200.</param>
+        public void Generate(WallGrid grid, CaveType type, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
             ValidateGrid(grid);
-            GenerateCeiling(grid, ceilingHeightMap);
-            ComputeMeshOutlines(ceilingMesh);
-            GenerateWallsFromCeiling();
-            GenerateFloor(grid, floorHeightMap);
+            switch (type)
+            {
+                case CaveType.Isometric:
+                    GenerateIsometric(grid, floorHeightMap, ceilingHeightMap);
+                    break;
+                case CaveType.Enclosed:
+                    GenerateEnclosed(grid, floorHeightMap, ceilingHeightMap);
+                    break;
+                default:
+                    throw new System.ArgumentException("Unrecognized Cave Type.");
+            }
         }
 
-        /// <summary>
-        /// Generate the data necessary to produce meshes for enclosed cave. Generates floor, wall and enclosure meshes.
-        /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
-        /// <param name="grid">Grid specifying walls and floors, must have length and width at most 200.</param>
-        public void GenerateEnclosed(WallGrid grid, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
+        void GenerateIsometric(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            ValidateGrid(grid);
-            GenerateFloor(grid, floorHeightMap);
-            ComputeMeshOutlines(floorMesh);
-            ReverseOutlines(); 
-            GenerateEnclosure(enclosureHeightMap);
-            GenerateWallsFromEnclosure();
+            ceilingMesh = MeshBuilder.BuildCeiling(grid, ceilingHeightMap);
+            outlines    = OutlineGenerator.Generate(ceilingMesh);
+            wallMesh    = MeshBuilder.BuildWalls(outlines, floorHeightMap, ceilingHeightMap);
+            floorMesh   = MeshBuilder.BuildFloor(grid, floorHeightMap);
+        }
+
+        void GenerateEnclosed(WallGrid grid, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
+        {
+            floorMesh   = MeshBuilder.BuildFloor(grid, floorHeightMap);
+            outlines    = OutlineGenerator.Generate(floorMesh, reverseOutlines: true);
+            ceilingMesh = MeshBuilder.BuildEnclosure(floorMesh, enclosureHeightMap);
+            wallMesh    = MeshBuilder.BuildWalls(outlines, floorHeightMap, enclosureHeightMap);
             PruneWallsAtGlobalSeams(grid.Scale);
         }
 
-        /// <summary>
-        /// Get the mesh for the ceiling component. Types of caves producing this mesh: Isometric.
-        /// </summary>
-        /// <exception cref="System.InvalidOperationException"></exception>
-        public Mesh GetCeilingMesh()
+        public CaveMeshes ExtractMeshes()
         {
-            return GetMesh(ceilingMesh);
-        }
+            if (floorMesh == null || wallMesh == null || ceilingMesh == null)
+                throw new System.InvalidOperationException("Generate meshes before extracting.");
 
-        /// <summary>
-        /// Get the mesh for the wall component. Types of caves producing this mesh: Isometric, Enclosed.
-        /// </summary>
-        /// <exception cref="System.InvalidOperationException"></exception>
-        public Mesh GetWallMesh()
-        {
-            return GetMesh(wallMesh);
-        }
+            Mesh floor   = floorMesh.CreateMesh();
+            Mesh walls   = wallMesh.CreateMesh();
+            Mesh ceiling = ceilingMesh.CreateMesh();
 
-        /// <summary>
-        /// Get the mesh for the floor component. Types of caves producing this mesh: Isometric, Enclosed.
-        /// </summary>
-        /// <exception cref="System.InvalidOperationException"></exception>
-        public Mesh GetFloorMesh()
-        {
-            return GetMesh(floorMesh);
-        }
-
-        /// <summary>
-        /// Get the mesh for the enclosure component. Types of caves producing this mesh: Enclosed.
-        /// </summary>
-        /// <exception cref="System.InvalidOperationException"></exception>
-        public Mesh GetEnclosureMesh()
-        {
-            return GetMesh(enclosureMesh);
-        }
-
-        Mesh GetMesh(MeshData meshData)
-        {
-            if (meshData == null)
-                throw new System.InvalidOperationException("Use a generate method on mesh generator before using get methods.");
-
-            return meshData.CreateMesh();
+            return new CaveMeshes(floor, walls, ceiling, Index);
         }
 
         void ValidateGrid(WallGrid grid)
         {
-            if (grid == null) throw new System.ArgumentNullException("Null grid passed to mesh generator!");
+            if (grid == null)
+                throw new System.ArgumentNullException("Null grid passed to mesh generator!");
+
             if (grid.Length > 200 || grid.Width > 200)
                 throw new System.ArgumentException("Grid too large for mesh generator. Max size is 200 by 200.");
         }
@@ -153,54 +133,11 @@ namespace CaveGeneration.MeshGeneration
         // of the map get walls built around them. This method removes those walls. 
         void PruneWallsAtGlobalSeams(int scale)
         {
+            Assert.IsNotNull(wallMesh);
             if (DoGlobalSeamsExist()) 
             {
                 int modulo = scale * chunkSize.Value;
                 WallPruner.PruneModulo(wallMesh, modulo);
-            }
-        }
-
-        void GenerateCeiling(WallGrid map, IHeightMap ceilingHeightMap)
-        {
-            IMeshBuilder ceilingBuilder = new CeilingBuilder(map, ceilingHeightMap);
-            ceilingMesh = ceilingBuilder.Build();
-        }
-
-        void GenerateWallsFromCeiling()
-        {
-            IMeshBuilder wallBuilder = new WallBuilder(ceilingMesh.vertices, outlines);
-            wallMesh = wallBuilder.Build();
-        }
-
-        void GenerateWallsFromEnclosure()
-        {
-            IMeshBuilder wallBuilder = new WallBuilder(enclosureMesh.vertices, outlines);
-            wallMesh = wallBuilder.Build();
-        }
-
-        void GenerateFloor(WallGrid map, IHeightMap heightMap)
-        {
-            IMeshBuilder floorBuilder = new FloorBuilder(map, heightMap);
-            floorMesh = floorBuilder.Build();
-        }
-
-        void GenerateEnclosure(IHeightMap heightMap)
-        {
-            IMeshBuilder enclosureBuilder = new EnclosureBuilder(floorMesh, heightMap);
-            enclosureMesh = enclosureBuilder.Build();
-        }
-
-        void ComputeMeshOutlines(MeshData mesh)
-        {
-            OutlineGenerator outlineGenerator = new OutlineGenerator(mesh);
-            outlines = outlineGenerator.GenerateOutlines();
-        }
-
-        void ReverseOutlines()
-        {
-            foreach (Outline outline in outlines)
-            {
-                outline.Reverse();
             }
         }
 

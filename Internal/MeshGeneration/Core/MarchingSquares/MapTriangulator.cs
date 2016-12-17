@@ -26,7 +26,13 @@ namespace CaveGeneration.MeshGeneration
         List<LocalPosition> localVertices;
         List<VertexIndex> triangles;
 
-        public MapTriangulator(WallGrid grid)
+        public static MeshData Triangulate(WallGrid grid)
+        {
+            var triangulator = new MapTriangulator(grid);
+            return triangulator.Triangulate();
+        }
+
+        MapTriangulator(WallGrid grid)
         {
             this.grid = grid;
             int maxPossibleVertices = grid.Length * grid.Width;
@@ -40,7 +46,7 @@ namespace CaveGeneration.MeshGeneration
         /// Compute a triangulation of the map passed into the constructor.
         /// </summary>
         /// <returns>MeshData object containing vertices and triangles.</returns>
-        public MeshData Triangulate()
+        MeshData Triangulate()
         {
             TriangulateAllSquares();
             MeshData mesh = BuildMeshData();
@@ -117,7 +123,7 @@ namespace CaveGeneration.MeshGeneration
             Vector3 basePosition = grid.Position;
             int scale = grid.Scale;
 
-            Vector3[] globalPositions = new Vector3[localPositions.Count];
+            var globalPositions = new Vector3[localPositions.Count];
             for (int i = 0; i < globalPositions.Length; i++)
             {
                 globalPositions[i] = basePosition + localPositions[i].ToVector3() * scale;
@@ -127,7 +133,7 @@ namespace CaveGeneration.MeshGeneration
 
         int[] ExtractTriangleArray()
         {
-            int[] triangleArray = new int[triangles.Count];
+            var triangleArray = new int[triangles.Count];
             for (int i = 0; i < triangleArray.Length; i++)
             {
                 triangleArray[i] = triangles[i];

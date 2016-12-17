@@ -103,7 +103,7 @@ namespace CaveGeneration.MapGeneration
         /// Generate a list of coordinates representing a path beween the given coordinates (inclusive). 
         /// </summary>
         /// <returns>List of Coords between this and the other coord (inclusive).</returns>
-        public List<Coord> CreateLineTo(Coord other)
+        public List<Coord> GetLineTo(Coord other)
         {
             Vector2 startVector = new Vector2(x, y);
             List<Coord> line = new List<Coord>();

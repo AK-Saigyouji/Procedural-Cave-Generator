@@ -7,15 +7,9 @@
     public interface IHeightMap
     {
         /// <summary>
-        /// A constant offset for the height map. 
+        /// Minimum possible value returned by get height.
         /// </summary>
-        int BaseHeight { get; }
-
-        /// <summary>
-        /// If true, get height will return 0 for each pair of values, and the only useful information in the class is
-        /// held by the base height.
-        /// </summary>
-        bool IsSimple { get; }
+        float MinHeight { get; }
 
         /// <summary>
         /// Highest possible value returned by get height.
@@ -25,7 +19,7 @@
         /// <summary>
         /// Return a height value parametrized by a pair of floats. Identical input will produce identical output.
         /// </summary>
-        /// <returns>A float between 0 and max height.</returns>
+        /// <returns>Float between MinHeight and MaxHeight.</returns>
         float GetHeight(float x, float y);
     }
 }

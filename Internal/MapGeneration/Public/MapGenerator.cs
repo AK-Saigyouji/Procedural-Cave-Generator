@@ -15,7 +15,9 @@ namespace CaveGeneration.MapGeneration
 
         public MapGenerator(MapParameters parameters)
         {
-            if (parameters == null) throw new System.ArgumentNullException("parameters", "MapParameters must not be null!");
+            if (parameters == null)
+                throw new System.ArgumentNullException("parameters");
+
             map = new MapParameters(parameters);
         }
 

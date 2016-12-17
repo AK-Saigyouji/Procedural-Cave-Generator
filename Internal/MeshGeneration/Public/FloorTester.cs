@@ -25,8 +25,9 @@ namespace CaveGeneration.MeshGeneration
 
         readonly WallCache wallCache;
 
-        public FloorTester(WallGrid grid)
+        internal FloorTester(WallGrid grid)
         {
+            Assert.IsNotNull(grid);
             this.grid = grid; // WallGrids are immutable so we don't need to create a copy.
             scale = grid.Scale;
             scaleReciprocal = 1f / scale;
@@ -63,11 +64,11 @@ namespace CaveGeneration.MeshGeneration
             // e.g. for the bot-left corner with this wall configuration:
             // 0 0
             // 1 0
-            // If botLeft is (0.3, 0.3), then there won't be a collision but due to our rounding,
+            // If botLeft is (0.3, 0.3), then there shouldn't be a collision but due to our rounding,
             // wallCache will count the bottom left corner because bot = 0, left = 0. We can simply 
             // subtract off the walls given by the new corners, since we already confirmed that
             // the actual corners are floors. 
-            int numFalseWalls = grid[left, bot] + grid[left, top] + grid[right, bot] + grid[right, top];
+            int numFalseWalls = CountCornerWalls(bot, top, left, right);
             int numWallsInBox = wallCache.CountWallsInBox(bot, top, left, right) - numFalseWalls;
             Assert.IsTrue(numWallsInBox >= 0, "Internal error: impossible number of walls counted.");
             return numWallsInBox == 0;
@@ -93,6 +94,34 @@ namespace CaveGeneration.MeshGeneration
 
             int configuration = MarchingSquares.ComputeConfiguration(botLeft, botRight, topRight, topLeft);
             return !MarchingSquares.IntersectsTriangle(new Vector2(fractionalX, fractionalZ), configuration);
+        }
+
+        /// <summary>
+        /// Count the number of corners of the (possibly degenerate) box given by these coordinates. e.g.
+        /// bot = 2, top = 2, left = 3, right = 5 will return 0, 1 or 2 depending on which of (3,2) and (5,2)
+        /// are walls. 
+        /// </summary>
+        /// <returns>Integer between 0 and 4 (inclusive).</returns>
+        int CountCornerWalls(int bot, int top, int left, int right)
+        {
+            bool distinctY = top != bot;
+            bool distinctX = left != right;
+            if (distinctY && distinctX)
+            {
+                return grid[left, top] + grid[right, top] + grid[left, bot] + grid[right, bot];
+            }
+            else if (distinctY)
+            {
+                return grid[left, top] + grid[left, bot];
+            }
+            else if (distinctX)
+            {
+                return grid[left, bot] + grid[right, bot];
+            }
+            else
+            {
+                return grid[left, bot];
+            }
         }
 
         static void ValidateBox(Vector2 botLeft, Vector2 topRight)

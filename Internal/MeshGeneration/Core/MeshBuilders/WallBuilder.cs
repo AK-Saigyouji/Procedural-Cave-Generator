@@ -1,6 +1,7 @@
-﻿/* The basic idea behind wallbuilder is to generate quads on top of 2d outlines. The main challenge is the uv array,
- * which is addressed more thoroughly in comments preceding the corresponding method. 
- */
+﻿/* The task of building the walls is sufficiently complicated that it warranted a separate class. The basic
+ idea is simple: taking a 2D outline of the walls, build a quad on each edge of the outline. The difficult
+ part is the task of assigning texture coordinates.
+*/
 
 using UnityEngine;
 using System.Collections.Generic;
@@ -8,62 +9,45 @@ using System.Linq;
 
 namespace CaveGeneration.MeshGeneration
 {
-    sealed class WallBuilder : IMeshBuilder
+    static class WallBuilder
     {
-        Vector3[] outlineVertices;
-        IList<Outline> outlines;
-        MeshData mesh;
-
         const float UVSCALE = 10f;
 
-
-        public WallBuilder(Vector3[] vertices, IList<Outline> outlines)
+        public static MeshData Build(Outline[] outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            outlineVertices = vertices;
-            this.outlines = outlines;
-        }
-
-        public MeshData Build()
-        {
-            CreateMesh();
+            MeshData mesh = new MeshData();
+            mesh.vertices = GetVertices(outlines, floorHeightMap, ceilingHeightMap);
+            mesh.triangles = GetTriangles(outlines);
+            mesh.uv = GetUVs(outlines, mesh.vertices);
             return mesh;
         }
 
-        void CreateMesh()
+        static Vector3[] GetVertices(Outline[] outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            int outlineEdgeCount = outlines.Select(outline => outline.Length - 1).Sum();
-            int outlineVertexCount = outlineEdgeCount + outlines.Count;
+            int numWallVertices = 2 * outlines.Sum(outline => outline.NumVertices);
+            var vertices = new Vector3[numWallVertices];
 
-            mesh = new MeshData();
-            mesh.vertices = GetVertices(outlineVertexCount);
-            mesh.triangles = GetTriangles(outlineEdgeCount);
-            mesh.uv = GetUVs(outlineVertexCount);
-        }
-
-        Vector3[] GetVertices(int outlineVertexCount)
-        {
-            Vector3[] outlineVertices = this.outlineVertices;
-            Vector3[] vertices = new Vector3[2 * outlineVertexCount];
             int vertexIndex = 0;
             foreach (Outline outline in outlines)
             {
-                for (int i = 0; i < outline.Length; i++)
+                for (int i = 0; i < outline.NumVertices; i++)
                 {
-                    Vector3 vertex = outlineVertices[outline[i]];
-                    vertices[vertexIndex] = vertex;
-                    vertices[vertexIndex + 1] = new Vector3(vertex.x, 0f, vertex.z);
+                    Vector3 vertex = outline[i];
+                    float x = vertex.x;
+                    float z = vertex.z;
+                    vertices[vertexIndex] = new Vector3(x, ceilingHeightMap.GetHeight(x, z), z);
+                    vertices[vertexIndex + 1] = new Vector3(x, floorHeightMap.GetHeight(x, z), z);
                     vertexIndex += 2;
                 }
             }
             return vertices;
         }
 
-        /* Computing the UV array for the walls proves to be a tricky matter. Unlike other meshes like the floor,
+        /* Computing the UV array for the walls proves to be a tricky matter. Unlike other meshes such as the floor,
          * it is not possible to consistently determine the UV for walls based purely on global coordinates. On top of that,
-         * there are two extra challenges. Walls are built on top of outline edges. But the distance between pairs of 
-         * outline edges is inconsistent. So it's necessary to use distance in computing the u coordinate. The second
-         * challenge is ensuring that the left edge of the beginning of an outline matches up with the right side of
-         * the end of the outline. 
+         * there are two extra challenges. Walls are built on top of outline edges. But the length of 
+         * outline edges is inconsistent. So it's necessary to incorporate length in computing the u coordinate. 
+         * The second challenge is ensuring that the start and end of an outline line up.
          * 
          * The following implementation addresses both issues. To address the first, we base the u coordinate
          * for each point in the outline on the length of the outline so far. To address the second, we scale
@@ -72,76 +56,51 @@ namespace CaveGeneration.MeshGeneration
          * by a constant factor so that it doesn't tile too rapidly.
          * 
          * The one issue not addressed by this implementation is that the uv coordinates for a wall in one map chunk
-         * will not in general match up with the wall in an adjacent map chunk. It's not clear that there is a viable
-         * way to do this locally: it might be necessary to 'correct' wall UVs globally. 
+         * will not in general match up with the wall in an adjacent map chunk. 
          */
 
-        Vector2[] GetUVs(int outlineEdgeCount)
+        static Vector2[] GetUVs(Outline[] outlines, Vector3[] vertices)
         {
-            Vector2[] uv = new Vector2[2 * outlineEdgeCount];
+            var uv = new Vector2[vertices.Length];
             int vertexIndex = 0;
 
             foreach (Outline outline in outlines)
             {
                 float u = 0f;
                 float increment = ComputeUVIncrement(outline);
-                for (int i = 0; i < outline.Length; i++, vertexIndex += 2)
+                for (int i = 0; i < outline.NumVertices; i++, vertexIndex += 2)
                 {
-                    u += ComputeDistanceTo(outline, i) * increment;
-                    float v = outlineVertices[outline[i]].y / UVSCALE;
-                    uv[vertexIndex] = new Vector2(u, v);
-                    uv[vertexIndex + 1] = new Vector2(u, 0f);
+                    u += ComputeEdgeLength(outline, i) * increment;
+                    float vTop = vertices[vertexIndex].y / UVSCALE;
+                    float vBot = vertices[vertexIndex + 1].y / UVSCALE;
+                    uv[vertexIndex]     = new Vector2(u, vTop);
+                    uv[vertexIndex + 1] = new Vector2(u, vBot);
                 }
             }
             return uv;
         }
 
-        float ComputeUVIncrement(Outline outline)
+        static float ComputeEdgeLength(Outline outline, int i)
         {
-            float outlineDistance = ComputeOutlineDistance(outline);
-            float increment = ((int)(outlineDistance / UVSCALE)) / outlineDistance;
-            return increment;
+            if (i == 0) return 0;
+            return Vector3.Distance(outline[i], outline[i - 1]);
         }
 
-        float ComputeDistanceTo(Outline outline, int index)
+        static float ComputeUVIncrement(Outline outline)
         {
-            if (index == 0)
-            {
-                return 0;
-            }
-            Vector3 vectorA = outlineVertices[outline[index]];
-            Vector3 vectorB = outlineVertices[outline[index - 1]];
-            return Distance2D(vectorA, vectorB);
+            return ((int)(outline.Length / UVSCALE)) / outline.Length;
         }
 
-        // Compute the distance between the projections of the vectors along the y-axis.
-        float Distance2D(Vector3 a, Vector3 b)
+        static int[] GetTriangles(Outline[] outlines)
         {
-            a.y = 0;
-            b.y = 0;
-            return Vector3.Distance(a, b);
-        }
+            int numTriangles = 6 * outlines.Sum(outline => outline.NumEdges);
+            var triangles = new int[numTriangles];
 
-        float ComputeOutlineDistance(Outline outline)
-        {
-            float distance = 0;
-            for (int i = 0; i < outline.Length; i++)
-            {
-                distance += ComputeDistanceTo(outline, i);
-            }
-            return distance;
-        }
-
-        int[] GetTriangles(int outlineEdgeCount)
-        {
-            int[] triangles = new int[6 * outlineEdgeCount];
             int triangleIndex = 0;
             int currentVertex = 0;
-
             foreach (Outline outline in outlines)
             {
-                int numEdges = outline.Length - 1;
-                for (int i = 0; i < numEdges; i++, triangleIndex += 6, currentVertex += 2)
+                for (int i = 0; i < outline.NumEdges; i++, triangleIndex += 6, currentVertex += 2)
                 {
                     AddQuadAtIndex(triangles, triangleIndex, currentVertex);
                 }
@@ -150,7 +109,7 @@ namespace CaveGeneration.MeshGeneration
             return triangles;
         }
 
-        void AddQuadAtIndex(int[] triangles, int triangleIndex, int vertexIndex)
+        static void AddQuadAtIndex(int[] triangles, int triangleIndex, int vertexIndex)
         {
             triangles[triangleIndex] = vertexIndex;
             triangles[triangleIndex + 1] = vertexIndex + 1;

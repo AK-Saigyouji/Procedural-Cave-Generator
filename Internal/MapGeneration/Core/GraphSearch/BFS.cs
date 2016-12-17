@@ -1,7 +1,7 @@
-﻿/* This class isolates the functionality relating to running breadth-first searches on the map. In particular,
- * it supports floodfill (filling in regions) and also just finding connected components. */
+﻿/* This class supports functionality used to find and remove regions in the map.*/
 
 using System.Collections.Generic;
+using UnityEngine.Assertions;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -13,7 +13,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public static List<TileRegion> GetRegions(Map map, Tile tileType)
         {
-            UnityEngine.Assertions.Assert.IsNotNull(map);
+            Assert.IsNotNull(map);
             var regions = new List<TileRegion>();
             bool[,] visited = InitializeVisitedArray(map, tileType);
             map.ForEach((x, y) =>
@@ -35,7 +35,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public static void RemoveSmallRegions(Map map, Tile tileType, int threshold)
         {
-            UnityEngine.Assertions.Assert.IsNotNull(map);
+            Assert.IsNotNull(map);
             bool[,] visited = InitializeVisitedArray(map, tileType);
             map.ForEach((x, y) =>
             {
@@ -64,6 +64,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         static void VisitBoundaryRegion(bool[,] visited, Map map)
         {
+            Assert.IsTrue(map.Length > 1 && map.Width > 1, "Map is too small.");
             VisitColumns(visited, 0, 1, map.Length - 2, map.Length - 1);
             VisitRows(visited, 0, 1, map.Width - 2, map.Width - 1);
             Queue<Coord> queue = InitializeBoundaryQueue(map);
@@ -101,7 +102,7 @@ namespace CaveGeneration.MapGeneration
         static Queue<Coord> InitializeBoundaryQueue(Map map)
         {
             int length = map.Length, width = map.Width;
-            Queue<Coord> queue = new Queue<Coord>();
+            var queue = new Queue<Coord>();
             for (int x = 1; x < length - 1; x++)
             {
                 if (map.IsWall(x, 1)) // left
@@ -128,7 +129,7 @@ namespace CaveGeneration.MapGeneration
         /// <returns>The region of tiles containing the start point.</returns>
         static List<Coord> GetRegion(int xStart, int yStart, bool[,] visited)
         {
-            Queue<Coord> queue = new Queue<Coord>();
+            var queue = new Queue<Coord>();
             queue.Enqueue(new Coord(xStart, yStart));
             visited[xStart, yStart] = true;
             return GetTilesReachableFromQueue(queue, visited);
@@ -138,19 +139,19 @@ namespace CaveGeneration.MapGeneration
         // Most substantially, it is assumed that the elements of queue all correspond to a single tile type,
         // and that the visited array has already set to true every element of the opposite type. e.g.
         // if queue has a single Coord (2,3) and map[2,3] = Tile.Wall, then for each (x,y) such that map[x,y] = Tile.Floor,
-        // visited[x,y] = true. 
+        // visited[x,y] = true. Checking these explicitly with assertions would degrade performance significantly,
+        // as this is a computationally intense routine.
         static List<Coord> GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
         {
-            // This list ends up consuming a lot of memory from resizing (~ 10 times the entire map) but maintaining a 
+            // This list ends up consuming a lot of memory from resizing but maintaining a 
             // cached list and clearing it each time increased the run-time of this method by a factor of 4. 
-            List<Coord> tiles = new List<Coord>();
+            var tiles = new List<Coord>();
             while (queue.Count > 0)
             {
                 Coord currentTile = queue.Dequeue();
                 tiles.Add(currentTile);
 
-                // Packing the following into a foreach loop would be cleaner, but results in a noticeable performance 
-                // hit, and this is a computationally intense component of the entire generator.
+                // Packing the following into a foreach loop would be cleaner, but results in a big performance hit
                 int x = currentTile.x, y = currentTile.y;
                 int left = x - 1, right = x + 1, up = y + 1, down = y - 1;
 
@@ -178,7 +179,7 @@ namespace CaveGeneration.MapGeneration
             return tiles;
         }
 
-            /// <summary>
+        /// <summary>
         /// Fill each tile in the region with tiles of the opposite type.
         /// </summary>
         static void FillRegion(Map map, List<Coord> region, Tile tileType)

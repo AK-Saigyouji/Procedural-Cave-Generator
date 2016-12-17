@@ -145,7 +145,6 @@ namespace CaveGeneration.MapGeneration
         /// <exception cref="System.IndexOutOfRangeException"></exception>
         public int GetSurroundingWallCount(int x, int y)
         {
-            Tile[,] grid = this.grid;
             return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]  // top-left, top, top-right
                  + (int)grid[x - 1, y    ] +                       (int)grid[x + 1, y    ]  // middle-left, middle-right
                  + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1]; // bottom-left, bottom, bottom-right
@@ -323,7 +322,7 @@ namespace CaveGeneration.MapGeneration
             {
                 for (int x = 1; x < length - 1; x++)
                 {
-                    grid[x,y] = transformation(x, y);
+                    grid[x, y] = transformation(x, y);
                 }
             }
         }

@@ -41,9 +41,8 @@ namespace CaveGeneration.MeshGeneration
         }
 
         /// <summary>
-        /// Retrieve position as a Vector3, orthogonal to the y-axis.
+        /// Retrieve position as a Vector3.
         /// </summary>
-        /// <returns></returns>
         public Vector3 ToVector3()
         {
             Vector2 offset = positionOffsets[squarePoint];

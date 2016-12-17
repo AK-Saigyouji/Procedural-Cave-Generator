@@ -1,12 +1,13 @@
 ﻿/* This class offers methods for testing whether objects will intersect the walls of a cave. Its primary purpose
  is to allow placing content at run-time without knowing ahead of time the structure of a cave. To this end
- it supports various tests for collision which are optimized to allow potentially thousands of executions 
+ it supports various tests for collision which are optimized to allow thousands of executions 
  per frame. To achieve this performance, collisions use axis-aligned bounding boxes (AABB), represented in
  Unity by the Bounds struct. These are found on every mesh and collider, and can also be built independently, 
- offering good flexibility and performance at the expense of some accuracy.
+ offering good flexibility and performance at the expense of some accuracy for objects not shaped like 
+ boxes parallel to the axes.
  
-  Note that we use the efficient primitives from the FloorTester class as the basis behind the functionality in this
- one. */
+ Note that we use the efficient primitives from the FloorTester class as the basis behind the functionality in this
+ class. */
 
 using UnityEngine;
 
@@ -14,9 +15,8 @@ namespace CaveGeneration
 {
     /// <summary>
     /// Specifies the component to use for determining whether an object will collide with cave walls. 
-    /// Will extract the bounding box from the given component.
     /// </summary>
-    public enum Component
+    public enum ComponentType
     {
         Mesh,
         Collider
@@ -45,7 +45,7 @@ namespace CaveGeneration
         // (x, y, z) to (x, y) instead of (x, z). Hence the need for the following overload. 
 
         /// <summary>
-        /// Will the box fit in the cave without intersecting any walls?
+        /// Will the box fit in the cave without intersecting any walls? Ignores y-axis entirely.
         /// </summary>
         /// <param name="botLeft">Bottom left corner of box.</param>
         /// <param name="topRight">Top right corner of box.</param>
@@ -56,7 +56,8 @@ namespace CaveGeneration
 
         /// <summary>
         /// Tests whether the object will fit within the walls of the cave at the given position, using the 
-        /// specified component's Bounds property (axis-aligned bounding box).
+        /// specified component's Bounds property (axis-aligned bounding box). Note that the game object's scale
+        /// will be factored into the computation, but rotation will not be. 
         /// </summary>
         /// <param name="gameObject">The game object to be placed.</param>
         /// <param name="position">The location for the object to be placed.</param>
@@ -64,7 +65,7 @@ namespace CaveGeneration
         /// mesh, or collider. Must have such component on the object.</param>
         /// <exception cref="System.ArgumentNullException"></exception>
         /// <exception cref="System.ArgumentException"></exception>
-        public bool CanFitObject(GameObject gameObject, Vector3 position, Component component)
+        public bool CanFitObject(GameObject gameObject, Vector3 position, ComponentType component)
         {
             Bounds bounds = ExtractBounds(gameObject, component);
             bounds = ScaleBounds(bounds, gameObject.transform.localScale);
@@ -95,16 +96,16 @@ namespace CaveGeneration
             return tester.IsFloor(x, z);
         }
 
-        static Bounds ExtractBounds(GameObject gameObject, Component source)
+        static Bounds ExtractBounds(GameObject gameObject, ComponentType source)
         {
             switch (source)
             {
-                case Component.Mesh:
+                case ComponentType.Mesh:
                     return ExtractMesh(gameObject).bounds;
-                case Component.Collider:
+                case ComponentType.Collider:
                     return ExtractCollider(gameObject).bounds;
                 default:
-                    throw new System.ArgumentException("Unrecognized Component.");
+                    throw new System.ArgumentException("Unrecognized ComponentType.");
             }
         }
 

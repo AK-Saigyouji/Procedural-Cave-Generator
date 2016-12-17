@@ -11,9 +11,10 @@
         public const string MAP_FLOOR_EXPANSION = "Expand floor regions in every direction by given quantity.";
         public const string MAP_SEED =
             "The seed uniquely identifies which map gets generated. If using random seed, getting the seed will " +
-            "set its value to some random seed.";
+            "randomly reset its value.";
         public const string MAP_USE_RANDOM_SEED =
-            "If set to true, a random map will be generated. If false, the seed property will be used to specify the map";
+            "If set to true, a random map will be generated. If false, the seed property will be used to specify the map." +
+            "While true, the seed property will return random values. Disable before attemping to read or set a specific seed.";
         public const string MAP_BORDER_SIZE = "The width of extra boundary around the map.";
         public const string MAP_SQUARE_SIZE =
             "How many game units each tile in the map should occupy. By default, each tile occupies 1 game unit " +

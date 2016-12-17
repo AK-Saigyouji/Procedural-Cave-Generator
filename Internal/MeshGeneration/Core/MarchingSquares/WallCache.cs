@@ -2,6 +2,8 @@
 It does so in constant time by exploiting a well known dynamic programming algorithm for computing
 submatrix sums. Note that construction takes time and space linear in the size of the original grid. */
 
+using UnityEngine.Assertions;
+
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
@@ -12,11 +14,14 @@ namespace CaveGeneration.MeshGeneration
         // wallSum[x,y] corresponds to the number of walls on lattice points between (0,0) and (x,y) inclusive.
         // e.g. wallSum[5,17] is the sum of all grid[x,y] for 0 <= x <= 5 and 0 <= y <= 17. 
         readonly int[,] wallSums;
+        readonly int length;
+        readonly int width;
 
         public WallCache(WallGrid grid)
         {
-            int length = grid.Length;
-            int width = grid.Width;
+            Assert.IsNotNull(grid);
+            length = grid.Length;
+            width = grid.Width;
             wallSums = new int[length, width];
             for (int y = 0; y < width; y++)
             {
@@ -32,9 +37,10 @@ namespace CaveGeneration.MeshGeneration
         /// CountWallsInBox(3,5,0,1) will return the number of walls among the points (0,3), (0,4), (0,5), (1,3),
         /// (1,4), (1,5). 
         /// </summary>
-        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
         public int CountWallsInBox(int bottom, int top, int left, int right)
         {
+            Assert.IsTrue(bottom >= 0 && left >= 0 && top < width && right < length);
+
             return GetWallSum(right, top) 
                 - GetWallSum(left - 1, top) 
                 - GetWallSum(right, bottom - 1) 
@@ -45,7 +51,6 @@ namespace CaveGeneration.MeshGeneration
         /// Does the given box contain a wall? Boundaries are inclusive. e.g. CountWallsInBox(3,5,0,1) will return 
         /// the number of walls among the points (0,3), (0,4), (0,5), (1,3), (1,4), (1,5). 
         /// </summary>
-        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
         public bool BoxContainsWall(int bottom, int top, int left, int right)
         {
             return CountWallsInBox(bottom, top, left, right) > 0;
