@@ -128,23 +128,15 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Create a copy of the given map parameters.
+        /// Create a copy of the map parameters. 
         /// </summary>
-        public MapParameters(MapParameters parameters, bool isReadOnly = true)
+        /// <param name="isReadOnly">Should the copy be read-only?</param>
+        /// <returns></returns>
+        public MapParameters Copy(bool isReadOnly)
         {
-            length            = parameters.length;
-            width             = parameters.width;
-            initialMapDensity = parameters.initialMapDensity;
-            floorExpansion    = parameters.floorExpansion;
-            useRandomSeed     = parameters.useRandomSeed;
-            seed              = parameters.seed;
-            borderSize        = parameters.borderSize;
-            squareSize        = parameters.squareSize;
-            minWallSize       = parameters.minWallSize;
-            minFloorSize      = parameters.minFloorSize;
-            wallHeight        = parameters.wallHeight;
-
-            IsReadOnly = isReadOnly;
+            var newParameters = (MapParameters)MemberwiseClone();
+            newParameters.IsReadOnly = IsReadOnly;
+            return newParameters;
         }
         
         void Reset()

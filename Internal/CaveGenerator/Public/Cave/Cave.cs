@@ -34,9 +34,13 @@ namespace CaveGeneration
 
         internal Cave(Map map, IEnumerable<CaveMeshes> caveMeshes, MapParameters mapParameters)
         {
+            Assert.IsNotNull(map);
+            Assert.IsNotNull(caveMeshes);
+            Assert.IsNotNull(mapParameters);
+
+            MapParameters = mapParameters;
             GameObject = new GameObject("Cave");
             CollisionTester = GetCollisionTester(map);
-            MapParameters = mapParameters;
             BuildSectors(caveMeshes);
         }
 
@@ -62,7 +66,7 @@ namespace CaveGeneration
 
         CollisionTester GetCollisionTester(Map map)
         {
-            return new CollisionTester(new FloorTester(MapConverter.ToWallGrid(map)));
+            return new CollisionTester(new FloorTester(MapConverter.ToWallGrid(map, MapParameters.SquareSize)));
         }
 
         void BuildSectors(IEnumerable<CaveMeshes> caveMeshes)

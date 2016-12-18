@@ -58,10 +58,9 @@ namespace CaveGeneration.MeshGeneration
             {
                 if (triangles[i] > -1)
                 {
-                    newTriangles[newIndex] = triangles[i];
-                    newTriangles[newIndex + 1] = triangles[i + 1];
-                    newTriangles[newIndex + 2] = triangles[i + 2];
-                    newIndex += 3;
+                    newTriangles[newIndex++] = triangles[i];
+                    newTriangles[newIndex++] = triangles[i + 1];
+                    newTriangles[newIndex++] = triangles[i + 2];
                 }
             }
 

@@ -13,15 +13,6 @@ using UnityEngine;
 
 namespace CaveGeneration
 {
-    /// <summary>
-    /// Specifies the component to use for determining whether an object will collide with cave walls. 
-    /// </summary>
-    public enum ComponentType
-    {
-        Mesh,
-        Collider
-    }
-
     public sealed class CollisionTester
     {
         MeshGeneration.FloorTester tester;
@@ -56,34 +47,30 @@ namespace CaveGeneration
 
         /// <summary>
         /// Tests whether the object will fit within the walls of the cave at the given position, using the 
-        /// specified component's Bounds property (axis-aligned bounding box). Note that the game object's scale
-        /// will be factored into the computation, but rotation will not be. 
+        /// gameObject's MeshRenderer component.
         /// </summary>
-        /// <param name="gameObject">The game object to be placed.</param>
+        /// <param name="gameObject">The game object to be placed. Must have a MeshRenderer component.</param>
         /// <param name="position">The location for the object to be placed.</param>
-        /// <param name="component">What component to use to determine whether the object will fit, e.g.
-        /// mesh, or collider. Must have such component on the object.</param>
         /// <exception cref="System.ArgumentNullException"></exception>
         /// <exception cref="System.ArgumentException"></exception>
-        public bool CanFitObject(GameObject gameObject, Vector3 position, ComponentType component)
+        public bool CanFitObject(GameObject gameObject, Vector3 position)
         {
-            Bounds bounds = ExtractBounds(gameObject, component);
-            bounds = ScaleBounds(bounds, gameObject.transform.localScale);
+            Bounds bounds = ExtractBounds(gameObject);
             return CanFitBoundingBox(bounds, position);
         }
 
         /// <summary>
-        /// Can the bounding box fit within the walls at the given position? 
+        /// Can the bounding box fit within the walls at the given position? Uses the Bound's size, but not
+        /// its center - uses the position instead.
         /// </summary>
-        /// <param name="bounds">Specificies a bounding box. Every mesh has one.</param>
+        /// <param name="bounds">Specificies a bounding box.</param>
         /// <param name="position">Test position - will attempt to center the object at this position.</param>
         public bool CanFitBoundingBox(Bounds bounds, Vector3 position)
         {
             Vector3 extents = bounds.extents;
-            Vector3 center = bounds.center + position;
 
-            Vector2 botLeft = new Vector2(center.x - extents.x, center.z - extents.z);
-            Vector2 topRight = new Vector2(center.x + extents.x, center.z + extents.z);
+            Vector2 botLeft = new Vector2(position.x - extents.x, position.z - extents.z);
+            Vector2 topRight = new Vector2(position.x + extents.x, position.z + extents.z);
 
             return CanFitBox(botLeft, topRight);
         }
@@ -96,57 +83,17 @@ namespace CaveGeneration
             return tester.IsFloor(x, z);
         }
 
-        static Bounds ExtractBounds(GameObject gameObject, ComponentType source)
-        {
-            switch (source)
-            {
-                case ComponentType.Mesh:
-                    return ExtractMesh(gameObject).bounds;
-                case ComponentType.Collider:
-                    return ExtractCollider(gameObject).bounds;
-                default:
-                    throw new System.ArgumentException("Unrecognized ComponentType.");
-            }
-        }
-
-        static Bounds ScaleBounds(Bounds bounds, Vector3 scale)
-        {
-            Vector3 oldSize = bounds.size;
-            bounds.size = new Vector3(oldSize.x * scale.x, oldSize.y * scale.y, oldSize.z * scale.z);
-            return bounds;
-        }
-
-        static Mesh ExtractMesh(GameObject gameObject)
-        {
-            // This could be greatly simplified with the null propagating operator in C# 6, but alas, Unity...
-
-            if (gameObject == null)
-                throw new System.ArgumentNullException("gameObject");
-
-            MeshFilter meshFilter = gameObject.GetComponent<MeshFilter>();
-
-            if (meshFilter == null)
-                throw new System.ArgumentException("gameObject has no MeshFilter component.");
-
-            Mesh mesh = meshFilter.sharedMesh;
-
-            if (mesh == null)
-                throw new System.ArgumentException("gameObject has MeshFilter with null mesh.");
-
-            return mesh;
-        }
-
-        static Collider ExtractCollider(GameObject gameObject)
+        static Bounds ExtractBounds(GameObject gameObject)
         {
             if (gameObject == null)
                 throw new System.ArgumentNullException("gameObject");
 
-            Collider collider = gameObject.GetComponent<Collider>();
+            MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
 
-            if (collider == null)
-                throw new System.ArgumentException("gameObject has no Collider.");
+            if (meshRenderer == null)
+                throw new System.ArgumentException("Must have MeshRenderer component.", "gameObject");
 
-            return collider;
+            return meshRenderer.bounds;
         }
 
         static Vector2 RemoveYComponent(Vector3 original)

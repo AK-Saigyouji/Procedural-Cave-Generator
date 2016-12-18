@@ -1,12 +1,10 @@
-﻿/* This is the class that gets built up by a MapBuilder to represent a 2D grid consisting of walls and floors. 
+﻿/* This class represents a 2D grid of Tiles, and has functionality focused on facilitating the generation
+ * of such a grid. 
  * 
  * A major design decision was the use of array type for the underlying grid. The three obvious choices
- * are a 2D array, a jagged array, and a flat array. Normally, jagged and flat arrays are noticeably faster than 2D
- * arrays. But given the way data is accessed, the cost associated with translating between 2d coordinates and position
- * in a flat array proved to strip flat arrays of any speedup they otherwise would have. As for jagged arrays, they would be
- * faster here, but they come with two penalties. The first is readability, as they would be accessed grid[y][x] (reversed
- * coordinates). The second is the extra memory consumption of jagged arrays associated with the overhead for each 
- * array, which adds up as the grid may have to be copied several times. Thus ultimately the 2D array was chosen.*/
+ * are a 2D array, a jagged array, and a flat array. Initially 2D arrays were chosen for maximal readability. 
+ * The other two options were tested, but found to offer no significant performance improvement, so 2D arrays remain,
+ * despite normally offering significantly worse performance.*/ 
 
 using System;
 using UnityEngine;
@@ -26,28 +24,24 @@ namespace CaveGeneration.MapGeneration
     /// </summary>
     public sealed class Map
     {
-        public int SquareSize { get; private set; }
         public int Length { get { return length; } }
         public int Width { get { return width; } }
-        public Vector3 Position { get; private set; } 
         public Coord Index { get; private set; }
 
         Tile[,] grid;
         int length;
         int width;
 
-        public Map(int length, int width, int squareSize)
+        public Map(int length, int width)
         {
             grid = new Tile[length, width];
             this.length = length;
             this.width = width;
-            SquareSize = squareSize;
         }
 
-        public Map(int length, int width, int squareSize, Coord index, Vector3 position) : this(length, width, squareSize)
+        public Map(int length, int width, Coord index) : this(length, width)
         {
             Index = index;
-            Position = position;
         }
 
         public Tile this[int x, int y]
@@ -71,7 +65,7 @@ namespace CaveGeneration.MapGeneration
         {
             if (other == null) throw new System.ArgumentNullException();
             if (length != other.length || width != other.width)
-                throw new System.ArgumentException("Cannot copy map with different dimensions!");
+                throw new ArgumentException("Cannot copy map with different dimensions!");
 
             Copy(other.grid);
         }
@@ -92,7 +86,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public Map Clone()
         {
-            Map clone = new Map(length, width, SquareSize);
+            Map clone = new Map(length, width);
             clone.Copy(this);
             return clone;
         }
@@ -104,7 +98,6 @@ namespace CaveGeneration.MapGeneration
         /// <exception cref="System.IndexOutOfRangeException"></exception>
         public bool IsAdjacentToWallFast(int x, int y)
         {
-            Tile[,] grid = this.grid;
             return grid[x - 1, y] == Tile.Wall || grid[x + 1, y] == Tile.Wall 
                 || grid[x, y + 1] == Tile.Wall || grid[x, y - 1] == Tile.Wall;
         }
@@ -116,7 +109,6 @@ namespace CaveGeneration.MapGeneration
         /// <exception cref="System.IndexOutOfRangeException"></exception>
         public bool IsAdjacentToFloorFast(int x, int y)
         {
-            Tile[,] grid = this.grid;
             return grid[x - 1, y] == Tile.Floor || grid[x + 1, y] == Tile.Floor
                 || grid[x, y + 1] == Tile.Floor || grid[x, y - 1] == Tile.Floor;
         }

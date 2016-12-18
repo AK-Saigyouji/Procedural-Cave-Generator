@@ -37,7 +37,8 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public MeshData Clone()
         {
-            MeshData mesh = new MeshData();
+            // We cannot simply call MemberwiseClone as that would create a shallow copy.
+            var mesh = new MeshData();
             mesh.vertices = (Vector3[])vertices.Clone();
             mesh.triangles = (int[])triangles.Clone();
             mesh.uv = (Vector2[])uv.Clone();

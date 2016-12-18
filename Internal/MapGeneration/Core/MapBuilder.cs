@@ -1,50 +1,40 @@
-﻿/* MapBuilder is a low-level class that offers a library of methods for map generation. The intention is to write
- * light-weight, higher-level map generator classes that can easily be customized by choosing which of the methods
- * in this class should be used and in what order. See the default map generator for an example.*/
+﻿/* MapBuilder is a low-level class that offers a library of extension methods for map generation. 
+The intention is to write light-weight, higher-level map generator classes that can easily be customized 
+by choosing which of the methods in this class should be used and in what order. See the default map generator 
+for an example. 
+ 
+  Each public method is an extension method for the Map class, and returns the resulting Map object, allowing
+the methods to be chained together. These methods are not necessarily side-effect free, however - in many cases
+the original Map object is returned.*/
 
 using UnityEngine;
 using System.Collections.Generic;
+using CaveGeneration.MapGeneration.Connectivity;
+using System;
 
 namespace CaveGeneration.MapGeneration
 {
-    using MapConnector = Connectivity.MapConnector;
-    using ConnectionInfo = Connectivity.ConnectionInfo;
-
     /// <summary>
-    /// Offers a variety of methods for configuring a randomized Map object. Start with an initialization
-    /// method, and end with the build method to receive the map.
+    /// Offers a variety of extension methods for generating Map objects. 
     /// </summary>
-    sealed class MapBuilder
+    static class MapBuilder
     {
-        Map map;
-
-        int length;
-        int width;
-
         const int SMOOTHING_ITERATIONS = 5;
         const int SMOOTHING_THRESHOLD = 4;
-
-        /// <summary>
-        /// Begin building a new map by specifying its dimensions.
-        /// </summary>
-        public MapBuilder(int length, int width, int squareSize)
-        {
-            map = new Map(length, width, squareSize);
-            this.length = length;
-            this.width = width;
-        }
 
         /// <summary>
         /// Fills the map as follows: the outer most boundary is filled with wall tiles. The rest of the map is filled with
         /// wall tiles randomly based on the map density: e.g. if the map density is 0.45 then roughly 45% will be filled
         /// with wall tiles (excluding boundary) and the rest with floor tiles. 
         /// </summary>
-        public void InitializeRandomFill(float mapDensity, int seed)
+        public static Map InitializeRandomMap(int length, int width, float mapDensity, int seed)
         {
+            Map map = new Map(length, width);
             // Unity's Random seed cannot be set in a secondary thread, so System.Random is used instead.
             var random = new System.Random(seed);
             map.TransformBoundary((x, y) => Tile.Wall);
             map.TransformInterior((x, y) => random.NextDouble() < mapDensity ? Tile.Wall : Tile.Floor);
+            return map;
         }
 
         /// <summary>
@@ -54,8 +44,10 @@ namespace CaveGeneration.MapGeneration
         /// <param name="iterations">The number of smoothing passes to perform. The default is sufficient to
         /// turn completely random noise into smooth caverns. Can set to a lower number if map is already 
         /// well-structured but a bit jagged. Setting higher not recommended.</param>
-        public void Smooth(int iterations = SMOOTHING_ITERATIONS)
+        public static Map Smooth(this Map inputMap, int iterations = SMOOTHING_ITERATIONS)
         {
+            Map map = inputMap.Clone();
+
             Map currentMap = map;
             Map tempMap = map.Clone();
             for (int i = 0; i < iterations; i++)
@@ -64,22 +56,25 @@ namespace CaveGeneration.MapGeneration
                 Swap(ref currentMap, ref tempMap);
             }
             map = currentMap;
+            return map;
         }
 
         /// <summary>
         /// Expand each floor region by a number of tiles in each direction based on the provided argument. Use cautiously,
         /// as this method will dramatically reduce the proportion of walls in the map even for a small radius.
         /// </summary>
-        public void ExpandRegions(int radius)
+        public static Map ExpandRegions(this Map inputMap, int radius)
         {
-            if (radius <= 0) return;
-            radius = Mathf.Min(radius, Mathf.Max(length, width)); // Reduce work done for unreasonable radius input
-            Map tempMap = map.Clone();
-            map.ForEachInterior((x, y) => 
+            if (radius < 0) throw new ArgumentException("Cannot expand regions by a negative number.", "radius");
+            if (radius == 0) return inputMap.Clone();
+
+            Map map = inputMap.Clone();
+            radius = Mathf.Min(radius, Mathf.Max(inputMap.Length, inputMap.Width));
+            inputMap.ForEachInterior((x, y) => 
             {
-                if (map.IsFloor(x, y)) ClearNeighbours(tempMap, x, y, radius);
+                if (inputMap.IsFloor(x, y)) ClearNeighbours(map, x, y, radius);
             });
-            map = tempMap;
+            return map;
         }
 
         /// <summary>
@@ -87,10 +82,9 @@ namespace CaveGeneration.MapGeneration
         /// sequence of vertical and horizontal steps through walls. 
         /// </summary>
         /// <param name="threshold">Number of tiles a region must have to not be removed.</param>
-        public void RemoveSmallWallRegions(int threshold)
+        public static Map RemoveSmallWallRegions(this Map inputMap, int threshold)
         {
-            if (threshold <= 0) return;
-            BFS.RemoveSmallRegions(map, Tile.Wall, threshold);
+            return RemoveSmallRegions(inputMap, threshold, Tile.Wall);
         }
 
         /// <summary>
@@ -98,21 +92,25 @@ namespace CaveGeneration.MapGeneration
         /// by a sequence of vertical and horizontal steps through floor tiles. 
         /// </summary>
         /// <param name="threshold">Number of tiles a region must have to not be removed.</param>
-        public void RemoveSmallFloorRegions(int threshold)
+        public static Map RemoveSmallFloorRegions(this Map inputMap, int threshold)
         {
-            if (threshold <= 0) return;
-            BFS.RemoveSmallRegions(map, Tile.Floor, threshold);
+            return RemoveSmallRegions(inputMap, threshold, Tile.Floor);
         }
 
         /// <summary>
         /// Ensure connectivity between all regions of floors in the map. It is recommended that you first prune
         /// small floor regions in order to avoid creating tunnels to tiny regions.
         /// </summary>
-        public void ConnectFloors(int tunnelRadius)
+        public static Map ConnectFloors(this Map inputMap, int tunnelRadius)
         {
+            if (tunnelRadius < 0) throw new ArgumentException("Cannot tunnel a negative radius", "tunnelRadius");
+            if (tunnelRadius == 0) return inputMap.Clone();
+
+            Map map = inputMap.Clone();
             List<TileRegion> floors = BFS.GetRegions(map, Tile.Floor);
             ConnectionInfo[] finalConnections = MapConnector.GetConnections(map, floors);
-            System.Array.ForEach(finalConnections, connection => CreatePassage(connection, tunnelRadius));
+            Array.ForEach(finalConnections, connection => CreatePassage(map, connection, tunnelRadius));
+            return map;
         }
 
         /// <summary>
@@ -120,24 +118,27 @@ namespace CaveGeneration.MapGeneration
         /// width and length.
         /// </summary>
         /// <param name="borderSize">How thick the border should be on each side.</param>
-        public void ApplyBorder(int borderSize)
+        public static Map ApplyBorder(this Map inputMap, int borderSize)
         {
-            if (borderSize <= 0) return;
-            Map borderedMap = new Map(length + borderSize * 2, width + borderSize * 2, map.SquareSize);
+            if (borderSize < 0) throw new ArgumentException("Cannot add a border of negative size.", "borderSize");
+            if (borderSize == 0) return inputMap.Clone();
+            Map borderedMap = new Map(inputMap.Length + borderSize * 2, inputMap.Width + borderSize * 2);
             borderedMap.Transform((x, y) =>
             {
                 int yShifted = y - borderSize;
                 int xShifted = x - borderSize;
-                return map.Contains(xShifted, yShifted) ? map[xShifted, yShifted] : Tile.Wall;
+                return inputMap.Contains(xShifted, yShifted) ? inputMap[xShifted, yShifted] : Tile.Wall;
             });
-            map = borderedMap;
+            return borderedMap;
         }
 
-        /// <summary>
-        /// Build the map and return it.
-        /// </summary>
-        public Map ToMap()
+        static Map RemoveSmallRegions(Map inputMap, int threshold, Tile tileType)
         {
+            if (threshold < 0) throw new ArgumentException("Removal threshold cannot be negative.", "threshold");
+            if (threshold == 0) return inputMap.Clone();
+
+            Map map = inputMap.Clone();
+            BFS.RemoveSmallRegions(map, tileType, threshold);
             return map;
         }
 
@@ -162,12 +163,13 @@ namespace CaveGeneration.MapGeneration
             }
         }
 
-        void CreatePassage(ConnectionInfo connection, int tunnelingRadius)
+        static void CreatePassage(Map map, ConnectionInfo connection, int tunnelingRadius)
         {
             tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
-            List<Coord> line = connection.tileA.GetLineTo(connection.tileB);
-            line.ForEach(tile => ClearNeighbours(map, tile, tunnelingRadius));
-
+            foreach (Coord tile in GetPath(connection))
+            {
+                ClearNeighbours(map, tile, tunnelingRadius);
+            }
         }
 
         /// <summary>
@@ -201,6 +203,11 @@ namespace CaveGeneration.MapGeneration
         static bool IsInCircle(Coord testCoord, Coord center, int squaredRadius)
         {
             return center.SquaredDistance(testCoord) <= squaredRadius;
+        }
+
+        static List<Coord> GetPath(ConnectionInfo connection)
+        {
+            return connection.tileA.GetLineTo(connection.tileB);
         }
 
         static void Swap(ref Map a, ref Map b)

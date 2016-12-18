@@ -6,6 +6,7 @@ using System.Collections;
 using CaveGeneration.MapGeneration;
 
 using WallGrid = CaveGeneration.MeshGeneration.WallGrid;
+using UnityEngine.Assertions;
 
 namespace CaveGeneration
 {
@@ -17,9 +18,18 @@ namespace CaveGeneration
         /// <summary>
         /// Converts a map for consumption by the mesh generation system.
         /// </summary>
-        public static WallGrid ToWallGrid(Map map)
+        public static WallGrid ToWallGrid(Map map, int scale)
         {
-            return new WallGrid(map.ToByteArray(), map.Position, map.SquareSize);
+            Assert.IsNotNull(map);
+            Assert.IsTrue(scale > 0, "Scale must be positive");
+
+            Vector3 position = IndexToPosition(map.Index, scale);
+            return new WallGrid(map.ToByteArray(), position, scale);
+        }
+
+        static Vector3 IndexToPosition(Coord index, int scale)
+        {
+            return new Vector3(index.x, 0f, index.y) * scale * MapSplitter.CHUNK_SIZE;
         }
     } 
 }

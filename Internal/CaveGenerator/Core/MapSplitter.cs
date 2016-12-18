@@ -39,12 +39,10 @@ namespace CaveGeneration
             int xEnd = ComputeSubmapEndPoint(xStart, map.Length);
             int yEnd = ComputeSubmapEndPoint(yStart, map.Width);
 
-            int scale = map.SquareSize;
             int length = xEnd - xStart;
             int width = yEnd - yStart;
-            Vector3 position = new Vector3(xStart, 0f, yStart) * scale;
             Coord index = new Coord(xIndex, yIndex);
-            Map subMap = new Map(length, width, scale, index, position);
+            Map subMap = new Map(length, width, index);
 
             for (int x = xStart; x < xEnd; x++)
             {

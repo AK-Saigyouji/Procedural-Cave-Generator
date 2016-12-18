@@ -1,7 +1,4 @@
-﻿/* This is the main driver for the entire cave generation algorithm. It accepts the parameters and delegates
- * responsibility to the appropriate subsystems, in particular the map generator and mesh generator.  */
-
-using CaveGeneration.MapGeneration;
+﻿using CaveGeneration.MapGeneration;
 using CaveGeneration.MeshGeneration;
 using CaveGeneration.HeightMaps;
 using System;
@@ -50,7 +47,7 @@ namespace CaveGeneration
         public MapParameters MapParameters
         {
             get { return mapParameters; }
-            set { mapParameters = new MapParameters(value, isReadOnly: false); }
+            set { mapParameters = value == null ? new MapParameters() : value.Copy(isReadOnly: false); }
         }
 
         // Unity's coroutines do not support return values, so we save them as instance variables instead.
@@ -69,7 +66,7 @@ namespace CaveGeneration
         /// that this method is asynchronous so control will be returned before the cave is created. Supply a callback
         /// to consume results as soon as generator is finished.
         /// </summary>
-        /// <param name="callback"> Optional function to call when generation is finished.</param>
+        /// <param name="callback">Optional function to call when generation is finished.</param>
         public void Generate(Action callback = null)
         {
             if (IsGenerating)
@@ -103,31 +100,11 @@ namespace CaveGeneration
         {
             Setup();
             ExtractHeightMaps();
-            if (debugMode)
-            {
-                GenerateCoreData();
-            }
-            else
-            {
-                yield return Utility.Threading.ExecuteAndAwait(GenerateCoreData);
-            }
+            yield return ExecuteTask(GenerateCoreData);
             yield return BuildCave();
             yield return ActivateChildren();
             TearDown();
             if (callback != null) callback();
-        }
-
-        void ExtractHeightMaps()
-        {
-            FloorHeightMap = GetHeightMap<HeightMapFloor>();
-            MainHeightMap = GetHeightMap<HeightMapMain>(mapParameters.WallHeight);
-        }
-
-        MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
-        {
-            WallGrid wallGrid = MapConverter.ToWallGrid(map);
-            meshGenerator.Generate(wallGrid, caveType, FloorHeightMap, MainHeightMap);
-            return meshGenerator;
         }
 
         // This method packages the functionality that can be executed in a secondary thread, 
@@ -135,11 +112,9 @@ namespace CaveGeneration
         // actually build the cave, something that has to be excuted on the main thread.
         void GenerateCoreData()
         {
-            var prevParameters = new MapParameters(mapParameters, isReadOnly: true);
-            var mapGenerator = new MapGenerator(prevParameters);
-            Map map = mapGenerator.GenerateMap();
+            var prevParameters = mapParameters.Copy(isReadOnly: true);
+            Map map = MapGenerator.GenerateMap(mapParameters);
             IList<Map> submaps = MapSplitter.Subdivide(map);
-            var PrepareMeshGenerators = SelectMethodForMeshGeneratorPreparation();
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
 
             this.map = map;
@@ -162,23 +137,48 @@ namespace CaveGeneration
             Cave = cave;
         }
 
+        MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
+        {
+            WallGrid wallGrid = MapConverter.ToWallGrid(map, mapParameters.SquareSize);
+            meshGenerator.Generate(wallGrid, caveType, FloorHeightMap, MainHeightMap);
+            return meshGenerator;
+        }
+
+        /// <summary>
+        /// Creates a mesh generator for each submap and populates the data in each generator necessary to produce meshes.
+        /// </summary>
+        MeshGenerator[] PrepareMeshGenerators(IList<Map> submaps)
+        {
+            var meshGenerators = new MeshGenerator[submaps.Count];
+            var actions = new Action[meshGenerators.Length];
+            for (int i = 0; i < meshGenerators.Length; i++)
+            {
+                Map currentMap = submaps[i];
+                MeshGenerator meshGenerator = InitializeMeshGenerator(currentMap);
+                int indexCopy = i; // using i directly would result in each action using the same value of i
+                actions[i] = (() => meshGenerators[indexCopy] = PrepareMeshGenerator(meshGenerator, currentMap));
+            }
+            if (debugMode)
+            {
+                Array.ForEach(actions, action => action.Invoke());
+            }
+            else
+            {
+                Utility.Threading.ParallelExecute(actions);
+            }
+            return meshGenerators;
+        }
+
+        MeshGenerator InitializeMeshGenerator(Map map)
+        {
+            return new MeshGenerator(MapSplitter.CHUNK_SIZE, map.Index.ToString());
+        }
+
         void AssignMaterials(IEnumerable<CaveComponent> components, Material material)
         {
             foreach (CaveComponent component in components)
             {
                 component.Material = material;
-            }
-        }
-
-        Func<IList<Map>, MeshGenerator[]> SelectMethodForMeshGeneratorPreparation()
-        {
-            if (debugMode)
-            {
-                return PrepareMeshGeneratorsSinglethreaded;
-            }
-            else
-            {
-                return PrepareMeshGeneratorsMultithreaded;
             }
         }
 
@@ -203,47 +203,14 @@ namespace CaveGeneration
 
         void TearDown()
         {
-            meshGenerators = null;
             EditorOnlyLog("Finished!");
             IsGenerating = false;
         }
 
-        /// <summary>
-        /// Creates a mesh generator for each submap and populates the data in each generator necessary to produce meshes.
-        /// </summary>
-        MeshGenerator[] PrepareMeshGeneratorsMultithreaded(IList<Map> submaps)
+        void ExtractHeightMaps()
         {
-            var meshGenerators = new MeshGenerator[submaps.Count];
-            var actions = new Action[meshGenerators.Length];
-            for (int i = 0; i < meshGenerators.Length; i++)
-            {
-                Map currentMap = submaps[i];
-                MeshGenerator meshGenerator = InitializeMeshGenerator(currentMap);
-                int indexCopy = i; // using i directly would result in each action using the same value of i
-                actions[i] = (() => meshGenerators[indexCopy] = PrepareMeshGenerator(meshGenerator, currentMap));
-            }
-            Utility.Threading.ParallelExecute(actions);
-            return meshGenerators;
-        }
-
-        /// <summary>
-        /// Singlethreaded version of PrepareMeshGenerators. Useful primarily for debugging and profiling. 
-        /// </summary>
-        MeshGenerator[] PrepareMeshGeneratorsSinglethreaded(IList<Map> submaps)
-        {
-            MeshGenerator[] meshGenerators = new MeshGenerator[submaps.Count];
-            for (int i = 0; i < meshGenerators.Length; i++)
-            {
-                Map currentMap = submaps[i];
-                MeshGenerator meshGenerator = InitializeMeshGenerator(currentMap);
-                meshGenerators[i] = PrepareMeshGenerator(meshGenerator, currentMap);
-            }
-            return meshGenerators;
-        }
-
-        MeshGenerator InitializeMeshGenerator(Map map)
-        {
-            return new MeshGenerator(MapSplitter.CHUNK_SIZE, map.Index.ToString());
+            FloorHeightMap = GetHeightMap<HeightMapFloor>();
+            MainHeightMap = GetHeightMap<HeightMapMain>(mapParameters.WallHeight);
         }
 
         /// <summary>
@@ -260,6 +227,18 @@ namespace CaveGeneration
             else 
             {
                 return new ConstantHeightMap(baseHeight);
+            }
+        }
+
+        IEnumerator ExecuteTask(Action action)
+        {
+            if (debugMode)
+            {
+                action();
+            }
+            else
+            {
+                yield return Utility.Threading.ExecuteAndAwait(action);
             }
         }
 
