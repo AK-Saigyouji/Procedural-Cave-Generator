@@ -40,7 +40,7 @@ namespace CaveGeneration
             }
         }
 
-        [SerializeField] CaveConfiguration configuration;
+        [SerializeField] CaveConfiguration configuration = new CaveConfiguration();
 
         // Unity's coroutines do not support return values, so we save them as instance variables instead.
         // .NET tasks do not have this limitation, but Unity's version of .NET does not have them yet (maybe in 5.6)
