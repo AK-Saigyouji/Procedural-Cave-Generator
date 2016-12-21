@@ -130,8 +130,8 @@ namespace CaveGeneration.MeshGeneration
             if (grid == null)
                 throw new System.ArgumentNullException("grid");
 
-            if (grid.Length > 200 || grid.Width > 200)
-                throw new System.ArgumentException("Grid too large for mesh generator. Max size is 200 by 200.");
+            if (grid.Length > MAX_SIZE || grid.Width > MAX_SIZE)
+                throw new System.ArgumentException(string.Format("Max grid size is {0} by {0}", MAX_SIZE));
 
             if (floorHeightMap == null)
                 throw new System.ArgumentNullException("floorHeightMap");

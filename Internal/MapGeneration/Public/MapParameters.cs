@@ -10,8 +10,6 @@ namespace CaveGeneration.MapGeneration
     [Serializable]
     public sealed class MapParameters
     {
-        public bool IsReadOnly { get; private set; }
-
         [Tooltip(Tooltips.MAP_LENGTH)]
         [SerializeField] int length;
         public int Length
@@ -69,14 +67,6 @@ namespace CaveGeneration.MapGeneration
             set { SetBorderSize(value); }
         }
 
-        [Tooltip(Tooltips.MAP_SQUARE_SIZE)]
-        [SerializeField] int squareSize;
-        public int SquareSize
-        {
-            get { return squareSize; }
-            set { SetSquareSize(value); }
-        }
-
         [Tooltip(Tooltips.MAP_MIN_WALL_SIZE)]
         [SerializeField] int minWallSize;
         public int MinWallSize
@@ -93,20 +83,10 @@ namespace CaveGeneration.MapGeneration
             set { minFloorSize = value; }
         }
 
-        [Tooltip(Tooltips.MAP_WALL_HEIGHT)]
-        [SerializeField] int wallHeight;
-        public int WallHeight
-        {
-            get { return wallHeight; }
-            set { SetWallHeight(value); }
-        }
-
         const int MINIMUM_LENGTH          = 5;
         const int MINIMUM_WIDTH           = 5;
         const int MINIMUM_BORDER_SIZE     = 0;
-        const int MINIMUM_SQUARE_SIZE     = 1;
         const int MINIMUM_FLOOR_EXPANSION = 0;
-        const int MINIMUM_WALL_HEIGHT     = 1;
         const float MINIMUM_MAP_DENSITY   = 0f;
         const float MAXIMUM_MAP_DENSITY   = 1f;
 
@@ -117,7 +97,6 @@ namespace CaveGeneration.MapGeneration
         const int DEFAULT_WIDTH           = 75;
         const int DEFAULT_BORDER_SIZE     = 0;
         const int DEFAULT_FLOOR_EXPANSION = 0;
-        const int DEFAULT_SQUARE_SIZE     = 1;
         const int DEFAULT_WALL_THRESHOLD  = 50;
         const int DEFAULT_FLOOR_THRESHOLD = 50;
         const int DEFAULT_WALL_HEIGHT     = 3;
@@ -130,15 +109,12 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Create a copy of the map parameters. 
         /// </summary>
-        /// <param name="isReadOnly">Should the copy be read-only?</param>
-        /// <returns></returns>
-        public MapParameters Copy(bool isReadOnly)
+        public MapParameters Clone()
         {
             var newParameters = (MapParameters)MemberwiseClone();
-            newParameters.IsReadOnly = IsReadOnly;
             return newParameters;
         }
-        
+
         void Reset()
         {
             length            = DEFAULT_LENGTH;
@@ -148,10 +124,8 @@ namespace CaveGeneration.MapGeneration
             useRandomSeed     = DEFAULT_SEED_STATUS;
             seed              = DEFAULT_SEED;
             borderSize        = DEFAULT_BORDER_SIZE;
-            squareSize        = DEFAULT_SQUARE_SIZE;
             minWallSize       = DEFAULT_WALL_THRESHOLD;
             minFloorSize      = DEFAULT_FLOOR_THRESHOLD;
-            wallHeight        = DEFAULT_WALL_HEIGHT;
         }
 
         public void OnValidate()
@@ -159,9 +133,7 @@ namespace CaveGeneration.MapGeneration
             length            = Mathf.Max(length, MINIMUM_WIDTH);
             width             = Mathf.Max(width, MINIMUM_WIDTH);
             floorExpansion    = Mathf.Max(floorExpansion, MINIMUM_FLOOR_EXPANSION);
-            squareSize        = Mathf.Max(squareSize, MINIMUM_SQUARE_SIZE);
             borderSize        = Mathf.Max(borderSize, MINIMUM_BORDER_SIZE);
-            wallHeight        = Mathf.Max(wallHeight, MINIMUM_WALL_HEIGHT);
             initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
         }
 
@@ -190,27 +162,13 @@ namespace CaveGeneration.MapGeneration
             SetParameter(ref floorExpansion, value, MINIMUM_FLOOR_EXPANSION, int.MaxValue);
         }
 
-        void SetSquareSize(int value)
-        {
-            SetParameter(ref squareSize, value, MINIMUM_SQUARE_SIZE, int.MaxValue);
-        }
-
         void SetMapDensity(float value)
         {
             SetParameter(ref initialMapDensity, value, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
         }
 
-        void SetWallHeight(int value)
-        {
-            SetParameter(ref wallHeight, value, MINIMUM_WALL_HEIGHT, int.MaxValue);
-        }
-
         void SetParameter<T>(ref T parameter, T value, T minimum, T maximum) where T: IComparable<T>
         {
-            if (IsReadOnly)
-            {
-                throw new InvalidOperationException("Readonly map parameters cannot be changed.");
-            }
             bool tooSmall = value.CompareTo(minimum) == -1;
             bool tooBig = value.CompareTo(maximum) == 1;
             if (tooSmall)

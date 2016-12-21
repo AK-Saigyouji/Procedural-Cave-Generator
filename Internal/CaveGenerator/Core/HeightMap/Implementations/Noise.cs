@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
+using UnityEngine.Assertions;
 
-namespace CaveGeneration.HeightMaps
+namespace CaveGeneration
 {
     /// <summary>
     /// Random number generator that produces continuously varying numbers between 0 and 1. Offers greater control
@@ -18,8 +19,7 @@ namespace CaveGeneration.HeightMaps
         const int OFFSET_MAXIMUM = 100000;
 
         /// <summary>
-        /// Create a new random number generator by specifying how layers of Perlin Noise should be added together. Using
-        /// just one layer results in ordinary Perlin Noise stretched out based on scale.
+        /// Create a new random number generator by specifying how layers of Perlin Noise should be added together.
         /// </summary>
         /// <param name="numLayers">How many layers of Perlin Noise should be used.</param>
         /// <param name="amplitudePersistance">Determines the coefficient for each layer. Layer n will receive a 
@@ -30,10 +30,21 @@ namespace CaveGeneration.HeightMaps
         /// <param name="seed">Fixes the randomness.</param>
         public LayeredNoise(int numLayers, float amplitudePersistance, float frequencyGrowth, float scale, int seed)
         {
+            Assert.IsTrue(scale > 0, "Scale must be positive");
             this.scale = scale;
             offsets = CreateOffsets(seed, numLayers);
             amplitudes = GetArrayOfExponents(amplitudePersistance, numLayers);
             frequencies = GetArrayOfExponents(frequencyGrowth, numLayers);
+        }
+
+        /// <summary>
+        /// Create a random number generator with a single layer of Perlin Noise. 
+        /// </summary>
+        /// <param name="scale">Initial frequency. Think rolling hills (low scale) vs jagged mountains (high scale).</param>
+        /// <param name="seed">Fixes the randomness.</param>
+        public LayeredNoise(float scale, int seed) : this(1, 1f, 1f, scale, seed)
+        {
+
         }
 
         /// <summary>

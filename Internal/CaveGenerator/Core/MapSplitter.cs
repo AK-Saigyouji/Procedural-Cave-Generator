@@ -16,21 +16,19 @@ namespace CaveGeneration
         /// <summary>
         /// Divide the map into smaller Map chunks.
         /// </summary>
-        /// <returns>Returns a readonly list of smaller Map objects.</returns>
-        public static IList<Map> Subdivide(Map map)
+        public static Map[] Subdivide(Map map)
         {
-            List<Map> maps = new List<Map>();
+            var maps = new List<Map>();
             int xNumComponents = Mathf.CeilToInt(map.Length / (float)CHUNK_SIZE);
             int yNumComponents = Mathf.CeilToInt(map.Width / (float)CHUNK_SIZE);
             for (int x = 0; x < xNumComponents; x++)
             {
                 for (int y = 0; y < yNumComponents; y++)
                 {
-                    Map subMap = GenerateSubMap(map, x, y);
-                    maps.Add(subMap);
+                    maps.Add(GenerateSubMap(map, x, y));
                 }
             }
-            return maps.AsReadOnly();
+            return maps.ToArray();
         }
 
         static Map GenerateSubMap(Map map, int xIndex, int yIndex)

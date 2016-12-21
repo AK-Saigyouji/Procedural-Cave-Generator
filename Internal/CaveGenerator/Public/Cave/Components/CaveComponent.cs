@@ -5,7 +5,7 @@ public abstract class CaveComponent
     public string Name { get; private set; }
     public GameObject GameObject { get; private set; }
 
-    public Mesh Mesh { get { return meshFilter.mesh; } }
+    public Mesh Mesh { get { return meshFilter.sharedMesh; } }
 
     public Material Material
     {

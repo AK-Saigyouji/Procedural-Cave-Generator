@@ -19,7 +19,7 @@ namespace CaveGeneration.MapGeneration
             if (mapParameters == null)
                 throw new System.ArgumentNullException("mapParameters");
 
-            var mapParams = mapParameters.Copy(true);
+            var mapParams = mapParameters.Clone();
 
             return MapBuilder
                 .InitializeRandomMap(mapParams.Length, mapParams.Width, mapParams.InitialDensity, mapParams.Seed)

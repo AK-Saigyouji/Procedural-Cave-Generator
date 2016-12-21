@@ -18,7 +18,7 @@ namespace CaveGeneration
         /// <summary>
         /// The actual cave GameObject itself. 
         /// </summary>
-        public GameObject      GameObject      { get; private set; }
+        public GameObject GameObject { get; private set; }
 
         /// <summary>
         /// Contains logic for testing the cave's boundaries, allowing objects to be placed dynamically. 
@@ -26,21 +26,21 @@ namespace CaveGeneration
         public CollisionTester CollisionTester { get; private set; }
 
         /// <summary>
-        /// A readonly copy of the map configuration used to generate this cave. 
+        /// The configuration used to generate this cave.
         /// </summary>
-        public MapParameters   MapParameters   { get; private set; }
+        public CaveConfiguration Configuration { get; private set; }
 
         Sector[] sectors;
 
-        internal Cave(Map map, IEnumerable<CaveMeshes> caveMeshes, MapParameters mapParameters)
+        internal Cave(CollisionTester collisionTester, IEnumerable<CaveMeshes> caveMeshes, CaveConfiguration caveConfiguration)
         {
-            Assert.IsNotNull(map);
+            Assert.IsNotNull(collisionTester);
             Assert.IsNotNull(caveMeshes);
-            Assert.IsNotNull(mapParameters);
+            Assert.IsNotNull(caveConfiguration);
 
-            MapParameters = mapParameters;
+            Configuration = caveConfiguration;
             GameObject = new GameObject("Cave");
-            CollisionTester = GetCollisionTester(map);
+            CollisionTester = collisionTester;
             BuildSectors(caveMeshes);
         }
 
@@ -64,11 +64,6 @@ namespace CaveGeneration
             return sectors;
         }
 
-        CollisionTester GetCollisionTester(Map map)
-        {
-            return new CollisionTester(new FloorTester(MapConverter.ToWallGrid(map, MapParameters.SquareSize)));
-        }
-
         void BuildSectors(IEnumerable<CaveMeshes> caveMeshes)
         {
             var sectors = new List<Sector>();
@@ -80,5 +75,5 @@ namespace CaveGeneration
             }
             this.sectors = sectors.ToArray();
         }
-    } 
+    }
 }
