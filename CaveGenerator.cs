@@ -27,20 +27,23 @@ namespace CaveGeneration
         /// </summary>
         public CaveConfiguration Configuration
         {
-            get
+            get { return config; }
+            set
             {
-                if (!IsGenerating)
+                if (value == null)
                 {
-                    return configuration;
+                    throw new ArgumentNullException();
                 }
                 else
                 {
-                    throw new InvalidOperationException("Cannot access configuration during generation.");
+                    config = value;
                 }
             }
         }
 
-        [SerializeField] CaveConfiguration configuration = new CaveConfiguration();
+        // Caution: any change to this property's name needs to be reflected in the custom inspector script
+        // for the latter to work properly.
+        [SerializeField] CaveConfiguration config = new CaveConfiguration();
 
         // Unity's coroutines do not support return values, so we save them as instance variables instead.
         // .NET tasks do not have this limitation, but Unity's version of .NET does not have them yet (maybe in 5.6)
@@ -97,15 +100,17 @@ namespace CaveGeneration
 
         // This method packages the functionality that can be executed in a secondary thread, 
         // which includes generating most of the data necessary to build a cave. BuildCave uses the generated data to 
-        // actually build the cave, something that has to be excuted on the main thread.
+        // build the cave, something that has to be excuted on the main thread as most of Unity's API
+        // is off-limits on secondary threads. 
         void GenerateCoreData()
         {
-            MapParameters prevParameters = configuration.MapParameters.Clone();
+            MapParameters prevParameters = config.MapParameters.Clone();
             Map map = MapGenerator.GenerateMap(prevParameters);
             Map[] submaps = MapSplitter.Subdivide(map);
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
+            CollisionTester collisionTester = MapConverter.ToCollisionTester(map, config.Scale);
 
-            this.collisionTester = MapConverter.ToCollisionTester(map, configuration.Scale);
+            this.collisionTester = collisionTester;
             this.meshGenerators = meshGenerators;
         }
 
@@ -117,17 +122,17 @@ namespace CaveGeneration
                 caveMeshes.Add(meshGenerator.ExtractMeshes());
                 yield return null;
             }
-            Cave cave = new Cave(collisionTester, caveMeshes, configuration);
-            AssignMaterials(cave.GetFloors(), configuration.FloorMaterial);
-            AssignMaterials(cave.GetCeilings(), configuration.CeilingMaterial);
-            AssignMaterials(cave.GetWalls(), configuration.WallMaterial);
+            Cave cave = new Cave(collisionTester, caveMeshes, config);
+            AssignMaterials(cave.GetFloors(), config.FloorMaterial);
+            AssignMaterials(cave.GetCeilings(), config.CeilingMaterial);
+            AssignMaterials(cave.GetWalls(), config.WallMaterial);
             Cave = cave;
         }
 
         MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
-            WallGrid wallGrid = MapConverter.ToWallGrid(map, configuration.Scale);
-            meshGenerator.Generate(wallGrid, configuration.CaveType, configuration.FloorHeightMap, configuration.CeilingHeightMap);
+            WallGrid wallGrid = MapConverter.ToWallGrid(map, config.Scale);
+            meshGenerator.Generate(wallGrid, config.CaveType, config.FloorHeightMap, config.CeilingHeightMap);
             return meshGenerator;
         }
 
@@ -145,7 +150,7 @@ namespace CaveGeneration
                 int indexCopy = i; // using i directly would result in each action using the same value of i
                 actions[i] = (() => meshGenerators[indexCopy] = PrepareMeshGenerator(meshGenerator, currentMap));
             }
-            if (configuration.DebugMode)
+            if (config.DebugMode)
             {
                 Array.ForEach(actions, action => action.Invoke());
             }
@@ -196,7 +201,7 @@ namespace CaveGeneration
 
         IEnumerator ExecuteTask(Action action)
         {
-            if (configuration.DebugMode)
+            if (config.DebugMode)
             {
                 action();
             }
@@ -217,12 +222,12 @@ namespace CaveGeneration
 
         void Reset()
         {
-            configuration = new CaveConfiguration();
+            config = new CaveConfiguration();
         }
 
         void OnValidate()
         {
-            configuration.OnValidate();
+            config.OnValidate();
         }
 
         /// <summary>

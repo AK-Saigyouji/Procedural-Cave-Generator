@@ -1,5 +1,7 @@
 ﻿/* This serves as a container for the configurable properties of the cave generator, and handles the related
- book-keeping regarding validation, reset logic, etc.*/
+ book-keeping regarding validation, reset logic, etc.
+ 
+  Warning: changes to the names of properties in this class may break the cave generator's custom inspector.*/
 
 using CaveGeneration.MapGeneration;
 using CaveGeneration.MeshGeneration;
@@ -7,6 +9,9 @@ using UnityEngine;
 
 namespace CaveGeneration
 {
+    /// <summary>
+    /// Holds a complete configuration for a CaveGenerator. 
+    /// </summary>
     [System.Serializable]
     public sealed class CaveConfiguration
     {
@@ -44,23 +49,31 @@ namespace CaveGeneration
             }
         }
 
+        /// <summary>
+        /// To configure the floor's height map, either use the inspector or use the HeightMapFactory class to 
+        /// generate a height map and assign it here.
+        /// </summary>
         public IHeightMap FloorHeightMap
         {
             get { return floorHeightMap ?? floorHeight.ToHeightMap(mapParameters.Seed); }
             set { floorHeightMap = value; }
         }
 
+        /// <summary>
+        /// To configure the ceiling's height map, either use the inspector or use the HeightMapFactory class to 
+        /// generate a height map and assign it here.
+        /// </summary>
         public IHeightMap CeilingHeightMap
         {
             get { return ceilingHeightMap ?? ceilingHeight.ToHeightMap(mapParameters.Seed); }
             set { ceilingHeightMap = value; }
         }
 
-        const int DEFAULT_SCALE = 1;
         const int MIN_SCALE = 1;
-        const bool DEFAULT_DEBUG_MODE = false;
+        const int DEFAULT_SCALE = 1;
         const int DEFAULT_FLOOR_HEIGHT = 0;
         const int DEFAULT_CEILING_HEIGHT = 3;
+        const bool DEFAULT_DEBUG_MODE = false;
 
         internal CaveConfiguration()
         {

@@ -3,10 +3,17 @@
 public abstract class CaveComponent
 {
     public string Name { get; private set; }
+
     public GameObject GameObject { get; private set; }
 
+    /// <summary>
+    /// The mesh for this component. Shortcut for this object's mesh filter's shared mesh.
+    /// </summary>
     public Mesh Mesh { get { return meshFilter.sharedMesh; } }
 
+    /// <summary>
+    /// The material for this component. Shortcut for the material property on this object's meshFilter component.
+    /// </summary>
     public Material Material
     {
         get { return meshRenderer.material; }

@@ -15,8 +15,8 @@ namespace CaveGeneration
 
         float scale; // Starting frequency / level of compression.
 
-        const int OFFSET_MINIMUM = -100000;
-        const int OFFSET_MAXIMUM = 100000;
+        const int OFFSET_MINIMUM = -10000;
+        const int OFFSET_MAXIMUM = 10000;
 
         /// <summary>
         /// Create a new random number generator by specifying how layers of Perlin Noise should be added together.

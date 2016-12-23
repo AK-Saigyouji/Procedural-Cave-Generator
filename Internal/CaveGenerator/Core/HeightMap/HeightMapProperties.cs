@@ -1,4 +1,11 @@
-﻿using UnityEngine;
+﻿/* This is a container for the properties needed to build a height map, intended to be configured solely
+ through the inspector (hence why the only exposed property or method is the method to convert to a height map). 
+ Height maps are unlikely candidates for objects that need to be configured dynamically at run-time, and it's 
+ very easy to screw something up when doing so. For those reasons, they're not configurable. It's still possible
+ to build height maps directly however.
+ */
+
+using UnityEngine;
 
 namespace CaveGeneration
 {
@@ -8,10 +15,6 @@ namespace CaveGeneration
     [System.Serializable]
     public sealed class HeightMapProperties
     {
-        [Tooltip(Tooltips.HEIGHT_MAP_CONSTANT)]
-        [SerializeField]
-        bool constant;
-
         [Tooltip(Tooltips.HEIGHT_MAP_MIN_HEIGHT)]
         [SerializeField]
         float minHeight;
@@ -21,57 +24,61 @@ namespace CaveGeneration
         float maxHeight;
 
         [Tooltip(Tooltips.HEIGHT_MAP_SMOOTHNESS)]
+        [Range(MIN_SMOOTHNESS, MAX_SMOOTHNESS)]
         [SerializeField]
         float smoothness;
 
         [Tooltip(Tooltips.HEIGHT_MAP_NUM_LAYERS)]
+        [Range(MIN_NUM_LAYERS, MAX_NUM_LAYERS)]
         [SerializeField]
         int numLayers;
 
-        [Tooltip(Tooltips.HEIGHT_MAP_AMP_DECAY)]
+        [Tooltip(Tooltips.HEIGHT_MAP_CONTRIBUTION_MULT)]
         [Range(MIN_CONTRIBUTION_MULT, MAX_CONTRIBUTION_MULT)]
         [SerializeField]
         float contributionMult;
 
         [Tooltip(Tooltips.HEIGHT_MAP_COMPRESSION_MULT)]
+        [Range(MIN_COMPRESSION_MULT, MAX_COMPRESSION_MULT)]
         [SerializeField]
         float compressionMult;
 
+        [Tooltip(Tooltips.HEIGHT_MAP_CONSTANT)]
+        [SerializeField]
+        bool isConstant;
+
         const int MIN_NUM_LAYERS = 1;
         const int MAX_NUM_LAYERS = 10;
-        const int MIN_COMPRESSION_MULT = 1;
+        const float MIN_SMOOTHNESS = 5f;
+        const float MAX_SMOOTHNESS = 100f;
+        const float MIN_COMPRESSION_MULT = 1f;
+        const float MAX_COMPRESSION_MULT = 5f;
         const float MIN_COMPRESSION = 1f;
         const float MAX_COMPRESSION = 100f;
         const float MIN_CONTRIBUTION_MULT = 0f;
         const float MAX_CONTRIBUTION_MULT = 1f;
 
+        const int DEFAULT_NUM_LAYERS = 1;
+        const bool DEFAULT_IS_CONSTANT = true;
         const float DEFAULT_COMPRESSION = 10f;
         const float DEFAULT_CONTRIBUTION_MULT = 0.5f;
-        const int DEFAULT_COMPRESSION_MULT = 2;
-        const int DEFAULT_NUM_LAYERS = 1;
+        const float DEFAULT_COMPRESSION_MULT = 2f;
 
         internal HeightMapProperties(int startHeight = 0)
         {
             minHeight = startHeight;
             maxHeight = startHeight;
-            smoothness = DEFAULT_COMPRESSION;
+
+            smoothness       = DEFAULT_COMPRESSION;
             contributionMult = DEFAULT_CONTRIBUTION_MULT;
-            compressionMult = DEFAULT_COMPRESSION_MULT;
-            numLayers = DEFAULT_NUM_LAYERS;
-            constant = true;
+            compressionMult  = DEFAULT_COMPRESSION_MULT;
+            numLayers        = DEFAULT_NUM_LAYERS;
+            isConstant         = DEFAULT_IS_CONSTANT;
         }
 
         public void OnValidate()
         {
-            maxHeight        = Mathf.Max(minHeight, maxHeight); 
-            compressionMult  = Mathf.Max(compressionMult, MIN_COMPRESSION_MULT);
-            smoothness      = Mathf.Clamp(smoothness, MIN_COMPRESSION, MAX_COMPRESSION);
-            numLayers        = Mathf.Clamp(numLayers, MIN_NUM_LAYERS, MAX_NUM_LAYERS);
-            contributionMult = Mathf.Clamp(contributionMult, MIN_CONTRIBUTION_MULT, MAX_CONTRIBUTION_MULT);
-            if (constant)
-            {
-                maxHeight = minHeight;
-            }
+            maxHeight = Mathf.Max(minHeight, maxHeight); 
         }
 
         /// <summary>
@@ -79,7 +86,7 @@ namespace CaveGeneration
         /// </summary>
         public MeshGeneration.IHeightMap ToHeightMap(int seed)
         {
-            if (constant)
+            if (isConstant)
             {
                 return HeightMapFactory.Build(minHeight);
             }
