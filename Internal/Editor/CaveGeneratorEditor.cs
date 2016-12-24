@@ -2,10 +2,7 @@
 using UnityEngine.Assertions;
 using UnityEditor;
 using CaveGeneration;
-using CaveGeneration.MeshGeneration;
 using System.Collections.Generic;
-using System.Linq;
-using System.Collections;
 
 [CustomEditor(typeof(CaveGenerator))]
 public class CaveGeneratorEditor : Editor
@@ -56,7 +53,6 @@ public class CaveGeneratorEditor : Editor
 
     public override void OnInspectorGUI()
     {
-        serializedObject.Update();
         DrawProperties();
         serializedObject.ApplyModifiedProperties();
 
@@ -119,18 +115,13 @@ public class CaveGeneratorEditor : Editor
                 SerializedProperty height = property.FindPropertyRelative(HEIGHT_MAP_HEIGHT);
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(height, new GUIContent(CONSTANT_HEIGHT_LABEL));
+                DrawProperty(isConstant);
                 EditorGUI.indentLevel--;
             }
         }
         else
         {
             DrawProperty(property);
-        }
-        if (property.isExpanded) 
-        {
-            EditorGUI.indentLevel++; 
-            DrawProperty(isConstant);
-            EditorGUI.indentLevel--;
         }
     }
 
