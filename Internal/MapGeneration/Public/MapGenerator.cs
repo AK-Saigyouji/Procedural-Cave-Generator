@@ -11,6 +11,8 @@ namespace CaveGeneration.MapGeneration
     /// </summary>
     public static class MapGenerator
     {
+        const int BASE_TUNNEL_RADIUS = 1;
+
         /// <summary>
         /// Generates a randomized Map object based on the map generator's properties. 
         /// </summary>
@@ -25,7 +27,7 @@ namespace CaveGeneration.MapGeneration
                 .InitializeRandomMap(mapParams.Length, mapParams.Width, mapParams.InitialDensity, mapParams.Seed)
                 .Smooth()
                 .RemoveSmallFloorRegions(mapParams.MinFloorSize)
-                .ConnectFloors(mapParams.FloorExpansion)
+                .ConnectFloors(tunnelRadius: BASE_TUNNEL_RADIUS + mapParams.FloorExpansion)
                 .ExpandRegions(mapParams.FloorExpansion)
                 .RemoveSmallWallRegions(mapParams.MinWallSize)
                 .Smooth()
