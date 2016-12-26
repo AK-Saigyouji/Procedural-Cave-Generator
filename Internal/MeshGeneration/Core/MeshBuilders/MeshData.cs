@@ -28,7 +28,6 @@ namespace CaveGeneration.MeshGeneration
             mesh.uv = uv;
             mesh.RecalculateNormals();
             mesh.RecalculateTangents(vertices, triangles, uv, mesh.normals);
-            mesh.UploadMeshData(true);
             return mesh;
         }
 
@@ -37,7 +36,6 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public MeshData Clone()
         {
-            // We cannot simply call MemberwiseClone as that would create a shallow copy.
             var mesh = new MeshData();
             mesh.vertices = (Vector3[])vertices.Clone();
             mesh.triangles = (int[])triangles.Clone();

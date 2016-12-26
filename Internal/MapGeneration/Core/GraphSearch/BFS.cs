@@ -9,9 +9,10 @@ namespace CaveGeneration.MapGeneration
     {
         /// <summary>
         /// Get a list of all the connected regions in the map of the given type. Two tiles are part of the same
-        /// region if one can be reached from the other by a sequence of horizontal and vertical steps. 
+        /// region if one can be reached from the other by a sequence of horizontal and vertical steps through
+        /// the same tile type.
         /// </summary>
-        public static List<TileRegion> GetRegions(Map map, Tile tileType)
+        public static List<TileRegion> GetConnectedRegions(Map map, Tile tileType)
         {
             Assert.IsNotNull(map);
             var regions = new List<TileRegion>();

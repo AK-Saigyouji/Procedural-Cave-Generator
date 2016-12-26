@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -40,7 +39,7 @@ namespace CaveGeneration.MeshGeneration
         static Vector2[] ComputeFlatUVArray(Vector3[] vertices)
         {
             const float UVSCALE = 50;
-            Vector2[] uv = new Vector2[vertices.Length];
+            var uv = new Vector2[vertices.Length];
             for (int i = 0; i < vertices.Length; i++)
             {
                 float percentX = vertices[i].x / UVSCALE;

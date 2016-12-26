@@ -28,6 +28,7 @@ namespace CaveGeneration.MeshGeneration
             return a.value != b.value;
         }
 
+        // This implicit conversion allows us to use VertexIndex to index into arrays.
         public static implicit operator int(VertexIndex index)
         {
             return index.value;

@@ -27,7 +27,7 @@ namespace CaveGeneration
         void CreateMesh()
         {
             var wallGrid = new WallGrid(new byte[size, size], Vector3.zero);
-            IHeightMap heightMap = parameters.ToHeightMap(0);
+            IHeightMap heightMap = parameters.ToHeightMap();
             CaveMeshes meshes = MeshGenerator.GenerateCaveMeshes(wallGrid, CaveType.Isometric, heightMap, heightMap);
             mesh = meshes.Floor;
         }

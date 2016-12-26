@@ -50,22 +50,22 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// To configure the floor's height map, either use the inspector or use the HeightMapFactory class to 
-        /// generate a height map and assign it here.
+        /// To configure the floor's height map, either use the inspector to set properties 
+        /// or use the HeightMapFactory class to generate a height map and assign it here.
         /// </summary>
         public IHeightMap FloorHeightMap
         {
-            get { return floorHeightMap ?? floorHeight.ToHeightMap(mapParameters.Seed); }
+            get { return floorHeightMap ?? floorHeight.ToHeightMap(); }
             set { floorHeightMap = value; }
         }
 
         /// <summary>
-        /// To configure the ceiling's height map, either use the inspector or use the HeightMapFactory class to 
-        /// generate a height map and assign it here.
+        /// To configure the ceiling's height map, either use the inspector to set properties 
+        /// or use the HeightMapFactory class to generate a height map and assign it here.
         /// </summary>
         public IHeightMap CeilingHeightMap
         {
-            get { return ceilingHeightMap ?? ceilingHeight.ToHeightMap(mapParameters.Seed); }
+            get { return ceilingHeightMap ?? ceilingHeight.ToHeightMap(); }
             set { ceilingHeightMap = value; }
         }
 

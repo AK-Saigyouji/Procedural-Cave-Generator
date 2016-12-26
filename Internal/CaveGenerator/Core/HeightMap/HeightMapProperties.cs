@@ -43,6 +43,9 @@ namespace CaveGeneration
         [SerializeField]
         float compressionMult;
 
+        [SerializeField]
+        int seed;
+
         [Tooltip(Tooltips.HEIGHT_MAP_CONSTANT)]
         [SerializeField]
         bool isConstant;
@@ -73,7 +76,9 @@ namespace CaveGeneration
             contributionMult = DEFAULT_CONTRIBUTION_MULT;
             compressionMult  = DEFAULT_COMPRESSION_MULT;
             numLayers        = DEFAULT_NUM_LAYERS;
-            isConstant         = DEFAULT_IS_CONSTANT;
+            isConstant       = DEFAULT_IS_CONSTANT;
+
+            seed = System.Guid.NewGuid().GetHashCode();
         }
 
         public void OnValidate()
@@ -84,7 +89,7 @@ namespace CaveGeneration
         /// <summary>
         /// Construct a heightmap from these properties.
         /// </summary>
-        public MeshGeneration.IHeightMap ToHeightMap(int seed)
+        public MeshGeneration.IHeightMap ToHeightMap()
         {
             if (isConstant)
             {

@@ -4,18 +4,19 @@ by choosing which of the methods in this class should be used and in what order.
 for an example. 
  
   Each public method is an extension method for the Map class, and returns the resulting Map object, allowing
-the methods to be chained together. These methods are not necessarily side-effect free, however - in many cases
-the original Map object is returned.*/
+the methods to be chained together. Each method is a pure function: they don't mutate any state (in particular,
+the input map) and instead output a copy of the map with the resulting changes.*/
 
-using UnityEngine;
-using System.Collections.Generic;
-using CaveGeneration.MapGeneration.Connectivity;
 using System;
+using System.Collections.Generic;
+using UnityEngine;
+using CaveGeneration.MapGeneration.Connectivity;
 
 namespace CaveGeneration.MapGeneration
 {
     /// <summary>
-    /// Offers a variety of extension methods for generating Map objects. 
+    /// Offers a variety of extension methods for generating Map objects. All methods leave the original intact,
+    /// returning a copy with the modifications.
     /// </summary>
     static class MapBuilder
     {
@@ -46,17 +47,14 @@ namespace CaveGeneration.MapGeneration
         /// well-structured but a bit jagged. Setting higher not recommended.</param>
         public static Map Smooth(this Map inputMap, int iterations = SMOOTHING_ITERATIONS)
         {
-            Map map = inputMap.Clone();
-
-            Map currentMap = map;
-            Map tempMap = map.Clone();
+            Map currentMap = inputMap.Clone();
+            Map smoothedMap = inputMap.Clone();
             for (int i = 0; i < iterations; i++)
             {
-                tempMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y));
-                Swap(ref currentMap, ref tempMap);
+                smoothedMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y));
+                Swap(ref currentMap, ref smoothedMap);
             }
-            map = currentMap;
-            return map;
+            return currentMap;
         }
 
         /// <summary>
@@ -69,7 +67,6 @@ namespace CaveGeneration.MapGeneration
             if (radius == 0) return inputMap.Clone();
 
             Map map = inputMap.Clone();
-            radius = Mathf.Min(radius, Mathf.Max(inputMap.Length, inputMap.Width));
             inputMap.ForEachInterior((x, y) => 
             {
                 if (inputMap.IsFloor(x, y)) ClearNeighbours(map, x, y, radius);
@@ -107,7 +104,7 @@ namespace CaveGeneration.MapGeneration
             if (tunnelRadius == 0) return inputMap.Clone();
 
             Map map = inputMap.Clone();
-            List<TileRegion> floors = BFS.GetRegions(map, Tile.Floor);
+            List<TileRegion> floors = BFS.GetConnectedRegions(map, Tile.Floor);
             ConnectionInfo[] finalConnections = MapConnector.GetConnections(map, floors);
             Array.ForEach(finalConnections, connection => CreatePassage(map, connection, tunnelRadius));
             return map;
@@ -115,7 +112,7 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// Add walls around the map of given thickness. Note that a border of thickness n will result in 2n being added to both
-        /// width and length.
+        /// width and length of the resulting map.
         /// </summary>
         /// <param name="borderSize">How thick the border should be on each side.</param>
         public static Map ApplyBorder(this Map inputMap, int borderSize)
@@ -165,7 +162,6 @@ namespace CaveGeneration.MapGeneration
 
         static void CreatePassage(Map map, ConnectionInfo connection, int tunnelingRadius)
         {
-            tunnelingRadius = Mathf.Max(tunnelingRadius, 1);
             foreach (Coord tile in GetPath(connection))
             {
                 ClearNeighbours(map, tile, tunnelingRadius);

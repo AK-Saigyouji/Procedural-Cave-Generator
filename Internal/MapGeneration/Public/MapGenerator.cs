@@ -16,12 +16,10 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Generates a randomized Map object based on the map generator's properties. 
         /// </summary>
-        public static Map GenerateMap(MapParameters mapParameters)
+        public static Map GenerateMap(MapParameters mapParams)
         {
-            if (mapParameters == null)
-                throw new System.ArgumentNullException("mapParameters");
-
-            var mapParams = mapParameters.Clone();
+            if (mapParams == null)
+                throw new System.ArgumentNullException("mapParams");
 
             return MapBuilder
                 .InitializeRandomMap(mapParams.Length, mapParams.Width, mapParams.InitialDensity, mapParams.Seed)

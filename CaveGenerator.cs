@@ -41,7 +41,7 @@ namespace CaveGeneration
             }
         }
 
-        // Caution: any change to this property's name needs to be reflected in the custom inspector script
+        // Caution: any change to this field's name needs to be reflected in the custom inspector script
         // for the latter to work properly.
         [SerializeField] CaveConfiguration config = new CaveConfiguration();
 
@@ -104,8 +104,7 @@ namespace CaveGeneration
         // is off-limits on secondary threads. 
         void GenerateCoreData()
         {
-            MapParameters prevParameters = config.MapParameters.Clone();
-            Map map = MapGenerator.GenerateMap(prevParameters);
+            Map map = MapGenerator.GenerateMap(config.MapParameters);
             Map[] submaps = MapSplitter.Subdivide(map);
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
             CollisionTester collisionTester = MapConverter.ToCollisionTester(map, config.Scale);
