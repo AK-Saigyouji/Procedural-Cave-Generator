@@ -15,9 +15,6 @@ namespace CaveGeneration
     [System.Serializable]
     public sealed class CaveConfiguration
     {
-        IHeightMap floorHeightMap;
-        IHeightMap ceilingHeightMap;
-
         [SerializeField] CaveType caveType;
         [SerializeField] MapParameters mapParameters;
 
@@ -31,6 +28,7 @@ namespace CaveGeneration
         [SerializeField, Tooltip(Tooltips.CAVE_GEN_SCALE)] int scale;
         [SerializeField, Tooltip(Tooltips.CAVE_GEN_DEBUG_MODE)] bool debugMode;
 
+        // Auto-properties won't get serialized properly, so their backing fields are explicitly implemented.
         public CaveType CaveType { get { return caveType; }  set { caveType  = value; } }
         public int Scale         { get { return scale; }     set { scale     = value; } }
         public bool DebugMode    { get { return debugMode; } set { debugMode = value; } }
@@ -50,23 +48,21 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// To configure the floor's height map, either use the inspector to set properties 
-        /// or use the HeightMapFactory class to generate a height map and assign it here.
+        /// To configure the floor's height map, use the inspector. Alternatively, supply a height map
+        /// to the CaveGenerator directly when generating the cave. 
         /// </summary>
         public IHeightMap FloorHeightMap
         {
-            get { return floorHeightMap ?? floorHeight.ToHeightMap(); }
-            set { floorHeightMap = value; }
+            get { return floorHeight.ToHeightMap(); }
         }
 
         /// <summary>
-        /// To configure the ceiling's height map, either use the inspector to set properties 
-        /// or use the HeightMapFactory class to generate a height map and assign it here.
+        /// To configure the ceiling's height map, use the inspector. Alternatively, supply a height map
+        /// to the CaveGenerator directly when generating the cave.
         /// </summary>
         public IHeightMap CeilingHeightMap
         {
-            get { return ceilingHeightMap ?? ceilingHeight.ToHeightMap(); }
-            set { ceilingHeightMap = value; }
+            get { return ceilingHeight.ToHeightMap(); }
         }
 
         const int MIN_SCALE = 1;
@@ -94,8 +90,8 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Creates and return a copy of this object. Performs a deep copy with the exception of the materials,
-        /// which will not be duplicated.
+        /// Creates and returns a copy of this object. The materials are shallow copied, everything else is 
+        /// deep copied. 
         /// </summary>
         public CaveConfiguration Clone()
         {

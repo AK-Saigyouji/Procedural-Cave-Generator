@@ -3,7 +3,6 @@
 
 using UnityEngine;
 using UnityEngine.Assertions;
-using CaveGeneration.MapGeneration;
 using CaveGeneration.MeshGeneration;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +37,7 @@ namespace CaveGeneration
             Assert.IsNotNull(caveMeshes);
             Assert.IsNotNull(caveConfiguration);
 
-            Configuration = caveConfiguration;
+            Configuration = caveConfiguration.Clone();
             GameObject = new GameObject("Cave");
             CollisionTester = collisionTester;
             BuildSectors(caveMeshes);

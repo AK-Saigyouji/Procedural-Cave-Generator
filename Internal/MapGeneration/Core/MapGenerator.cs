@@ -1,9 +1,4 @@
-﻿#if UNITY_EDITOR
-using Stopwatch = System.Diagnostics.Stopwatch;
-using CaveGeneration.Utility;
-#endif
-
-namespace CaveGeneration.MapGeneration
+﻿namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// Generates a randomized cave-like Map object with the property that every floor tile is reachable from every other
@@ -25,10 +20,10 @@ namespace CaveGeneration.MapGeneration
                 .InitializeRandomMap(mapParams.Length, mapParams.Width, mapParams.InitialDensity, mapParams.Seed)
                 .Smooth()
                 .RemoveSmallFloorRegions(mapParams.MinFloorSize)
-                .ConnectFloors(tunnelRadius: BASE_TUNNEL_RADIUS + mapParams.FloorExpansion)
                 .ExpandRegions(mapParams.FloorExpansion)
+                .ConnectFloors(tunnelRadius: BASE_TUNNEL_RADIUS + mapParams.FloorExpansion)
+                .SmoothOnlyWalls()
                 .RemoveSmallWallRegions(mapParams.MinWallSize)
-                .Smooth()
                 .ApplyBorder(mapParams.BorderSize);
         }
     } 

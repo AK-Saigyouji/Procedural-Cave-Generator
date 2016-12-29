@@ -1,14 +1,13 @@
 ﻿/* This class represents a 2D grid of Tiles, and has functionality focused on facilitating the generation
- * of such a grid. 
- * 
- * A major design decision was the use of array type for the underlying grid. The three obvious choices
- * are a 2D array, a jagged array, and a flat array. Initially 2D arrays were chosen for maximal readability. 
- * The other two options were tested, but found to offer no significant performance improvement, so 2D arrays remain,
- * despite normally offering significantly worse performance.*/ 
+of such a grid. 
+ 
+ A major design decision was the use of array type for the underlying grid. The three obvious choices
+are a 2D array, a jagged array, and a flat array. Initially 2D arrays were chosen for maximal readability. 
+The other two options were tested, but found to offer no significant performance improvement. Thus 2D arrays remain,
+despite normally offering significantly worse performance.
+ */
 
 using System;
-using UnityEngine;
-using System.Collections.Generic;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -18,6 +17,7 @@ namespace CaveGeneration.MapGeneration
         Wall = 1
     }
 
+    [Serializable]
     /// <summary>
     /// The 2D grid-based Map. Points in the map are given by integer pairs like a 2d array. Each point is either 
     /// a floor or wall tile. Offers a variety of methods tailored to map construction.
@@ -26,11 +26,13 @@ namespace CaveGeneration.MapGeneration
     {
         public int Length { get { return length; } }
         public int Width { get { return width; } }
-        public Coord Index { get; private set; }
+        public Coord Index { get { return index; } private set { index = value; } }
 
         Tile[,] grid;
+
         int length;
         int width;
+        Coord index;
 
         public Map(int length, int width)
         {
@@ -57,13 +59,13 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Copies the values from the other map. Maps must have the same dimensions (length and width).
+        /// Copies the tiles from the other map. Maps must have the same dimensions (length and width).
         /// </summary>
-        /// <exception cref="System.ArgumentException"></exception>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Copy(Map other)
         {
-            if (other == null) throw new System.ArgumentNullException();
+            if (other == null) throw new ArgumentNullException();
             if (length != other.length || width != other.width)
                 throw new ArgumentException("Cannot copy map with different dimensions!");
 
@@ -95,7 +97,7 @@ namespace CaveGeneration.MapGeneration
         /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
         /// so use only if this tile is in the interior of the map.
         /// </summary>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public bool IsAdjacentToWallFast(int x, int y)
         {
             return grid[x - 1, y] == Tile.Wall || grid[x + 1, y] == Tile.Wall 
@@ -106,7 +108,7 @@ namespace CaveGeneration.MapGeneration
         /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
         /// so use only if this tile is in the interior of the map.
         /// </summary>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public bool IsAdjacentToFloorFast(int x, int y)
         {
             return grid[x - 1, y] == Tile.Floor || grid[x + 1, y] == Tile.Floor
@@ -134,7 +136,7 @@ namespace CaveGeneration.MapGeneration
         /// Note that the input coordinates must be contained in the interior of the map (not on the boundary);
         /// </summary>
         /// <returns>Number of walls surrounding the given tile, between 0 and 8 inclusive.</returns>
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public int GetSurroundingWallCount(int x, int y)
         {
             return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]  // top-left, top, top-right
@@ -205,25 +207,25 @@ namespace CaveGeneration.MapGeneration
             return bools;
         }
 
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public bool IsFloor(int x, int y)
         {
             return grid[x, y] == Tile.Floor;
         }
 
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public bool IsFloor(Coord tile)
         {
             return grid[tile.x, tile.y] == Tile.Floor;
         }
 
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public bool IsWall(int x, int y)
         {
             return grid[x, y] == Tile.Wall;
         }
 
-        /// <exception cref="System.IndexOutOfRangeException"></exception>
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public bool IsWall(Coord tile)
         {
             return grid[tile.x,tile.y] == Tile.Wall;
@@ -315,6 +317,57 @@ namespace CaveGeneration.MapGeneration
                 for (int x = 1; x < length - 1; x++)
                 {
                     grid[x, y] = transformation(x, y);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reassigns every tile that satisfies the provided predicate, using the provided transformation.
+        /// </summary>
+        public void Transform(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    if (predicate(x, y))
+                    {
+                        grid[x, y] = transformation(x, y);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Reassigns every boundary tile that satisfies the provided predicate, using the provided transformation.
+        /// </summary>
+        public void TransformBoundary(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
+        {
+            for (int x = 0; x < length; x++)
+            {
+                if (predicate(x, 0))          grid[x, 0] = transformation(x, 0);
+                if (predicate(x, width - 1))  grid[x, width - 1] = transformation(x, width - 1);
+            }
+            for (int y = 1; y < width - 1; y++)
+            {
+                if (predicate(0, y))          grid[0, y] = transformation(0, y);
+                if (predicate(length - 1, y)) grid[length - 1, y] = transformation(length - 1, y);
+            }
+        }
+
+        /// <summary>
+        /// Reassigns every interior tile satisfying the provided predicate, using the provided transformation.
+        /// </summary>
+        public void TransformInterior(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
+        {
+            for (int y = 1; y < width - 1; y++)
+            {
+                for (int x = 1; x < length - 1; x++)
+                {
+                    if (predicate(x, y))
+                    {
+                        grid[x, y] = transformation(x, y);
+                    }
                 }
             }
         }

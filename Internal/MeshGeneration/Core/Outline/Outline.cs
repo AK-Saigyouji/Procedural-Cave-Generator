@@ -21,7 +21,7 @@ namespace CaveGeneration.MeshGeneration
     {
         public int NumVertices { get { return indices.Length; } }
         public int NumEdges { get { return indices.Length - 1; } }
-        public float Length { get { return length; } }
+        public float PerimeterLength { get { return length; } }
 
         VertexIndex[] indices;
         Vector3[] vertices;

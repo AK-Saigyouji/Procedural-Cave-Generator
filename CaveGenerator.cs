@@ -18,7 +18,7 @@ namespace CaveGeneration
     {
         /// <summary>
         /// Is the cave generator currently generating a cave? Attempting to extract or generate a cave while a cave is 
-        /// being generated will have no effect. 
+        /// being generated will result in an InvalidOperationException.
         /// </summary>
         public bool IsGenerating { get; private set; }
 
@@ -36,7 +36,7 @@ namespace CaveGeneration
                 }
                 else
                 {
-                    config = value;
+                    config = value.Clone();
                 }
             }
         }
@@ -50,22 +50,29 @@ namespace CaveGeneration
         MeshGenerator[] meshGenerators;
         CollisionTester collisionTester;
 
+        IHeightMap ceilingHeightMap;
+        IHeightMap floorHeightMap;
+
         Cave Cave;
 
         /// <summary>
         /// Main method for creating cave objects. Call ExtractCave to get a reference to the most recently generated cave.
         /// If ExtractCave is not called, next call to Generate will destroy the most recently generated cave. Note
         /// that this method is asynchronous so control will be returned before the cave is created. Supply a callback
-        /// to consume results as soon as generator is finished.
+        /// to consume results as soon as generator is finished. If a given heightmap is left null, the inspector
+        /// values will be used to generate the corresponding heightmap. 
         /// </summary>
         /// <param name="callback">Optional function to call when generation is finished.</param>
-        public void Generate(Action callback = null)
+        /// <param name="floorHeightMap">Height map for the floor. If null, will use inspector values to build.</param>
+        /// <param name="ceilingHeightMap">Height map for the ceiling. If null, will use inspector values to build.</param>
+        /// <exception cref="InvalidOperationException"></exception>
+        public void Generate(Action callback = null, IHeightMap floorHeightMap = null, IHeightMap ceilingHeightMap = null)
         {
             if (IsGenerating)
-            {
-                EditorOnlyLog("A cave is already being generated, must finish before another can begin.");
-                return;
-            }
+                throw new InvalidOperationException("Cave is already being generated.");
+
+            this.floorHeightMap = floorHeightMap ?? config.FloorHeightMap;
+            this.ceilingHeightMap = ceilingHeightMap ?? config.CeilingHeightMap;
             DestroyCurrentCave();
             StartCoroutine(GenerateCaveAsync(callback));
         }
@@ -131,7 +138,7 @@ namespace CaveGeneration
         MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
         {
             WallGrid wallGrid = MapConverter.ToWallGrid(map, config.Scale);
-            meshGenerator.Generate(wallGrid, config.CaveType, config.FloorHeightMap, config.CeilingHeightMap);
+            meshGenerator.Generate(wallGrid, config.CaveType, floorHeightMap, ceilingHeightMap);
             return meshGenerator;
         }
 

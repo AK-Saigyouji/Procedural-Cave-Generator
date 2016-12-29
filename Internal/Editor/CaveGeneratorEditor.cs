@@ -104,7 +104,7 @@ public class CaveGeneratorEditor : Editor
     void DrawHeightMapProperty(SerializedProperty property)
     {
         // Editor scripting is generally a hacky ordeal. Here we want to either reveal
-        // all the properties for height maps, or just a single height value, based on whether the hidden
+        // all the properties for height maps, or just a single height value, based on whether the
         // variable Constant is flagged.
         SerializedProperty isConstant = property.FindPropertyRelative(HEIGHT_MAP_IS_CONSTANT);
         if (isConstant.boolValue)

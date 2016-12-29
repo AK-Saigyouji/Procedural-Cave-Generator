@@ -18,7 +18,7 @@ namespace CaveGeneration.MapGeneration
     /// Offers a variety of extension methods for generating Map objects. All methods leave the original intact,
     /// returning a copy with the modifications.
     /// </summary>
-    static class MapBuilder
+    public static class MapBuilder
     {
         const int SMOOTHING_ITERATIONS = 5;
         const int SMOOTHING_THRESHOLD = 4;
@@ -39,19 +39,38 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Uses synchronous cellular automata to smooth out the map. Each cell becomes more like its neighbors,
-        /// turning noise into regions and smoothing out sharp edges.
+        /// Smooth out the grid by making each point in the interior more like its neighbours. i.e. floors surounded
+        /// by walls become walls, and vice versa. Caution: may affect connectivity.
         /// </summary>
         /// <param name="iterations">The number of smoothing passes to perform. The default is sufficient to
         /// turn completely random noise into smooth caverns. Can set to a lower number if map is already 
-        /// well-structured but a bit jagged. Setting higher not recommended.</param>
+        /// well-structured but a bit jagged. Higher than 10 will be clamped to 10.</param>
         public static Map Smooth(this Map inputMap, int iterations = SMOOTHING_ITERATIONS)
         {
+            iterations = Mathf.Min(10, iterations);
             Map currentMap = inputMap.Clone();
             Map smoothedMap = inputMap.Clone();
             for (int i = 0; i < iterations; i++)
             {
                 smoothedMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y));
+                Swap(ref currentMap, ref smoothedMap);
+            }
+            return currentMap;
+        }
+
+        /// <summary>
+        /// Similar to Smooth, but only affects walls. Useful for smoothing out rough edges without affecting
+        /// connectivity. 
+        /// </summary>
+        /// <param name="iterations">The number of smoothing passes to perform. Higher than 10 will be clamped to 10.</param>
+        public static Map SmoothOnlyWalls(this Map inputMap, int iterations = SMOOTHING_ITERATIONS)
+        {
+            iterations = Mathf.Min(10, iterations);
+            Map currentMap = inputMap.Clone();
+            Map smoothedMap = inputMap.Clone();
+            for (int i = 0; i < iterations; i++)
+            {
+                smoothedMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y), currentMap.IsWall);
                 Swap(ref currentMap, ref smoothedMap);
             }
             return currentMap;
@@ -181,12 +200,14 @@ namespace CaveGeneration.MapGeneration
             // Look at each x,y in a square surrounding the center, but only remove those that fall within
             // the circle of given radius. 
             int squaredRadius = radius * radius;
-            for (int x = xMin; x <= xMax; x++)
+            for (int y = yMin; y <= yMax; y++)
             {
-                for (int y = yMin; y <= yMax; y++)
+                for (int x = xMin; x <= xMax; x++)
                 {
-                    Coord testCoord = new Coord(x, y);
-                    if (IsInCircle(testCoord, center, squaredRadius)) map[x, y] = Tile.Floor;
+                    if (IsInCircle(new Coord(x, y), center, squaredRadius))
+                    {
+                        map[x, y] = Tile.Floor;
+                    }
                 }
             }
         }
