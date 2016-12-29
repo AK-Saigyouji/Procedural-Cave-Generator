@@ -1,6 +1,6 @@
 ﻿using System;
 using UnityEngine;
-using MeshTangentExtension;
+using MeshTangentCalculator;
 
 namespace CaveGeneration.MeshGeneration
 {
