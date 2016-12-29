@@ -88,7 +88,13 @@ namespace CaveGeneration.MeshGeneration
 
         static float ComputeUVIncrement(Outline outline)
         {
-            return ((int)(outline.Length / UVSCALE)) / outline.Length;
+            // The following number is meant to be approximately 1/UVSCALE, but adjusted slightly
+            // to ensure that the final vector in the outline gets a u-value that is an integer multiple. 
+            // Otherwise, the texture at the beginning of the outline won't match the texture at the end.
+            // i.e. we require that outline.PerimeterLength * uvIncrement is an integer. 
+            float uvIncrement = Mathf.Round(outline.PerimeterLength / UVSCALE) / outline.PerimeterLength;
+            uvIncrement = Mathf.Max(uvIncrement, 1f / UVSCALE); // In case uvIncremenet = 0
+            return uvIncrement;
         }
 
         static int[] GetTriangles(Outline[] outlines)
