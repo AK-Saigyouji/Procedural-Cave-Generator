@@ -54,73 +54,7 @@ namespace CaveGeneration.MapGeneration
         static bool[,] InitializeVisitedArray(Map map, Tile tileType)
         {
             bool[,] visited = map.ToBoolArray(GetOpposite(tileType));
-            if (tileType == Tile.Wall) VisitBoundaryRegion(visited, map);
             return visited;
-        }
-
-        /// <summary>
-        /// Visits all tiles corresponding to walls connected to the outermost boundary of the map. Doing this ensures
-        /// that every remaining point in the map has four neighbors, removing the need for four boundary checks every time a 
-        /// new tile is visited.
-        /// </summary>
-        static void VisitBoundaryRegion(bool[,] visited, Map map)
-        {
-            Assert.IsTrue(map.Length > 1 && map.Width > 1, "Map is too small.");
-            VisitColumns(visited, 0, 1, map.Length - 2, map.Length - 1);
-            VisitRows(visited, 0, 1, map.Width - 2, map.Width - 1);
-            Queue<Coord> queue = InitializeBoundaryQueue(map);
-            GetTilesReachableFromQueue(queue, visited);
-        }
-
-        static void VisitColumns(bool[,] visited, params int[] columns)
-        {
-            int width = visited.GetLength(1);
-            foreach (int columnNumber in columns)
-            {
-                for (int y = 0; y < width; y++)
-                {
-                    visited[columnNumber, y] = true;
-                }
-            }
-        }
-
-        static void VisitRows(bool[,] visited, params int[] rows)
-        {
-            int length = visited.GetLength(0);
-            foreach (int rowNumber in rows)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    visited[x, rowNumber] = true;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Prepares a queue of coordinates corresponding to all the wall tiles exactly 1 unit away from the boundary. A BFS
-        /// from this queue will find all the wall tiles connected to the boundary. 
-        /// </summary>
-        static Queue<Coord> InitializeBoundaryQueue(Map map)
-        {
-            int length = map.Length, width = map.Width;
-            var queue = new Queue<Coord>();
-            for (int x = 1; x < length - 1; x++)
-            {
-                if (map.IsWall(x, 1)) // left
-                    queue.Enqueue(new Coord(x, 1));
-
-                if (map.IsWall(x, width - 2)) // right
-                    queue.Enqueue(new Coord(x, width - 2));
-            }
-            for (int y = 1; y < width - 1; y++)
-            {
-                if (map.IsWall(1, y)) // bottom
-                    queue.Enqueue(new Coord(1, y));
-
-                if (map.IsWall(length - 2, y)) // top
-                    queue.Enqueue(new Coord(length - 2, y));
-            }
-            return queue;
         }
 
         /// <summary>
@@ -136,42 +70,36 @@ namespace CaveGeneration.MapGeneration
             return GetTilesReachableFromQueue(queue, visited);
         }
 
-        // There are several assumptions built into this method that will cause problems if not met. 
-        // Most substantially, it is assumed that the elements of queue all correspond to a single tile type,
-        // and that the visited array has already set to true every element of the opposite type. e.g.
-        // if queue has a single Coord (2,3) and map[2,3] = Tile.Wall, then for each (x,y) such that map[x,y] = Tile.Floor,
-        // visited[x,y] = true. Checking these explicitly with assertions would degrade performance significantly,
-        // as this is a computationally intense routine.
         static List<Coord> GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
         {
-            // This list ends up consuming a lot of memory from resizing but maintaining a 
-            // cached list and clearing it each time increased the run-time of this method by a factor of 4. 
+            int xMax = visited.GetLength(0);
+            int yMax = visited.GetLength(1);
             var tiles = new List<Coord>();
             while (queue.Count > 0)
             {
                 Coord currentTile = queue.Dequeue();
                 tiles.Add(currentTile);
 
-                // Packing the following into a foreach loop would be cleaner, but results in a big performance hit
+                // Unpacking the foreach loop for the following four checks offers a dramatic speedup.
                 int x = currentTile.x, y = currentTile.y;
                 int left = x - 1, right = x + 1, up = y + 1, down = y - 1;
 
-                if (!visited[left, y])
+                if (left >= 0 && !visited[left, y])
                 {
                     queue.Enqueue(new Coord(left, y));
                     visited[left, y] = true;
                 }
-                if (!visited[right, y])
+                if (right < xMax && !visited[right, y])
                 {
                     queue.Enqueue(new Coord(right, y));
                     visited[right, y] = true;
                 }
-                if (!visited[x, up])
+                if (up < yMax && !visited[x, up])
                 {
                     queue.Enqueue(new Coord(x, up));
                     visited[x, up] = true;
                 }
-                if (!visited[x, down])
+                if (down >= 0 && !visited[x, down])
                 {
                     queue.Enqueue(new Coord(x, down));
                     visited[x, down] = true;
