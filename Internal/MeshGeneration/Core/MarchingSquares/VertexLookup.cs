@@ -1,9 +1,13 @@
 ﻿/* During map triangulation, we process many triangles that have overlapping vertices. In order to avoid seams, 
  * it's necessary to ensure each triangle with a common vertex points to the same vertex in the vertices array.
- * Keeping a dictionary for every vertex would work, but consumes O(map length * map width) memory. To improve performance
- * we can exploit the fact that when we determine vertices for a single row, those vertices can only be shared by the
- * vertices in the row directly above it or to the right of it. Thus we need only keep track of two rows at a time, 
- * not the entire map. This brings memory down to O(map length).
+ * Keeping a generic dictionary for every vertex would work, but that would be both slow and memory-intensive. 
+ * To achieve better performance, we can exploit the following observation: a given square can only share its vertices
+ * with its immediate neighbours. If we handle squares left to right, bottom to top, this means once we process a 
+ * square at x, y, then the only future squares that share its vertices are the squares at (x + 1, y) and (x, y + 1).
+ * What this means is that we only need to keep track of two rows at a time: the current one, and the previous one. 
+ * 
+ * Furthermore, we can perform extremely fast checks by using the fact that we know exactly where to look: e.g.
+ * the left-mid point on a square can only be shared by the right-mid point on the previous square on the current row.
  */
 
 namespace CaveGeneration.MeshGeneration
@@ -15,8 +19,8 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     sealed class VertexLookup
     {
-        VertexIndex?[,] currentRow;
-        VertexIndex?[,] previousRow;
+        int[,] currentRow;
+        int[,] previousRow;
 
         // left side of a square corresponds to 0, 6, 7
         readonly bool[] isOnLeft = new[]
@@ -45,9 +49,11 @@ namespace CaveGeneration.MeshGeneration
         };
 
         // these two arrays convert a point on a square to the corresponding point to the left or below.
+        // -1 represents an invalid entry
 
         // 0, 7, 6 to 2, 3, 4 respectively (topleft, left, bottomleft to topright, right, bottomright)
         readonly int[] leftOffset = new[] { 2, -1, -1, -1, -1, -1, 4, 3 };
+
         // 4, 5, 6 to 2, 1, 0 respectively (bottomright, bottom, bottomleft to topright, top, topleft)
         readonly int[] bottomOffset = new[] { -1, -1, -1, -1, 2, 1, 0, -1 };
 
@@ -55,43 +61,31 @@ namespace CaveGeneration.MeshGeneration
 
         public VertexLookup(int rowLength)
         {
-            currentRow = new VertexIndex?[perSquareCacheSize, rowLength];
-            previousRow = new VertexIndex?[perSquareCacheSize, rowLength];
+            currentRow = new int[perSquareCacheSize, rowLength];
+            previousRow = new int[perSquareCacheSize, rowLength];
         }
 
-        /// <summary>
-        /// Retrieve the vertex from the cache, if it exists.
-        /// </summary>
-        /// <param name="vertexIndex">The index associated with this vertex.</param>
-        /// <param name="point">The location of the point on the square: an int from 0 to 7.</param>
-        /// <param name="x">Location in the current row.</param>
-        /// <returns>Bool representing whether the vertex was found.</returns>
-        public bool TryGetCachedVertex(int point, int x, out VertexIndex vertexIndex)
+        public bool TryGetCachedVertex(LocalPosition point, out int vertexIndex)
         {
-            VertexIndex? index = null;
-            if (isOnBottom[point])
+            if (isOnBottom[point.squarePoint] && point.y > 0)
             {
-                index = previousRow[bottomOffset[point], x]; 
+                vertexIndex = previousRow[bottomOffset[point.squarePoint], point.x];
+                return true;
             }
-            if (!index.HasValue && isOnLeft[point] && x > 0)
+            if (isOnLeft[point.squarePoint] && point.x > 0)
             {
-                index = currentRow[leftOffset[point], x - 1];
+                vertexIndex = currentRow[leftOffset[point.squarePoint], point.x - 1];
+                return true;
             }
-            vertexIndex = index.HasValue ? index.Value : (VertexIndex)0;
-            return index.HasValue;
+            vertexIndex = 0;
+            return false;
         }
 
-        /// <summary>
-        /// Store the vertex into the cache for later retrieval.
-        /// </summary>
-        /// <param name="vertexIndex">The index associated with this vertex.</param>
-        /// <param name="point">The location of the point on the square: an int from 0 to 7.</param>
-        /// <param name="x">Location in the current row of squares.</param>
-        public void CacheVertex(VertexIndex vertexIndex, int point, int x)
+        public void CacheVertex(LocalPosition point, int vertexIndex)
         {
-            if (point < perSquareCacheSize)
+            if (point.squarePoint < perSquareCacheSize) // Only the first five points (0,1,2,3,4) need to be stored
             {
-                currentRow[point, x] = vertexIndex;
+                currentRow[point.squarePoint, point.x] = vertexIndex;
             }
         }
 
@@ -101,7 +95,6 @@ namespace CaveGeneration.MeshGeneration
         public void FinalizeRow()
         {
             SwapRows();
-            ResetBottomRow();
         }
 
         void SwapRows()
@@ -109,11 +102,6 @@ namespace CaveGeneration.MeshGeneration
             var temp = currentRow;
             currentRow = previousRow;
             previousRow = temp;
-        }
-
-        void ResetBottomRow()
-        {
-            System.Array.Clear(currentRow, 0, currentRow.Length);
         }
     } 
 }

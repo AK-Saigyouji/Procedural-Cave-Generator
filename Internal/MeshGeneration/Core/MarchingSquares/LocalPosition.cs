@@ -1,8 +1,7 @@
 ﻿/* This struct is used exclusively by the MapTriangulator as a compact representation of a relative (local) position in the
  * grid of squares as they're being triangulated. Since the Mesh Generator requires grids to be 255 by 255 or less,
  * we can store arbitrary positions in the grid of squares using just three bytes: one for the x coordinate, one for the
- * y coordinate, and one to track which of the 8 positions in the square (corners and midpoints) the point occupies. 
- * Previously such positions were represented with Vector2s, which took 8 bytes instead of 3. */
+ * y coordinate, and one to track which of the 8 positions in the square (corners and midpoints) the point occupies. */
 
 using UnityEngine;
 
@@ -10,6 +9,10 @@ namespace CaveGeneration.MeshGeneration
 {
     struct LocalPosition
     {
+        public readonly byte x;
+        public readonly byte y;
+        public readonly byte squarePoint;
+
         // These correspond to the 8 positions on the unit square, with 0 being topleft and going clockwise.
         static readonly Vector2[] positionOffsets = new Vector2[]
         {
@@ -22,10 +25,6 @@ namespace CaveGeneration.MeshGeneration
             new Vector2(0f, 0f),
             new Vector2(0f, 0.5f)
         };
-
-        readonly byte x;
-        readonly byte y;
-        readonly byte squarePoint;
 
         /// <summary>
         /// Represent a new position on a square grid of at most 255 by 255.
@@ -43,10 +42,10 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// Retrieve position as a Vector3.
         /// </summary>
-        public Vector3 ToVector3()
+        public Vector3 ToGlobalPosition(int scale, Vector3 basePosition)
         {
             Vector2 offset = positionOffsets[squarePoint];
-            return new Vector3(x + offset.x, 0f, y + offset.y);
+            return new Vector3(basePosition.x + x + offset.x, 0f, basePosition.z + y + offset.y);
         }
     } 
 }

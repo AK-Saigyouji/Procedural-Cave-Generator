@@ -2,8 +2,6 @@
  * triangulate a square based on which of its corners are walls, and an efficient function for querying whether
  * a point intersects a wall in a given configuration. */
 
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace CaveGeneration.MeshGeneration
