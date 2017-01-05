@@ -4,8 +4,9 @@
 */
 
 using UnityEngine;
-using System.Collections.Generic;
 using System.Linq;
+using System.Collections.Generic;
+using UnityEngine.Profiling;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -13,31 +14,34 @@ namespace CaveGeneration.MeshGeneration
     {
         const float UVSCALE = 10f;
 
-        public static MeshData Build(Outline[] outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        public static MeshData Build(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
+            Profiler.BeginSample("Outlines");
+            List<Vector3[]> outlines = OutlineGenerator.Generate(grid);
+            Profiler.EndSample();
+
             MeshData mesh = new MeshData();
-            mesh.vertices = GetVertices(outlines, floorHeightMap, ceilingHeightMap);
+            mesh.vertices  = GetVertices(outlines, floorHeightMap, ceilingHeightMap);
+            mesh.uv        = GetUVs(outlines, mesh.vertices);
             mesh.triangles = GetTriangles(outlines);
-            mesh.uv = GetUVs(outlines, mesh.vertices);
             return mesh;
         }
 
-        static Vector3[] GetVertices(Outline[] outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        static Vector3[] GetVertices(List<Vector3[]> outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            int numWallVertices = 2 * outlines.Sum(outline => outline.NumVertices);
+            int numWallVertices = 2 * outlines.Sum(outline => outline.Length);
             var vertices = new Vector3[numWallVertices];
 
             int vertexIndex = 0;
-            foreach (Outline outline in outlines)
+            foreach (Vector3[] outline in outlines)
             {
-                for (int i = 0; i < outline.NumVertices; i++)
+                for (int i = 0; i < outline.Length; i++)
                 {
                     Vector3 vertex = outline[i];
                     float x = vertex.x;
                     float z = vertex.z;
-                    vertices[vertexIndex] = new Vector3(x, ceilingHeightMap.GetHeight(x, z), z);
-                    vertices[vertexIndex + 1] = new Vector3(x, floorHeightMap.GetHeight(x, z), z);
-                    vertexIndex += 2;
+                    vertices[vertexIndex++] = new Vector3(x, ceilingHeightMap.GetHeight(x, z), z);
+                    vertices[vertexIndex++] = new Vector3(x, floorHeightMap.GetHeight(x, z), z);
                 }
             }
             return vertices;
@@ -59,71 +63,79 @@ namespace CaveGeneration.MeshGeneration
          * will not in general match up with the wall in an adjacent map chunk. 
          */
 
-        static Vector2[] GetUVs(Outline[] outlines, Vector3[] vertices)
+        static Vector2[] GetUVs(List<Vector3[]> outlines, Vector3[] vertices)
         {
             var uv = new Vector2[vertices.Length];
             int vertexIndex = 0;
 
-            foreach (Outline outline in outlines)
+            foreach (Vector3[] outline in outlines)
             {
                 float u = 0f;
                 float increment = ComputeUVIncrement(outline);
-                for (int i = 0; i < outline.NumVertices; i++, vertexIndex += 2)
+                for (int i = 0; i < outline.Length; i++, vertexIndex += 2)
                 {
                     u += ComputeEdgeLength(outline, i) * increment;
                     float vTop = vertices[vertexIndex].y / UVSCALE;
                     float vBot = vertices[vertexIndex + 1].y / UVSCALE;
-                    uv[vertexIndex]     = new Vector2(u, vTop);
+                    uv[vertexIndex] = new Vector2(u, vTop);
                     uv[vertexIndex + 1] = new Vector2(u, vBot);
                 }
             }
             return uv;
         }
 
-        static float ComputeEdgeLength(Outline outline, int i)
+
+        static float ComputeEdgeLength(Vector3[] outline, int i)
         {
             if (i == 0) return 0;
             return Vector3.Distance(outline[i], outline[i - 1]);
         }
 
-        static float ComputeUVIncrement(Outline outline)
+        static float ComputeUVIncrement(Vector3[] outline)
         {
-            // The following number is meant to be approximately 1/UVSCALE, but adjusted slightly
-            // to ensure that the final vector in the outline gets a u-value that is an integer multiple. 
-            // Otherwise, the texture at the beginning of the outline won't match the texture at the end.
-            // i.e. we require that outline.PerimeterLength * uvIncrement is an integer. 
-            float uvIncrement = Mathf.Round(outline.PerimeterLength / UVSCALE) / outline.PerimeterLength;
-            uvIncrement = Mathf.Max(uvIncrement, 1f / UVSCALE); // In case uvIncremenet = 0
+            float perimeter = ComputeLength(outline);
+            float uvIncrement = Mathf.Round(perimeter / UVSCALE) / perimeter;
+            uvIncrement = Mathf.Max(uvIncrement, 1f / UVSCALE); // In case uvIncrement = 0 (can happen for tiny outlines)
             return uvIncrement;
         }
 
-        static int[] GetTriangles(Outline[] outlines)
+        static int[] GetTriangles(List<Vector3[]> outlines)
         {
-            int numTriangles = 6 * outlines.Sum(outline => outline.NumEdges);
+            int numTriangles = 6 * outlines.Sum(outline => outline.Length - 1);
             var triangles = new int[numTriangles];
 
             int triangleIndex = 0;
-            int currentVertex = 0;
-            foreach (Outline outline in outlines)
+            int vertexIndex = 0;
+            foreach (Vector3[] outline in outlines)
             {
-                for (int i = 0; i < outline.NumEdges; i++, triangleIndex += 6, currentVertex += 2)
+                for (int i = 0; i < outline.Length - 1; i++, triangleIndex += 6, vertexIndex += 2)
                 {
-                    AddQuadAtIndex(triangles, triangleIndex, currentVertex);
+                    AddQuadAtIndex(triangles, triangleIndex, vertexIndex);
                 }
-                currentVertex += 2; // skip the two vertices at the end of an outline for the seam
+                vertexIndex += 2; // skip the two vertices at the end of an outline
             }
             return triangles;
         }
 
         static void AddQuadAtIndex(int[] triangles, int triangleIndex, int vertexIndex)
         {
-            triangles[triangleIndex] = vertexIndex;
-            triangles[triangleIndex + 1] = vertexIndex + 1;
-            triangles[triangleIndex + 2] = vertexIndex + 3;
+            triangles[triangleIndex++] = vertexIndex;
+            triangles[triangleIndex++] = vertexIndex + 1;
+            triangles[triangleIndex++] = vertexIndex + 3;
 
-            triangles[triangleIndex + 3] = vertexIndex + 3;
-            triangles[triangleIndex + 4] = vertexIndex + 2;
-            triangles[triangleIndex + 5] = vertexIndex;
+            triangles[triangleIndex++] = vertexIndex + 3;
+            triangles[triangleIndex++] = vertexIndex + 2;
+            triangles[triangleIndex++] = vertexIndex;
+        }
+
+        static float ComputeLength(Vector3[] outline)
+        {
+            float length = 0;
+            for (int i = 1; i < outline.Length; i++)
+            {
+                length += Vector3.Distance(outline[i], outline[i - 1]);
+            }
+            return length;
         }
     }
 }

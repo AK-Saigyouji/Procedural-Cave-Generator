@@ -1,190 +1,133 @@
-﻿using System;
+﻿/* This class creates a list of outlines based on a marching square triangulation for a grid. */
+
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
-using UnityEngine.Assertions;
+using UnityEngine.Profiling;
 
 namespace CaveGeneration.MeshGeneration
 {
-    /// <summary>
-    /// Generates a list of outlines for a triangulated map, based on the vertices and the triangles containing each vertex.
-    /// Note that it may skip extremely small outlines. As an example, it will skip the case of a single floor tile surrounded
-    /// by walls. As such, it is recommended that very small rooms are pruned (filled in) before generating outlines.
-    /// </summary>
-    sealed class OutlineGenerator
+    static class OutlineGenerator
     {
-        Vector3[] vertices;
-        int[] triangles;
-
-        TriangleLookup triangleLookup;
-        bool[] visited;
-        List<VertexIndex> outlineTemp;
-        int[] currentTriangle = new int[3];
-
-        const int MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX = 3;
-
-        /// <summary>
-        /// Build an array of 2D polygonal outlines of the mesh projected onto the y = 0 plane. 
-        /// By default, will generate outlines going in the clockwise direction: 
-        /// e.g. given a triangle (a = (0,0,0), b = (1,0,0), c = (0,0,1)), will return an outline in the order
-        /// (a, c, b).
-        /// </summary>
-        /// <param name="reverseOutlines">Build outlines in the opposite (counter-clockwise) direction.</param>
-        public static Outline[] Generate(MeshData mesh, bool reverseOutlines = false)
+        // This gives us the squarepoints corresponding to the outlines in each square.
+        // e.g. configuration 1 gives us just the bottom-right triangle, which has one outline edge
+        // running from point 3 (mid-right) to 5 (down-mid). The order is always such that
+        // the triangle is to the right of the edge when travelling from the first point to the second.
+        static byte[][] outlineTable = new byte[][]
         {
-            Assert.IsNotNull(mesh);
-            var outlineGenerator = new OutlineGenerator(mesh);
-            List<Outline> outlines = outlineGenerator.GenerateOutlines();
-            if (reverseOutlines)
+            new byte[] { },           //  0: empty
+            new byte[] {7, 5 },       //  1: bottom-left triangle
+            new byte[] {5, 3 },       //  2: bottom-right triangle
+            new byte[] {7, 3 },       //  3: bottom half
+            new byte[] {3, 1 },       //  4: top-right triangle
+            new byte[] {7, 1, 3, 5 }, //  5: all but top-left and bottom-right triangles
+            new byte[] {5, 1 },       //  6: right half
+            new byte[] {7, 1 },       //  7: all but top-left triangle
+            new byte[] {1, 7 },       //  8: top-left triangle
+            new byte[] {1, 5 },       //  9: left half
+            new byte[] {5, 7, 1, 3 }, // 10: all but bottom-left and top-right
+            new byte[] {1, 3 },       // 11: all but top-right
+            new byte[] {3, 7 },       // 12: top half
+            new byte[] {3, 5 },       // 13: all but bottom-right
+            new byte[] {5, 7 },       // 14: all but bottom-left
+            new byte[] {}             // 15: full square
+        };
+
+        public static List<Vector3[]> Generate(WallGrid grid)
+        {
+            byte[,] configurations = MarchingSquares.ComputeConfigurations(grid);
+            int numOutlineEdges = CountOutlineEdges(configurations);
+            var forwardLookup  = new Dictionary<LocalPosition, LocalPosition>(numOutlineEdges);
+            var backwardLookup = new Dictionary<LocalPosition, LocalPosition>(numOutlineEdges);
+            PopulateLookupTables(forwardLookup, backwardLookup, configurations);
+
+            var outlines = new List<Vector3[]>();
+            var visited = new HashSet<LocalPosition>();
+            var reusableList = new List<LocalPosition>(backwardLookup.Count);
+            foreach (var pair in backwardLookup)
             {
-                outlines.ForEach(outline => outline.Reverse());
-            }
-            return outlines.ToArray();
-        }
-
-        OutlineGenerator(MeshData mesh)
-        {
-            vertices = mesh.vertices;
-            triangles = mesh.triangles;
-            outlineTemp = new List<VertexIndex>(mesh.vertices.Length);
-            triangleLookup = new TriangleLookup(mesh.vertices, mesh.triangles);
-        }
-
-        List<Outline> GenerateOutlines()
-        {
-            var outlines = new List<Outline>();
-            visited = new bool[vertices.Length];
-            for (VertexIndex index = 0; index < vertices.Length; index++)
-            {
-                if (!visited[index] && MustBeOutlineVertex(index))
+                if (!visited.Contains(pair.Key))
                 {
-                    outlines.Add(GenerateOutlineFromPoint(index));
+                    LocalPosition start = pair.Key;
+                    LocalPosition next = pair.Value;
+                    reusableList.Clear();
+                    List<LocalPosition> outline = reusableList;
+                    outline.Add(start);
+                    visited.Add(start);
+                    outline.Add(next);
+                    visited.Add(next);
+                    // first we do a backward pass until we loop or until we run out of connected outline edges
+                    while (start != next && backwardLookup.TryGetValue(next, out next))
+                    {
+                        outline.Add(next);
+                        visited.Add(next);
+                    }
+                    outline.Reverse();
+                    // if we didn't loop, then we need to do a forward pass from the starting point
+                    if (start != next) 
+                    {
+                        next = start;
+                        while (forwardLookup.TryGetValue(next, out next))
+                        {
+                            visited.Add(next);
+                            outline.Add(next);
+                        }
+                    }
+                    outlines.Add(ToGlobalPositions(outline, grid.Scale, grid.Position));
                 }
             }
             return outlines;
         }
 
-        /// <summary>
-        /// Sufficient (but not necessary) test for the vertex index to be on an outline. For each outline, at least one
-        /// vertex will have an index that returns true according to this method. As such, indices failing this test
-        /// can be ignored while still ensuring every outline is discovered.
-        /// </summary>
-        bool MustBeOutlineVertex(VertexIndex vertexIndex)
+        static int CountOutlineEdges(byte[,] configurations)
         {
-            int numTrianglesContainingVertex = triangleLookup.CountTrianglesContainingVertex(vertexIndex);
-            return numTrianglesContainingVertex <= MAX_CONTAINING_TRIANGLES_ENSURING_OUTLINE_INDEX;
-        }
-
-        Outline GenerateOutlineFromPoint(VertexIndex startVertexIndex)
-        {
-            visited[startVertexIndex] = true;
-            outlineTemp.Clear();
-
-            outlineTemp.Add(startVertexIndex);
-            VertexIndex nextVertexIndex = GetInitialConnectedOutlineVertex(startVertexIndex);
-            FollowOutline(nextVertexIndex, outlineTemp);
-            outlineTemp.Add(startVertexIndex);
-
-            return new Outline(outlineTemp, vertices);
-        }
-
-        void FollowOutline(VertexIndex vertexIndex, List<VertexIndex> outline)
-        {
-            outline.Add(vertexIndex);
-            visited[vertexIndex] = true;
-            VertexIndex nextVertexIndex;
-            if (TryGetConnectedOutlineVertex(vertexIndex, out nextVertexIndex))
+            int length = configurations.GetLength(0);
+            int width = configurations.GetLength(1);
+            int acc = 0;
+            for (int y = 0; y < width; y++)
             {
-                FollowOutline(nextVertexIndex, outline);
-            }
-        }
-
-        VertexIndex GetInitialConnectedOutlineVertex(VertexIndex startIndex)
-        {
-            List<Triangle> containingTriangles = triangleLookup.GetTrianglesContainingVertex(startIndex);
-            for (int i = 0; i < containingTriangles.Count; i++)
-            {
-                Triangle triangle = containingTriangles[i];
-                int[] triangleIndices = ExtractTriangleIndices(triangle);
-                foreach (int nextIndex in triangleIndices)
+                for (int x = 0; x < length; x++)
                 {
-                    VertexIndex vertexIndex = triangles[nextIndex];
-                    if (IsOutlineEdge(startIndex, vertexIndex) && IsCorrectOrientation(startIndex, vertexIndex, triangle))
+                    // Each square has either 4 or 2 points, correspondinding to 2 or 1 outlines.
+                    acc += outlineTable[configurations[x, y]].Length;
+                }
+            }
+            return acc / 2;
+        }
+
+        static void PopulateLookupTables(
+            Dictionary<LocalPosition, LocalPosition> forward, 
+            Dictionary<LocalPosition, LocalPosition> backward,
+            byte[,] configurations)
+        {
+            int length = configurations.GetLength(0);
+            int width = configurations.GetLength(1);
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    byte[] outlineData = outlineTable[configurations[x, y]];
+                    for (int i = 0; i < outlineData.Length; i += 2)
                     {
-                        return vertexIndex;
+                        LocalPosition a = new LocalPosition(x, y, outlineData[i]);
+                        LocalPosition b = new LocalPosition(x, y, outlineData[i + 1]);
+
+                        forward[a] = b;
+                        backward[b] = a;
                     }
                 }
             }
-            throw new InvalidOperationException("Failed to initialize outline during mesh generation.");
         }
 
-        bool TryGetConnectedOutlineVertex(VertexIndex currentIndex, out VertexIndex nextIndex)
+        static Vector3[] ToGlobalPositions(List<LocalPosition> localPositions, int scale, Vector3 basePosition)
         {
-            List<Triangle> containingTriangles = triangleLookup.GetTrianglesContainingVertex(currentIndex);
-            for (int i = 0; i < containingTriangles.Count; i++)
+            var vertices = new Vector3[localPositions.Count];
+            for (int i = 0; i < vertices.Length; i++)
             {
-                int[] triangleIndices = ExtractTriangleIndices(containingTriangles[i]);
-                foreach (int index in triangleIndices)
-                {
-                    VertexIndex vertexIndex = triangles[index];
-                    if (!visited[vertexIndex] && IsOutlineEdge(currentIndex, vertexIndex))
-                    {
-                        nextIndex = vertexIndex;
-                        return true;
-                    }
-                }
+                vertices[i] = localPositions[i].ToGlobalPosition(scale, basePosition);
             }
-            nextIndex = new VertexIndex();
-            return false;
-        }
-
-        int[] ExtractTriangleIndices(Triangle triangle)
-        {
-            currentTriangle[0] = triangle.a;
-            currentTriangle[1] = triangle.b;
-            currentTriangle[2] = triangle.c;
-            return currentTriangle;
-        }
-
-        bool IsOutlineEdge(VertexIndex vertexA, VertexIndex vertexB)
-        {
-            return vertexA != vertexB && !triangleLookup.DoVerticesShareMultipleTriangles(vertexA, vertexB);
-        }
-
-        /// <summary>
-        /// Will these indices produce an Outline going in the right direction? The direction of the Outline will determine
-        /// whether the walls are visible. 
-        /// </summary>
-        /// <param name="startIndex">The starting index.</param>
-        /// <param name="otherIndex">The discovered index in question.</param>
-        /// <param name="triangle">A triangle containing both indices.</param>
-        /// <returns>Returns whether going from the start index to the discovered index will result in a correctly 
-        /// oriented Outline.</returns>
-        bool IsCorrectOrientation(VertexIndex startIndex, VertexIndex otherIndex, Triangle triangle)
-        {
-            VertexIndex outsideIndex = GetThirdPoint(startIndex, otherIndex, triangle);
-            return IsRightOf(vertices[startIndex], vertices[otherIndex], vertices[outsideIndex]);
-        }
-        
-        VertexIndex GetThirdPoint(VertexIndex indexA, VertexIndex indexB, Triangle triangle)
-        {
-            foreach (int triangleIndex in triangle.vertices)
-            {
-                VertexIndex vertexIndex = triangles[triangleIndex];
-                if (vertexIndex != indexA && vertexIndex != indexB)
-                {
-                    return vertexIndex;
-                }
-            }
-            throw new ArgumentException("Unexpected error: outline generation failed.");
-        }
-
-        /// <summary>
-        /// Is the vector c positioned "to the right of" the line formed by a and b, when looking down the y-axis?
-        /// </summary>
-        /// <returns>Returns whether the vector c is positioned to the right of the line formed by a and b.</returns>
-        bool IsRightOf(Vector3 a, Vector3 b, Vector3 c)
-        {
-            return ((b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x)) < 0;
+            return vertices;
         }
     }
 }

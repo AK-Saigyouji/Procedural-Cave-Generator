@@ -54,6 +54,11 @@ namespace CaveGeneration.MeshGeneration
             return new WallGrid(newWalls, Position, Scale);
         }
 
+        public byte[,] ToByteArray()
+        {
+            return (byte[,])walls.Clone();
+        }
+
         void ValidateWalls(byte[,] walls)
         {
             if (walls == null)

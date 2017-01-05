@@ -10,9 +10,9 @@ namespace CaveGeneration.MeshGeneration
             return BuildFlatMesh(invertedGrid, heightMap);
         }
 
-        public static MeshData BuildWalls(Outline[] outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        public static MeshData BuildWalls(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            return WallBuilder.Build(outlines, floorHeightMap, ceilingHeightMap);
+            return WallBuilder.Build(grid, floorHeightMap, ceilingHeightMap);
         }
 
         public static MeshData BuildCeiling(WallGrid grid, IHeightMap heightMap)

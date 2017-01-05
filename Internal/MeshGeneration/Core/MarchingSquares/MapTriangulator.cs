@@ -21,7 +21,7 @@ namespace CaveGeneration.MeshGeneration
             Vector3 position = wallGrid.Position;
             int scale = wallGrid.Scale;
 
-            byte[,] configurations = ComputeConfigurations(wallGrid);
+            byte[,] configurations = MarchingSquares.ComputeConfigurations(wallGrid);
             MeshSizes meshSizes = ComputeMeshSizes(configurations);
 
             // Using lists would be simpler, but this is a performance critical script and using arrays directly
@@ -38,17 +38,17 @@ namespace CaveGeneration.MeshGeneration
             {
                 for (int x = 0; x < configurations.GetLength(0); x++)
                 {
-                    int[] points = MarchingSquares.GetPoints(configurations[x, y]);
+                    byte[] points = MarchingSquares.GetPoints(configurations[x, y]);
                     for (int i = 0; i < points.Length; i++)
                     {
-                        var point = new LocalPosition(x, y, points[i]);
+                        int point = points[i];
                         int index;
-                        if (!vertexCache.TryGetCachedVertex(point, out index))
+                        if (!vertexCache.TryGetCachedVertex(x, y, point, out index))
                         {
                             index = numVertices++;
-                            vertices[index] = point.ToGlobalPosition(scale, position);
+                            vertices[index] = (new LocalPosition(x, y, point)).ToGlobalPosition(scale, position);
                         }
-                        vertexCache.CacheVertex(point, index);
+                        vertexCache.CacheVertex(x, point, index);
                         vertexIndices[i] = index;
                     }
                     for (int i = 0; i < points.Length - 2; i++)
@@ -87,31 +87,6 @@ namespace CaveGeneration.MeshGeneration
                 }
             }
             return new MeshSizes(totalVertices, totalTriangles);
-        }
-
-        static byte[,] ComputeConfigurations(WallGrid wallGrid)
-        {
-            int length = wallGrid.Length - 1;
-            int width = wallGrid.Width - 1;
-            byte[,] configurations = new byte[length, width];
-            byte[,] grid = wallGrid.ToByteArray();
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    configurations[x, y] = (byte)GetConfiguration(grid, x, y);
-                }
-            }
-            return configurations;
-        }
-
-        static int GetConfiguration(byte[,] grid, int x, int y)
-        {
-            byte botLeft = grid[x, y];
-            byte botRight = grid[x + 1, y];
-            byte topRight = grid[x + 1, y + 1];
-            byte topLeft = grid[x, y + 1];
-            return MarchingSquares.ComputeConfiguration(botLeft, botRight, topRight, topLeft);
         }
 
         // This exists simply to return these two pieces of data from a single function call.

@@ -246,11 +246,13 @@ namespace MeshTangentCalculator
         /// maximum number of vertices possible in a mesh. Recalculating tangents on a mesh with more vertices than capacity
         /// will result in buffers resizing until max is reached.</param>
         /// <exception cref="System.ArgumentOutOfRangeException"></exception>
-        public static void UseBuffers(int capacity = ushort.MaxValue)
+        public static void UseBuffers(int capacity = MAX_BUFFER_SIZE)
         {
-            if (capacity < 0) throw new System.ArgumentOutOfRangeException("Cannot have negative capacity!");
+            if (capacity < 0)
+                throw new System.ArgumentOutOfRangeException("Cannot have negative capacity!");
+
             usingBuffers = true;
-            capacity = Mathf.Clamp(capacity, 1, ushort.MaxValue);
+            capacity = Mathf.Clamp(capacity, 1, MAX_BUFFER_SIZE);
             tanBuffer = new Vector3[capacity];
             biTanBuffer = new Vector3[capacity];
             tangentsBuffer = new List<Vector4>(capacity);

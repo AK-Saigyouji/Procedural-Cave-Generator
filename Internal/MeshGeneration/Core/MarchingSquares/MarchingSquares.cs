@@ -14,24 +14,24 @@ namespace CaveGeneration.MeshGeneration
         // 0 1 2
         // 7 - 3
         // 6 5 4
-        static int[][] configurationTable = new int[][]
+        static byte[][] configurationTable = new byte[][]
         {
-            new int[] { },                 //  0: empty
-            new int[] {5, 6, 7 },          //  1: bottom-left triangle
-            new int[] {3, 4, 5 },          //  2: bottom-right triangle
-            new int[] {3, 4, 6, 7 },       //  3: bottom half
-            new int[] {1, 2, 3 },          //  4: top-right triangle
-            new int[] {1, 2, 3, 5, 6, 7 }, //  5: all but top-left and bottom-right triangles
-            new int[] {1, 2, 4, 5 },       //  6: right half
-            new int[] {1, 2, 4, 6, 7 },    //  7: all but top-left triangle
-            new int[] {0, 1, 7 },          //  8: top-left triangle
-            new int[] {0, 1, 5, 6 },       //  9: left half
-            new int[] {0, 1, 3, 4, 5, 7 }, // 10: all but bottom-left and top-right
-            new int[] {0, 1, 3, 4, 6 },    // 11: all but top-right
-            new int[] {0, 2, 3, 7 },       // 12: top half
-            new int[] {0, 2, 3, 5, 6 },    // 13: all but bottom-right
-            new int[] {0, 2, 4, 5, 7 },    // 14: all but bottom-left
-            new int[] {0, 2, 4, 6}         // 15: full square
+            new byte[] { },                 //  0: empty
+            new byte[] {5, 6, 7 },          //  1: bottom-left triangle
+            new byte[] {3, 4, 5 },          //  2: bottom-right triangle
+            new byte[] {3, 4, 6, 7 },       //  3: bottom half
+            new byte[] {1, 2, 3 },          //  4: top-right triangle
+            new byte[] {1, 2, 3, 5, 6, 7 }, //  5: all but top-left and bottom-right triangles
+            new byte[] {1, 2, 4, 5 },       //  6: right half
+            new byte[] {1, 2, 4, 6, 7 },    //  7: all but top-left triangle
+            new byte[] {0, 1, 7 },          //  8: top-left triangle
+            new byte[] {0, 1, 5, 6 },       //  9: left half
+            new byte[] {0, 1, 3, 4, 5, 7 }, // 10: all but bottom-left and top-right
+            new byte[] {0, 1, 3, 4, 6 },    // 11: all but top-right
+            new byte[] {0, 2, 3, 7 },       // 12: top half
+            new byte[] {0, 2, 3, 5, 6 },    // 13: all but bottom-right
+            new byte[] {0, 2, 4, 5, 7 },    // 14: all but bottom-left
+            new byte[] {0, 2, 4, 6}         // 15: full square
         };
 
         // wallTests[config](x, y) tells whether the point (x, y) intersects a triangle in the given configuration
@@ -81,9 +81,34 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// Get a compact array of integers indicating how to triangulate the square. 
         /// </summary>
-        public static int[] GetPoints(int configuration)
+        public static byte[] GetPoints(int configuration)
         {
             return configurationTable[configuration];
+        }
+
+        public static byte[,] ComputeConfigurations(WallGrid wallGrid)
+        {
+            int length = wallGrid.Length - 1;
+            int width = wallGrid.Width - 1;
+            byte[,] configurations = new byte[length, width];
+            byte[,] grid = wallGrid.ToByteArray();
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    configurations[x, y] = (byte)GetConfiguration(grid, x, y);
+                }
+            }
+            return configurations;
+        }
+
+        static int GetConfiguration(byte[,] grid, int x, int y)
+        {
+            byte botLeft = grid[x, y];
+            byte botRight = grid[x + 1, y];
+            byte topRight = grid[x + 1, y + 1];
+            byte topLeft = grid[x, y + 1];
+            return ComputeConfiguration(botLeft, botRight, topRight, topLeft);
         }
     } 
 }
