@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System.Linq;
+using UnityEngine;
 using UnityEngine.Assertions;
 
 namespace CaveGeneration
@@ -9,11 +10,10 @@ namespace CaveGeneration
     /// </summary>
     sealed class LayeredNoise
     {
-        Vector2[] offsets; // Offsets provide randomness to the noise by offsetting the points of perlin noise we sample.
+        float[] xOffsets;
+        float[] yOffsets; // Offsets provide randomness to the noise by offsetting the points of perlin noise we sample.
         float[] amplitudes; // Descending coefficients for the contribution of each layer.
         float[] frequencies; // Ascending coefficients for how closely together points of each layer are sampled.
-
-        float scale; // Starting frequency / level of compression.
 
         const int OFFSET_MINIMUM = -10000;
         const int OFFSET_MAXIMUM = 10000;
@@ -31,10 +31,14 @@ namespace CaveGeneration
         public LayeredNoise(int numLayers, float amplitudePersistance, float frequencyGrowth, float scale, int seed)
         {
             Assert.IsTrue(scale > 0, "Scale must be positive");
-            this.scale = scale;
-            offsets = CreateOffsets(seed, numLayers);
+            CreateOffsets(seed, numLayers);
+
             amplitudes = GetArrayOfExponents(amplitudePersistance, numLayers);
             frequencies = GetArrayOfExponents(frequencyGrowth, numLayers);
+            for (int i = 0; i < frequencies.Length; i++)
+            {
+                frequencies[i] /= scale;
+            }
         }
 
         /// <summary>
@@ -42,10 +46,7 @@ namespace CaveGeneration
         /// </summary>
         /// <param name="scale">Initial frequency. Think rolling hills (low scale) vs jagged mountains (high scale).</param>
         /// <param name="seed">Fixes the randomness.</param>
-        public LayeredNoise(float scale, int seed) : this(1, 1f, 1f, scale, seed)
-        {
-
-        }
+        public LayeredNoise(float scale, int seed) : this(1, 1f, 1f, scale, seed) { }
 
         /// <summary>
         /// Get a random value between 0 and 1. 
@@ -55,30 +56,23 @@ namespace CaveGeneration
             float height = 0f;
             for (int i = 0; i < amplitudes.Length; i++)
             {
-                Vector2 sample = offsets[i] + (new Vector2(x, y)) * frequencies[i] / scale;
-                float perlinValue = TransformRange(sample);
+                float freq = frequencies[i];
+                float perlinValue = Mathf.PerlinNoise(xOffsets[i] + x * freq, yOffsets[i] + y * freq) * 2 - 1;
                 height += perlinValue * amplitudes[i];
             }
             return Mathf.InverseLerp(-1f, 1f, height);
         }
-
-        // Transforms range from (0,1) to (-1,1) for both points in vector.
-        float TransformRange(Vector2 sample)
-        {
-            return Mathf.PerlinNoise(sample.x, sample.y) * 2 - 1;
-        }
  
-        Vector2[] CreateOffsets(int seed, int numLayers)
+        void CreateOffsets(int seed, int numLayers)
         {
-            Vector2[] offsets = new Vector2[numLayers];
+            xOffsets = new float[numLayers];
+            yOffsets = new float[numLayers];
             System.Random random = new System.Random(seed);
             for (int i = 0; i < numLayers; i++)
             {
-                float x = random.Next(OFFSET_MINIMUM, OFFSET_MAXIMUM);
-                float y = random.Next(OFFSET_MINIMUM, OFFSET_MAXIMUM);
-                offsets[i] = new Vector2(x, y);
+                xOffsets[i] = random.Next(OFFSET_MINIMUM, OFFSET_MAXIMUM);
+                yOffsets[i] = random.Next(OFFSET_MINIMUM, OFFSET_MAXIMUM);
             }
-            return offsets;
         }
 
         float[] GetArrayOfExponents(float factor, int length)
