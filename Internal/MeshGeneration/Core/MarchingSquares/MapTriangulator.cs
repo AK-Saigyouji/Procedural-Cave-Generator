@@ -1,7 +1,7 @@
 ﻿/* This class turns a WallGrid, which is a grid of 0s and 1s, into vertices and triangles for a Mesh.
  * It does this using the Marching Squares algorithm. A square in this context refers to four points in the grid 
  * in the arrangement (x,y),(x+1,y),(x,y+1),(x+1,y+1). The algorithm iterates over all such squares, and builds triangles
- * based on which of the four corners are walls (giving rise to 16 configurations). The corners of the triangles are taken
+ * based on which of the four corners are walls (giving rise to 16 configurations). The vertices of the triangles are taken
  * from the four corners of the square plus the four midpoints of the square. 
  * 
  * A specialized data structure is used to cache vertices during triangulation to avoid doubling up on vertices. */
@@ -18,15 +18,10 @@ namespace CaveGeneration.MeshGeneration
     {
         public static MeshData Triangulate(WallGrid wallGrid)
         {
-            Vector3 position = wallGrid.Position;
-            int scale = wallGrid.Scale;
-
-            byte[,] configurations = ComputeConfigurations(wallGrid);
+            byte[,] configurations = MarchingSquares.ComputeConfigurations(wallGrid);
             MeshSizes meshSizes = ComputeMeshSizes(configurations);
 
-            // Using lists would be simpler, but this is a performance critical script and using arrays directly
-            // like this showed a measurable improvement to runtime.
-            var vertices = new Vector3[meshSizes.NumVertices];
+            var localVertices = new LocalPosition[meshSizes.NumVertices];
             var triangles = new int[meshSizes.NumTriangles];
             int numVertices = 0;
             int numTriangles = 0;
@@ -38,18 +33,18 @@ namespace CaveGeneration.MeshGeneration
             {
                 for (int x = 0; x < configurations.GetLength(0); x++)
                 {
-                    int[] points = MarchingSquares.GetPoints(configurations[x, y]);
+                    byte[] points = MarchingSquares.GetPoints(configurations[x, y]);
                     for (int i = 0; i < points.Length; i++)
                     {
-                        var point = new LocalPosition(x, y, points[i]);
-                        int index;
-                        if (!vertexCache.TryGetCachedVertex(point, out index))
+                        int point = points[i];
+                        int vertexIndex;
+                        if (!vertexCache.TryGetCachedVertex(x, y, point, out vertexIndex))
                         {
-                            index = numVertices++;
-                            vertices[index] = point.ToGlobalPosition(scale, position);
+                            vertexIndex = numVertices++;
+                            localVertices[vertexIndex] = new LocalPosition(x, y, point);
                         }
-                        vertexCache.CacheVertex(point, index);
-                        vertexIndices[i] = index;
+                        vertexCache.CacheVertex(x, point, vertexIndex);
+                        vertexIndices[i] = vertexIndex;
                     }
                     for (int i = 0; i < points.Length - 2; i++)
                     {
@@ -60,12 +55,20 @@ namespace CaveGeneration.MeshGeneration
                 }
                 vertexCache.FinalizeRow();
             }
-
             MeshData mesh = new MeshData();
-            System.Array.Resize(ref vertices, numVertices); 
-            mesh.vertices = vertices;
+            mesh.vertices = ToGlobalVertices(localVertices, numVertices, wallGrid.Scale, wallGrid.Position);
             mesh.triangles = triangles;
             return mesh;
+        }
+
+        static Vector3[] ToGlobalVertices(LocalPosition[] localVertices, int numVertices, int scale, Vector3 position)
+        {
+            var vertices = new Vector3[numVertices];
+            for (int i = 0; i < numVertices; i++)
+            {
+                vertices[i] = localVertices[i].ToGlobalPosition(scale, position);
+            }
+            return vertices;
         }
 
         static MeshSizes ComputeMeshSizes(byte[,] configurations)
@@ -87,31 +90,6 @@ namespace CaveGeneration.MeshGeneration
                 }
             }
             return new MeshSizes(totalVertices, totalTriangles);
-        }
-
-        static byte[,] ComputeConfigurations(WallGrid wallGrid)
-        {
-            int length = wallGrid.Length - 1;
-            int width = wallGrid.Width - 1;
-            byte[,] configurations = new byte[length, width];
-            byte[,] grid = wallGrid.ToByteArray();
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    configurations[x, y] = (byte)GetConfiguration(grid, x, y);
-                }
-            }
-            return configurations;
-        }
-
-        static int GetConfiguration(byte[,] grid, int x, int y)
-        {
-            byte botLeft = grid[x, y];
-            byte botRight = grid[x + 1, y];
-            byte topRight = grid[x + 1, y + 1];
-            byte topLeft = grid[x, y + 1];
-            return MarchingSquares.ComputeConfiguration(botLeft, botRight, topRight, topLeft);
         }
 
         // This exists simply to return these two pieces of data from a single function call.

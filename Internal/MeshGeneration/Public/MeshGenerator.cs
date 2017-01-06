@@ -11,15 +11,15 @@
  * closed off caves designed with a 1st person perspective in mind.
  * 
  * For isometric cave generation, the 1s are triangulated into a ceiling, and the 0s are triangulated into a floor. 
- * Outlines of the ceiling are computed and quads are built to connect the ceiling and floor meshes, giving complete 3D 
+ * Outlines are computed and quads are built to connect the ceiling and floor meshes, giving complete 3D 
  * geometry. Optional height maps then give the geometry added variation by translating the height of floors and ceilings. 
  * 
  * Enclosed cave generation is similar, but instead of triangulating a ceiling, a copy of the floor is made and inverted.
- * Outlines must be inverted since walls face inward for the enclosed caves, rather than outward for the isometric cave.
  */
 
 using UnityEngine;
 using UnityEngine.Assertions;
+using UnityEngine.Profiling;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -31,7 +31,7 @@ namespace CaveGeneration.MeshGeneration
 
     /// <summary>
     /// Produces meshes and colliders for grids. Break grids larger than 200 by 200 into smaller grids before feeding
-    /// into a mesh generator.
+    /// into the mesh generator.
     /// </summary>
     public sealed class MeshGenerator
     {
@@ -39,35 +39,15 @@ namespace CaveGeneration.MeshGeneration
         MeshData wallMesh;
         MeshData floorMesh;
 
-        Outline[] outlines;
-
         public string Index { get; private set; }
-
-        int? chunkSize;
 
         const int MAX_SIZE = 200;
 
-        /// <summary>
-        /// If breaking up a single grid into multiple chunks, set chunksize properly to ensure meshes can be stitched 
-        /// together correctly. Max chunk size is 200.
-        /// </summary>
-        /// <param name="ChunkSize">If breaking up a single grid into multiple square pieces, this number corresponds
-        /// to their size (location of seams), and ensures walls are generated correctly along seams. Example: if breaking a 280 by 260 grid 
-        /// into four pieces of size 150 by 150 (bottom left), 130 by 150 (bottom right), 150 by 110 (top left), and 
-        /// 130 by 110 (top right), chunk size should be set to 150 as the seams run along x = 150 and y = 150. Leave null
-        /// if not chunking a grid.</param>
-        /// <param name="Index">Optional label, useful if using multiple mesh generators concurrently.</param>
-        public MeshGenerator(int? ChunkSize, string Index)
+        /// <param name="index">Optional label, useful if using multiple mesh generators concurrently.</param>
+        public MeshGenerator(string index = "")
         {
-            chunkSize = ChunkSize;
-            this.Index = Index ?? "";
+            Index = index ?? "";
         }
-
-        /// <summary>
-        /// Create a meshgenerator for an independent grid. If breaking a grid into multiple chunks, use constructor with 
-        /// chunksize instead.
-        /// </summary>
-        public MeshGenerator() : this(null, null) { }
 
         /// <summary>
         /// Generates meshes for a cave. 
@@ -123,18 +103,15 @@ namespace CaveGeneration.MeshGeneration
         void GenerateIsometric(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
             ceilingMesh = MeshBuilder.BuildCeiling(grid, ceilingHeightMap);
-            outlines    = OutlineGenerator.Generate(ceilingMesh);
-            wallMesh    = MeshBuilder.BuildWalls(outlines, floorHeightMap, ceilingHeightMap);
+            wallMesh    = MeshBuilder.BuildWalls(grid, floorHeightMap, ceilingHeightMap);
             floorMesh   = MeshBuilder.BuildFloor(grid, floorHeightMap);
         }
 
         void GenerateEnclosed(WallGrid grid, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
         {
             floorMesh   = MeshBuilder.BuildFloor(grid, floorHeightMap);
-            outlines    = OutlineGenerator.Generate(floorMesh, reverseOutlines: true);
             ceilingMesh = MeshBuilder.BuildEnclosure(floorMesh, enclosureHeightMap);
-            wallMesh    = MeshBuilder.BuildWalls(outlines, floorHeightMap, enclosureHeightMap);
-            PruneWallsAtGlobalSeams(grid.Scale);
+            wallMesh    = MeshBuilder.BuildWalls(grid, floorHeightMap, enclosureHeightMap);
         }
 
         void ValidateInput(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
@@ -150,23 +127,6 @@ namespace CaveGeneration.MeshGeneration
 
             if (ceilingHeightMap == null)
                 throw new System.ArgumentNullException("ceilingHeightMap");
-        }
-
-        // Because of the fact that enclosed caves build walls around floors, the floors 
-        // along the boundary of the map get walls built around them. This method removes those walls. 
-        void PruneWallsAtGlobalSeams(int scale)
-        {
-            Assert.IsNotNull(wallMesh);
-            if (DoGlobalSeamsExist()) 
-            {
-                int modulo = scale * chunkSize.Value;
-                WallPruner.PruneModulo(wallMesh, modulo);
-            }
-        }
-
-        bool DoGlobalSeamsExist()
-        {
-            return chunkSize.HasValue;
         }
     }
 }

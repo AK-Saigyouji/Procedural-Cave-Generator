@@ -65,27 +65,27 @@ namespace CaveGeneration.MeshGeneration
             previousRow = new int[perSquareCacheSize, rowLength];
         }
 
-        public bool TryGetCachedVertex(LocalPosition point, out int vertexIndex)
+        public bool TryGetCachedVertex(int x, int y, int squarePoint, out int vertexIndex)
         {
-            if (isOnBottom[point.squarePoint] && point.y > 0)
+            if (isOnBottom[squarePoint] && y > 0)
             {
-                vertexIndex = previousRow[bottomOffset[point.squarePoint], point.x];
+                vertexIndex = previousRow[bottomOffset[squarePoint], x];
                 return true;
             }
-            if (isOnLeft[point.squarePoint] && point.x > 0)
+            if (isOnLeft[squarePoint] && x > 0)
             {
-                vertexIndex = currentRow[leftOffset[point.squarePoint], point.x - 1];
+                vertexIndex = currentRow[leftOffset[squarePoint], x - 1];
                 return true;
             }
             vertexIndex = 0;
             return false;
         }
 
-        public void CacheVertex(LocalPosition point, int vertexIndex)
+        public void CacheVertex(int x, int point, int vertexIndex)
         {
-            if (point.squarePoint < perSquareCacheSize) // Only the first five points (0,1,2,3,4) need to be stored
+            if (point < perSquareCacheSize) // Only the first five points (0,1,2,3,4) need to be stored
             {
-                currentRow[point.squarePoint, point.x] = vertexIndex;
+                currentRow[point, x] = vertexIndex;
             }
         }
 

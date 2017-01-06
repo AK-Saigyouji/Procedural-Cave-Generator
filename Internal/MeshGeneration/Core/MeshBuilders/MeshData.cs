@@ -1,4 +1,11 @@
-﻿using System;
+﻿/* Unity's Mesh class has two issues that motivated the creation of this class. The first is that it can only be used
+ on the primary thread, like much of the Unity API. The second is that the access methods for vertices, triangles,
+ uv, normals, and tangents all create copies of buffered data. Although this is actually sound design, the 
+ MeshGeneration system requires the same properties (e.g. vertices) to be accessed multiple times throughout
+ the system. Given the size of these arrays (potentially tens or hundreds of KB each), this is a substantial amount
+ of garbage to create and may bloat the working set of the program.*/
+
+using System;
 using UnityEngine;
 using MeshTangentCalculator;
 

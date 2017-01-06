@@ -46,7 +46,7 @@ namespace CaveGeneration
         [SerializeField] CaveConfiguration config = new CaveConfiguration();
 
         // Unity's coroutines do not support return values, so we save them as instance variables instead.
-        // .NET tasks do not have this limitation, but Unity's version of .NET does not have them yet (maybe in 5.6)
+        // .NET tasks do not have this limitation, but Unity's version of .NET does not have them yet
         MeshGenerator[] meshGenerators;
         CollisionTester collisionTester;
 
@@ -129,10 +129,11 @@ namespace CaveGeneration
                 yield return null;
             }
             Cave cave = new Cave(collisionTester, caveMeshes, config);
-            AssignMaterials(cave.GetFloors(), config.FloorMaterial);
+            AssignMaterials(cave.GetFloors(),   config.FloorMaterial);
             AssignMaterials(cave.GetCeilings(), config.CeilingMaterial);
-            AssignMaterials(cave.GetWalls(), config.WallMaterial);
-            Cave = cave;
+            AssignMaterials(cave.GetWalls(),    config.WallMaterial);
+
+            this.Cave = cave;
         }
 
         MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
@@ -142,9 +143,6 @@ namespace CaveGeneration
             return meshGenerator;
         }
 
-        /// <summary>
-        /// Creates a mesh generator for each submap and populates the data in each generator necessary to produce meshes.
-        /// </summary>
         MeshGenerator[] PrepareMeshGenerators(Map[] submaps)
         {
             var meshGenerators = new MeshGenerator[submaps.Length];
@@ -169,7 +167,7 @@ namespace CaveGeneration
 
         MeshGenerator InitializeMeshGenerator(Map map)
         {
-            return new MeshGenerator(MapSplitter.CHUNK_SIZE, map.Index.ToString());
+            return new MeshGenerator(map.Index.ToString());
         }
 
         void AssignMaterials(IEnumerable<CaveComponent> components, Material material)
