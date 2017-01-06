@@ -6,7 +6,6 @@
 using UnityEngine;
 using System.Linq;
 using System.Collections.Generic;
-using UnityEngine.Profiling;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -16,9 +15,7 @@ namespace CaveGeneration.MeshGeneration
 
         public static MeshData Build(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            Profiler.BeginSample("Outlines");
             List<Vector3[]> outlines = OutlineGenerator.Generate(grid);
-            Profiler.EndSample();
 
             MeshData mesh = new MeshData();
             mesh.vertices  = GetVertices(outlines, floorHeightMap, ceilingHeightMap);
@@ -58,9 +55,6 @@ namespace CaveGeneration.MeshGeneration
          * this value by a quantity (uvIncrement) which ensures that the final u coordinate will be an integer,
          * so that the texture will tile seamlessly. uvIncrement also serves the purpose of reducing the growth of u
          * by a constant factor so that it doesn't tile too rapidly.
-         * 
-         * The one issue not addressed by this implementation is that the uv coordinates for a wall in one map chunk
-         * will not in general match up with the wall in an adjacent map chunk. 
          */
 
         static Vector2[] GetUVs(List<Vector3[]> outlines, Vector3[] vertices)
@@ -82,13 +76,6 @@ namespace CaveGeneration.MeshGeneration
                 }
             }
             return uv;
-        }
-
-
-        static float ComputeEdgeLength(Vector3[] outline, int i)
-        {
-            if (i == 0) return 0;
-            return Vector3.Distance(outline[i], outline[i - 1]);
         }
 
         static float ComputeUVIncrement(Vector3[] outline)
@@ -136,6 +123,12 @@ namespace CaveGeneration.MeshGeneration
                 length += Vector3.Distance(outline[i], outline[i - 1]);
             }
             return length;
+        }
+
+        static float ComputeEdgeLength(Vector3[] outline, int i)
+        {
+            if (i == 0) return 0;
+            return Vector3.Distance(outline[i], outline[i - 1]);
         }
     }
 }

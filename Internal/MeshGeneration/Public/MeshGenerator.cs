@@ -11,11 +11,10 @@
  * closed off caves designed with a 1st person perspective in mind.
  * 
  * For isometric cave generation, the 1s are triangulated into a ceiling, and the 0s are triangulated into a floor. 
- * Outlines of the ceiling are computed and quads are built to connect the ceiling and floor meshes, giving complete 3D 
+ * Outlines are computed and quads are built to connect the ceiling and floor meshes, giving complete 3D 
  * geometry. Optional height maps then give the geometry added variation by translating the height of floors and ceilings. 
  * 
  * Enclosed cave generation is similar, but instead of triangulating a ceiling, a copy of the floor is made and inverted.
- * Outlines must be inverted since walls face inward for the enclosed caves, rather than outward for the isometric cave.
  */
 
 using UnityEngine;
@@ -32,7 +31,7 @@ namespace CaveGeneration.MeshGeneration
 
     /// <summary>
     /// Produces meshes and colliders for grids. Break grids larger than 200 by 200 into smaller grids before feeding
-    /// into a mesh generator.
+    /// into the mesh generator.
     /// </summary>
     public sealed class MeshGenerator
     {
@@ -44,14 +43,10 @@ namespace CaveGeneration.MeshGeneration
 
         const int MAX_SIZE = 200;
 
-        /// <summary>
-        /// If breaking up a single grid into multiple chunks, set chunksize properly to ensure meshes can be stitched 
-        /// together correctly. Max chunk size is 200.
-        /// </summary>
         /// <param name="index">Optional label, useful if using multiple mesh generators concurrently.</param>
         public MeshGenerator(string index = "")
         {
-            Index = index;
+            Index = index ?? "";
         }
 
         /// <summary>
