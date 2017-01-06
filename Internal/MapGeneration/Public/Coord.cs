@@ -22,22 +22,22 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Get the coord one unit to the left of this one. (x,y) -> (x-1,y).
         /// </summary>
-        public Coord Left        { get { return new Coord(x - 1, y    ); } }
+        public Coord Left        { get { return new Coord(x - 1, y); } }
 
         /// <summary>
         /// Get the coord one unit to the right of this one. (x,y) -> (x+1,y).
         /// </summary>
-        public Coord Right       { get { return new Coord(x + 1, y    ); } }
+        public Coord Right       { get { return new Coord(x + 1, y); } }
 
         /// <summary>
         /// Get the coord one unit above this one. (x,y) -> (x,y+1).
         /// </summary>
-        public Coord Up          { get { return new Coord(x    , y + 1); } }
+        public Coord Up          { get { return new Coord(x, y + 1); } }
 
         /// <summary>
         /// Get the coord one unit below this one. (x,y) -> (x,y-1).
         /// </summary>
-        public Coord Down        { get { return new Coord(x    , y - 1); } }
+        public Coord Down        { get { return new Coord(x, y - 1); } }
 
         /// <summary>
         /// Get the coord one unit to the top left. (x,y) -> (x-1,y+1).
@@ -100,13 +100,13 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Generate a list of coordinates representing a path beween the given coordinates (inclusive). 
+        /// Generate a list of coordinates representing a straight path beween the given pair of coordinates (inclusive). 
         /// </summary>
         /// <returns>List of Coords between this and the other coord (inclusive).</returns>
         public List<Coord> GetLineTo(Coord other)
         {
-            Vector2 startVector = new Vector2(x, y);
-            List<Coord> line = new List<Coord>();
+            var startVector = new Vector2(x, y);
+            var line = new List<Coord>();
 
             int xDelta = other.x - x;
             int yDelta = other.y - y;

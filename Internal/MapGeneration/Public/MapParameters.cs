@@ -84,15 +84,21 @@ namespace CaveGeneration.MapGeneration
         }
 
         const int MINIMUM_LENGTH          = 5;
+        const int MAXIMUM_LENGTH          = short.MaxValue;
+
         const int MINIMUM_WIDTH           = 5;
+        const int MAXIMUM_WIDTH           = short.MaxValue;
+
         const int MINIMUM_BORDER_SIZE     = 0;
+
         const int MINIMUM_FLOOR_EXPANSION = 0;
+
         const float MINIMUM_MAP_DENSITY   = 0f;
         const float MAXIMUM_MAP_DENSITY   = 1f;
 
         const float DEFAULT_DENSITY       = 0.5f;
         const bool DEFAULT_SEED_STATUS    = true;
-        const int DEFAULT_SEED = 0;
+        const int DEFAULT_SEED            = 0;
         const int DEFAULT_LENGTH          = 75;
         const int DEFAULT_WIDTH           = 75;
         const int DEFAULT_BORDER_SIZE     = 0;
@@ -130,11 +136,11 @@ namespace CaveGeneration.MapGeneration
 
         public void OnValidate()
         {
-            length            = Mathf.Max(length, MINIMUM_WIDTH);
-            width             = Mathf.Max(width, MINIMUM_WIDTH);
+            length            = Mathf.Clamp(length, MINIMUM_LENGTH, MAXIMUM_LENGTH);
+            width             = Mathf.Clamp(width, MINIMUM_WIDTH, MAXIMUM_WIDTH);
+            initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
             floorExpansion    = Mathf.Max(floorExpansion, MINIMUM_FLOOR_EXPANSION);
             borderSize        = Mathf.Max(borderSize, MINIMUM_BORDER_SIZE);
-            initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
         }
 
         int CreateRandomSeed()
@@ -144,12 +150,12 @@ namespace CaveGeneration.MapGeneration
 
         void SetLength(int value)
         {
-            SetParameter(ref length, value, MINIMUM_LENGTH, int.MaxValue);
+            SetParameter(ref length, value, MINIMUM_LENGTH, MAXIMUM_LENGTH);
         }
 
         void SetWidth(int value)
         {
-            SetParameter(ref width, value, MINIMUM_WIDTH, int.MaxValue);
+            SetParameter(ref width, value, MINIMUM_WIDTH, MAXIMUM_WIDTH);
         }
 
         void SetBorderSize(int value)

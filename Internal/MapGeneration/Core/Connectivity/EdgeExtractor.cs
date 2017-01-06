@@ -1,12 +1,11 @@
 ﻿/* This class takes a region of tiles and outputs its edge tiles in more or less sorted order. Sorted in this case
- * just means they carve out a more or less continuous path. 
+ * just means they carve out a continuous path. 
  * 
  * It was decided to make this class dependent upon a given map (as opposed to being a static class) so that a single
  * visited array could be re-used for every region in the map. The alternatives would be to either create a new giant
  * 2d bool array hundreds or even thousands of times, or to use hash tables which are much slower and have a 
  * much larger memory footprint. */
 
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -14,14 +13,16 @@ namespace CaveGeneration.MapGeneration.Connectivity
 {
     sealed class EdgeExtractor
     {
-        Coord[] adjacentTiles;
-        Map map;
-        bool[,] visited;
+        readonly Coord[] adjacentTiles;
+        readonly Map map;
+        readonly bool[,] visited;
+
+        const int NUM_ADJACENT_TILES = 8;
 
         public EdgeExtractor(Map map)
         {
             this.map = map;
-            adjacentTiles = new Coord[8];
+            adjacentTiles = new Coord[NUM_ADJACENT_TILES];
             visited = new bool[map.Length, map.Width];
         }
 
@@ -67,11 +68,15 @@ namespace CaveGeneration.MapGeneration.Connectivity
          * 
          * Ultimately this level of error is accepted as is. */
 
+        /// <summary>
+        /// Extract the edge tiles from this region.
+        /// </summary>
+        /// <param name="region">Must not be empty.</param>
         public TileRegion Extract(TileRegion region)
         {
             UnityEngine.Assertions.Assert.AreNotEqual(region.Count, 0, "Room is empty!");
-            List<Coord> edgeTiles = new List<Coord>(region.Count);
-            Stack<Coord> stack = new Stack<Coord>();
+            var edgeTiles = new List<Coord>(region.Count);
+            var stack = new Stack<Coord>();
             Coord firstTile = GetStartingEdgeTile(map, region);
             stack.Push(firstTile);
             edgeTiles.Add(firstTile);
@@ -108,7 +113,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
         static bool FoundEdgeTile(Coord source, Coord target, Map map)
         {
             int x = target.x, y = target.y;
-            return map[x, y] == Tile.Floor
+            return map.IsFloor(x, y)
                 && map.IsAdjacentToWallFast(x, y)
                 && IsValidJump(source, target, map);
         }
@@ -120,14 +125,10 @@ namespace CaveGeneration.MapGeneration.Connectivity
         /// </summary>
         static bool IsValidJump(Coord source, Coord destination, Map map)
         {
-            int x = destination.x - source.x;
-            int y = destination.y - source.y;
-            return map.IsFloor(source.x + x, source.y) || map.IsFloor(source.x, source.y + y);
+            return map.IsFloor(destination.x, source.y) || map.IsFloor(source.x, destination.y);
         }
 
-        // Coords are being put into outputCoords rather than assigning a new array each time. This is because 
-        // we're always getting exactly 8 coords and calling this method many times, so we don't need 
-        // to create a new array every time.
+        // We're re-using the same array for each method call
         static Coord[] GetAdjacentCoords(Coord tile, Coord[] outputCoords)
         {
             int x = tile.x, y = tile.y;

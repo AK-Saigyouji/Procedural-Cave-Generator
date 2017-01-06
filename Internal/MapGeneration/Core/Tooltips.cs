@@ -28,8 +28,7 @@
 
         public const string MAP_MIN_WALL_SIZE =
             "Contiguous sections of wall with a tile count below this number will be removed (turned " +
-            "to floor tiles). Regardless of how large this number is, the component of wall attached to the boundary " +
-            "will not be removed.";
+            "to floor tiles).";
 
         public const string MAP_MIN_FLOOR_SIZE =
             "Contiguous sections of floor with a tile count below this number will be removed (turned to wall tiles).";

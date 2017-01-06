@@ -33,8 +33,8 @@
  * 
  * 3 is simpler to compute: a general sorting algorithm would be numConnections * log(numConnections), but we can do
  * better. By truncating the floats representing distances, we can use a linear-time sorting algorithm instead. During 
- * tests, using the built-in sorting algorithm (n * logn) took half the time of the entire cave generator with a bucket
- * sort on a very large map (1000 by 1000) with min wall size set to 0, while a bucket sort took about 5%. With a min
+ * tests, using the built-in sorting algorithm (n * logn) took half the time of the entire cave generator
+ * on a very large map (1000 by 1000) with min wall size set to 0, while a bucket sort took about 5%. With a min
  * wall size of 1000 they both take 3-4 ms.
  * 
  * 4 is given by the run-time for Kruskal's MST algorithm without sorting (since we did it in 3), which is 
@@ -66,15 +66,14 @@ namespace CaveGeneration.MapGeneration.Connectivity
 
             TileRegion[] rooms = ExtractEdges(map, regions);
             ConnectionInfo[] allConnections = GetAllRoomConnections(rooms);
-            SortConnections(allConnections);
-            return PruneConnections(allConnections, rooms.Length);
+            ConnectionInfo[] sortedConnections = SortConnections(allConnections);
+            return PruneConnections(sortedConnections, rooms.Length);
         }
 
         static TileRegion[] ExtractEdges(Map map, List<TileRegion> regions)
         {
-            EdgeExtractor extractor = new EdgeExtractor(map);
-
-            TileRegion[] rooms = new TileRegion[regions.Count];
+            var extractor = new EdgeExtractor(map);
+            var rooms = new TileRegion[regions.Count];
             for (int i = 0; i < rooms.Length; i++)
             {
                 rooms[i] = extractor.Extract(regions[i]);
@@ -85,43 +84,60 @@ namespace CaveGeneration.MapGeneration.Connectivity
         static ConnectionInfo[] GetAllRoomConnections(TileRegion[] room)
         {
             int numRooms = room.Length;
-            int numConnections = room.Length * (room.Length - 1) / 2;
+            int numConnections = numRooms * (numRooms - 1) / 2; // The number of pairs (a,b) for a < b < numRooms
             var allConnections = new ConnectionInfo[numConnections];
-            int currentConnection = 0;
+            int connectionIndex = 0;
             for (int a = 0; a < numRooms; a++)
             {
+                var roomA = room[a];
                 for (int b = a + 1; b < numRooms; b++)
                 {
-                    allConnections[currentConnection] = ConnectionFinder.FindConnection(room[a], room[b], a, b);
-                    currentConnection++;
+                    allConnections[connectionIndex] = ConnectionFinder.FindConnection(roomA, room[b], a, b);
+                    connectionIndex++;
                 }
             }
             return allConnections;
         }
 
-        // This is a linear-time, in-place bucket sort
-        static void SortConnections(ConnectionInfo[] connections)
+        static ConnectionInfo[] SortConnections(ConnectionInfo[] connections)
+        {
+            List<int>[] buckets = CreateBuckets(connections);
+            ConnectionInfo[] sortedConnections = ExtractSortedFromBuckets(connections, buckets);
+            return sortedConnections;
+        }
+
+        static List<int>[] CreateBuckets(ConnectionInfo[] connections)
         {
             int maxDistance = connections.Max(con => (int)con.distance);
-            var buckets = new List<ConnectionInfo>[maxDistance + 1];
+            var buckets = new List<int>[maxDistance + 1];
             for (int i = 0; i < connections.Length; i++)
             {
                 int distance = (int)connections[i].distance;
-                if (buckets[distance] == null) buckets[distance] = new List<ConnectionInfo>();
-                buckets[distance].Add(connections[i]);
+                if (buckets[distance] == null)
+                {
+                    buckets[distance] = new List<int>();
+                }
+                buckets[distance].Add(i);
             }
+            return buckets;
+        }
+
+        static ConnectionInfo[] ExtractSortedFromBuckets(ConnectionInfo[] connections, List<int>[] buckets)
+        {
             int currentIndex = 0;
+            var sortedConnections = new ConnectionInfo[connections.Length];
             for (int i = 0; i < buckets.Length; i++)
             {
-                List<ConnectionInfo> currentBucket = buckets[i];
+                List<int> currentBucket = buckets[i];
                 if (currentBucket != null)
                 {
                     for (int k = 0; k < currentBucket.Count; k++, currentIndex++)
                     {
-                        connections[currentIndex] = currentBucket[k];
+                        sortedConnections[currentIndex] = connections[currentBucket[k]];
                     }
                 }
             }
+            return sortedConnections;
         }
 
         static ConnectionInfo[] PruneConnections(ConnectionInfo[] connections, int numRooms)

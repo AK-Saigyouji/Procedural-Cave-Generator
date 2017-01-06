@@ -21,7 +21,7 @@ namespace CaveGeneration.MapGeneration
             {
                 if (!visited[x, y])
                 {
-                    List<Coord> region = GetRegion(x, y, visited);
+                    List<Coord> region = GetConnectedRegion(x, y, visited);
                     regions.Add(new TileRegion(region));
                 }
             });
@@ -42,7 +42,7 @@ namespace CaveGeneration.MapGeneration
             {
                 if (!visited[x, y])
                 {
-                    List<Coord> region = GetRegion(x, y, visited);
+                    List<Coord> region = GetConnectedRegion(x, y, visited);
                     if (region.Count < threshold)
                     {
                         FillRegion(map, region, GetOpposite(tileType));
@@ -57,24 +57,15 @@ namespace CaveGeneration.MapGeneration
             return visited;
         }
 
-        /// <summary>
-        /// Get the region containing the start point. Two tiles are considered to be in the same region if there is a sequence
-        /// of horizontal steps from one to the other (inclusive) passing through only the same tile type.
-        /// </summary>
-        /// <returns>The region of tiles containing the start point.</returns>
-        static List<Coord> GetRegion(int xStart, int yStart, bool[,] visited)
-        {
-            var queue = new Queue<Coord>();
-            queue.Enqueue(new Coord(xStart, yStart));
-            visited[xStart, yStart] = true;
-            return GetTilesReachableFromQueue(queue, visited);
-        }
-
-        static List<Coord> GetTilesReachableFromQueue(Queue<Coord> queue, bool[,] visited)
+        static List<Coord> GetConnectedRegion(int xStart, int yStart, bool[,] visited)
         {
             int xMax = visited.GetLength(0);
             int yMax = visited.GetLength(1);
             var tiles = new List<Coord>();
+
+            var queue = new Queue<Coord>();
+            queue.Enqueue(new Coord(xStart, yStart));
+            visited[xStart, yStart] = true;
             while (queue.Count > 0)
             {
                 Coord currentTile = queue.Dequeue();

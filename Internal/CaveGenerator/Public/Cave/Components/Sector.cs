@@ -15,18 +15,17 @@ public sealed class Sector
     internal Sector(CaveMeshes caveMeshes, string index)
     {
         GameObject = new GameObject(AppendIndex("Sector", index));
-        GameObject.SetActive(false);
 
         Ceiling = new Ceiling(caveMeshes.Ceiling, AppendIndex("Ceiling", index));
         Walls   = new Walls(caveMeshes.Walls, AppendIndex("Walls", index));
         Floor   = new Floor(caveMeshes.Floor, AppendIndex("Floor", index));
 
-        AddChild(Ceiling);
-        AddChild(Walls);
-        AddChild(Floor);
+        SetChild(Ceiling);
+        SetChild(Walls);
+        SetChild(Floor);
     }
 
-    void AddChild(CaveComponent component)
+    void SetChild(CaveComponent component)
     {
         component.GameObject.transform.parent = GameObject.transform;
     }

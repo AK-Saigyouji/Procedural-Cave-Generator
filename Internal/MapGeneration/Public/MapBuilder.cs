@@ -22,6 +22,7 @@ namespace CaveGeneration.MapGeneration
     {
         const int SMOOTHING_ITERATIONS = 5;
         const int SMOOTHING_THRESHOLD = 4;
+        const int MAX_SMOOTHING_ITERATIONS = 10;
 
         /// <summary>
         /// Fills the map as follows: the outer most boundary is filled with wall tiles. The rest of the map is filled with
@@ -47,7 +48,7 @@ namespace CaveGeneration.MapGeneration
         /// well-structured but a bit jagged. Higher than 10 will be clamped to 10.</param>
         public static Map Smooth(this Map inputMap, int iterations = SMOOTHING_ITERATIONS)
         {
-            iterations = Mathf.Min(10, iterations);
+            iterations = Mathf.Min(MAX_SMOOTHING_ITERATIONS, iterations);
             Map currentMap = inputMap.Clone();
             Map smoothedMap = inputMap.Clone();
             for (int i = 0; i < iterations; i++)
@@ -65,7 +66,7 @@ namespace CaveGeneration.MapGeneration
         /// <param name="iterations">The number of smoothing passes to perform. Higher than 10 will be clamped to 10.</param>
         public static Map SmoothOnlyWalls(this Map inputMap, int iterations = SMOOTHING_ITERATIONS)
         {
-            iterations = Mathf.Min(10, iterations);
+            iterations = Mathf.Min(MAX_SMOOTHING_ITERATIONS, iterations);
             Map currentMap = inputMap.Clone();
             Map smoothedMap = inputMap.Clone();
             for (int i = 0; i < iterations; i++)
@@ -138,6 +139,7 @@ namespace CaveGeneration.MapGeneration
         {
             if (borderSize < 0) throw new ArgumentException("Cannot add a border of negative size.", "borderSize");
             if (borderSize == 0) return inputMap.Clone();
+
             Map borderedMap = new Map(inputMap.Length + borderSize * 2, inputMap.Width + borderSize * 2);
             borderedMap.Transform((x, y) =>
             {

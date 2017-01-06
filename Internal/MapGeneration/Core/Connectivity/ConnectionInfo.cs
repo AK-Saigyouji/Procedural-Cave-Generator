@@ -1,4 +1,4 @@
-﻿/* Fairly straightforward data container representing a possible connection between two rooms in a map. Holds
+﻿/* Straightforward data container representing a possible connection between two rooms in a map. Holds
  * information about the two tiles being connected, the distance between them, and the index corresponding to the 
  * rooms between them. 
  * 

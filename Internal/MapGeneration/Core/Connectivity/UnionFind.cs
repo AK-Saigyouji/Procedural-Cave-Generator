@@ -2,10 +2,10 @@
 
 namespace CaveGeneration.MapGeneration.Connectivity
 {
-    public sealed class UnionFind
+    sealed class UnionFind
     {
-        int[] parents;
-        int[] ranks;
+        readonly int[] parents;
+        readonly int[] ranks;
 
         public UnionFind(int numNodes)
         {
@@ -13,6 +13,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
             ranks = new int[numNodes + 1];
         }
 
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
         public void Union(int nodeA, int nodeB)
         {
             int parentA = Find(nodeA);
@@ -27,11 +28,12 @@ namespace CaveGeneration.MapGeneration.Connectivity
             }
             else
             {
-                ranks[parentA] += 1;
+                ranks[parentA]++;
                 parents[parentB] = parentA;
             }
         }
 
+        /// <exception cref="System.IndexOutOfRangeException"></exception>
         public int Find(int node)
         {
             int parent = parents[node];
@@ -46,8 +48,6 @@ namespace CaveGeneration.MapGeneration.Connectivity
         /// <summary>
         /// Create an array of integers from 0 inclusive to count exclusive.
         /// </summary>
-        /// <param name="count"></param>
-        /// <returns></returns>
         int[] GetRange(int count)
         {
             int[] range = new int[count];

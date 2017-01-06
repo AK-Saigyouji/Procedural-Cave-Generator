@@ -348,7 +348,7 @@ namespace CaveGeneration.MapGeneration
                 if (predicate(x, 0))          grid[x, 0] = transformation(x, 0);
                 if (predicate(x, width - 1))  grid[x, width - 1] = transformation(x, width - 1);
             }
-            for (int y = 1; y < width - 1; y++)
+            for (int y = 1; y < width - 1; y++) // adjust boundaries so we don't double-visit 0,0 and length-1,width-1
             {
                 if (predicate(0, y))          grid[0, y] = transformation(0, y);
                 if (predicate(length - 1, y)) grid[length - 1, y] = transformation(length - 1, y);

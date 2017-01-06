@@ -26,7 +26,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
         /// <param name="connections">Array of connections sorted in increasing order by weight.</param>
         /// <param name="numRooms">ConnectionInfo specifies room indices, and this parameters corresponds
         /// to the maximum room index possible.</param>
-        /// <returns>Collection of </returns>
+        /// <returns>Connections specifying a minimum spanning tree.</returns>
         /// <exception cref="System.ArgumentOutOfRangeException"></exception>
         /// <exception cref="System.ArgumentNullException"></exception>
         public static ConnectionInfo[] ComputeMST(ConnectionInfo[] connections, int numRooms)
@@ -34,7 +34,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
             if (connections == null) throw new System.ArgumentNullException("connections");
 
             var components = new UnionFind(numRooms);
-            var prunedConnections = new List<ConnectionInfo>();
+            var prunedConnections = new List<ConnectionInfo>(numRooms);
 
             foreach (ConnectionInfo connection in connections)
             {

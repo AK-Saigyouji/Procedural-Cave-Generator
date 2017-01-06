@@ -10,6 +10,7 @@ using UnityEngine.Assertions;
 #if UNITY_EDITOR
 using Stopwatch = System.Diagnostics.Stopwatch;
 using CaveGeneration.Utility;
+using UnityEngine.Profiling;
 #endif
 
 namespace CaveGeneration
@@ -100,7 +101,6 @@ namespace CaveGeneration
             Setup();
             yield return ExecuteTask(GenerateCoreData);
             yield return BuildCave();
-            yield return ActivateChildren();
             TearDown();
             if (callback != null) callback();
         }
@@ -115,7 +115,6 @@ namespace CaveGeneration
             Map[] submaps = MapSplitter.Subdivide(map);
             MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
             CollisionTester collisionTester = MapConverter.ToCollisionTester(map, config.Scale);
-
             this.collisionTester = collisionTester;
             this.meshGenerators = meshGenerators;
         }
@@ -175,19 +174,6 @@ namespace CaveGeneration
             foreach (CaveComponent component in components)
             {
                 component.Material = material;
-            }
-        }
-
-        // Sectors are disabled during generation to avoid engaging the Physx engine. They're re-enabled
-        // at the end here. In the future this logic could be altered to activate only some of the sectors.
-        // e.g. only the sector in which the player starts, leaving the rest disabled until the player gets close to them.
-        IEnumerator ActivateChildren()
-        {
-            EditorOnlyLog("Generation complete, activating sectors...");
-            foreach (Sector sector in Cave.GetSectors())
-            {
-                sector.GameObject.SetActive(true);
-                yield return null;
             }
         }
 

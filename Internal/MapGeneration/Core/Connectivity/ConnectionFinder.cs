@@ -10,11 +10,12 @@
  * a 2 tile connection versus a 22 tile connection is problematic. So each time we compute a distance, we skip a 
  * number of tiles comparable to the computed distance. This ensures that we don't waste time at large distances but 
  * are more careful as the tiles get closer (even if we compute a large initial distance, it is possible that the 
- * rooms are very close elsewhere else). The reason this results in minimal error is that in the optimal case 
+ * rooms are very close elsewhere). The reason this results in minimal error is that in the optimal case 
  * (i.e. where the shortest connection is always found) the average distance of the selected
- * connections is independent of the map size, and is about 3-6. So if we compute a distance between a pair of 
- * tiles of 20, then we're almost guaranteed to be 20+ tiles away from a connection that would actually get chosen.
- * Exceptions to this are statistically anomalous, and in those cases, the error is small.
+ * connections is independent of the map size, and is about 3-6 (at 50% map density). 
+ * So if we compute a distance between a pair of tiles of 20, then we're almost guaranteed to be 20+ tiles away 
+ * from a connection that would actually get chosen. Exceptions to this are statistically anomalous, and in those 
+ * cases, the error is small.
  */
 
 namespace CaveGeneration.MapGeneration.Connectivity
