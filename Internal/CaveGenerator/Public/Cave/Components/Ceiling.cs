@@ -1,10 +1,11 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public sealed class Ceiling : CaveComponent
+namespace CaveGeneration
 {
-    internal Ceiling(Mesh mesh, string name) : base(mesh, name)
+    sealed class Ceiling : CaveComponent
     {
-    }
+        internal Ceiling(Mesh mesh, string name) : base(mesh, name)
+        {
+        }
+    } 
 }

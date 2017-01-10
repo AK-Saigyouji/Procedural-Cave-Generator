@@ -44,15 +44,15 @@ namespace CaveGeneration
         // for the latter to work properly.
         [SerializeField] CaveConfiguration config = new CaveConfiguration();
 
-        // Unity's coroutines do not support return values, so we save them as instance variables instead.
-        // .NET tasks do not have this limitation, but Unity's version of .NET does not have them yet
-        MeshGenerator[] meshGenerators;
-        CollisionTester collisionTester;
-
         IHeightMap ceilingHeightMap;
         IHeightMap floorHeightMap;
 
-        Cave Cave;
+        // Unity's coroutines do not support return values, so we save them as instance variables instead.
+        // .NET tasks do not have this limitation, but Unity's version of .NET does not have them yet
+        CaveMeshChunk[] caveChunks;
+        CollisionTester collisionTester;
+
+        Cave cave;
 
         /// <summary>
         /// Main method for creating cave objects. Call ExtractCave to get a reference to the most recently generated cave.
@@ -84,13 +84,13 @@ namespace CaveGeneration
         /// <exception cref="InvalidOperationException"></exception>
         public Cave ExtractCave()
         {
-            if (IsGenerating || Cave == null)
+            if (IsGenerating || cave == null)
             {
                 string errorMessage = IsGenerating ? "Cannot extract cave while generating." : "No cave to Extract";
                 throw new InvalidOperationException(errorMessage);
             }
-            Cave extractedCave = Cave;
-            Cave = null;
+            Cave extractedCave = cave;
+            cave = null;
             return extractedCave;
         }
 
@@ -98,71 +98,47 @@ namespace CaveGeneration
         {
             IsGenerating = true;
             EditorOnlyLog("Generating cave...");
+
             yield return ExecuteTask(GenerateCoreData);
-            yield return BuildCave();
+            this.cave = new Cave(collisionTester, caveChunks, config);
+
             EditorOnlyLog("Finished!");
             IsGenerating = false;
+
             if (callback != null) callback();
         }
 
         // This method packages the functionality that can be executed in a secondary thread, 
-        // which includes generating most of the data necessary to build a cave. BuildCave uses the generated data to 
-        // build the cave, something that has to be excuted on the main thread as most of Unity's API
-        // is off-limits on secondary threads. 
+        // which includes generating most of the data necessary to build a cave. 
         void GenerateCoreData()
         {
             Map map = MapGenerator.GenerateMap(config.MapParameters);
-            MeshGenerator[] meshGenerators = PrepareMeshGenerators(map);
+            CaveMeshChunk[] caveChunks = GenerateMeshes(map);
             CollisionTester collisionTester = MapConverter.ToCollisionTester(map, config.Scale);
 
             this.collisionTester = collisionTester;
-            this.meshGenerators = meshGenerators;
+            this.caveChunks = caveChunks;
         }
 
-        IEnumerator BuildCave()
-        {
-            var caveMeshes = new List<CaveMeshes>();
-            foreach (MeshGenerator meshGenerator in meshGenerators)
-            {
-                caveMeshes.Add(meshGenerator.ExtractMeshes());
-                yield return null;
-            }
-            Cave cave = new Cave(collisionTester, caveMeshes, config);
-            AssignMaterial(cave.GetFloors(),   config.FloorMaterial);
-            AssignMaterial(cave.GetCeilings(), config.CeilingMaterial);
-            AssignMaterial(cave.GetWalls(),    config.WallMaterial);
-            this.Cave = cave;
-            yield return null;
-        }
-
-        MeshGenerator[] PrepareMeshGenerators(Map map)
+        CaveMeshChunk[] GenerateMeshes(Map map)
         {
             MapChunk[] mapChunks = MapSplitter.Subdivide(map);
-            var meshGenerators = new MeshGenerator[mapChunks.Length];
-            var actions = new Action[meshGenerators.Length];
-            for (int i = 0; i < meshGenerators.Length; i++)
+            var caveChunks = new CaveMeshChunk[mapChunks.Length];
+            var actions = new Action[mapChunks.Length];
+            for (int i = 0; i < mapChunks.Length; i++)
             {
-                var meshGenerator = new MeshGenerator(mapChunks[i].Index.ToString());
                 int indexCopy = i; // using i directly would result in each action using the same value of i
-                actions[i] = (() => meshGenerators[indexCopy] = GenerateMeshData(meshGenerator, mapChunks[indexCopy]));
+                actions[i] = (() => caveChunks[indexCopy] = GenerateMeshes(mapChunks[indexCopy]));
             }
             ExecuteActions(actions);
-            return meshGenerators;
+            return caveChunks;
         }
 
-        MeshGenerator GenerateMeshData(MeshGenerator meshGenerator, MapChunk mapChunk)
+        CaveMeshChunk GenerateMeshes(MapChunk mapChunk)
         {
             WallGrid wallGrid = MapConverter.ToWallGrid(mapChunk, config.Scale);
-            meshGenerator.Generate(wallGrid, config.CaveType, floorHeightMap, ceilingHeightMap);
-            return meshGenerator;
-        }
-
-        void AssignMaterial(IEnumerable<CaveComponent> components, Material material)
-        {
-            foreach (CaveComponent component in components)
-            {
-                component.Material = material;
-            }
+            CaveMeshes meshes = MeshGenerator.Generate(wallGrid, config.CaveType, floorHeightMap, ceilingHeightMap);
+            return new CaveMeshChunk(meshes, mapChunk.Index);
         }
 
         void ExecuteActions(Action[] actions)
@@ -191,11 +167,11 @@ namespace CaveGeneration
 
         void DestroyCurrentCave()
         {
-            if (Cave != null)
+            if (cave != null)
             {
-                Destroy(Cave.GameObject);
+                Destroy(cave.GameObject);
             }
-            Cave = null;
+            cave = null;
         }
 
         void Reset()

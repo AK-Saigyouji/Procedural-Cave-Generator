@@ -28,8 +28,8 @@ namespace CaveGeneration
         {
             var wallGrid = new WallGrid(new byte[size, size], Vector3.zero);
             IHeightMap heightMap = parameters.ToHeightMap();
-            CaveMeshes meshes = MeshGenerator.GenerateCaveMeshes(wallGrid, CaveType.Isometric, heightMap, heightMap);
-            mesh = meshes.Floor;
+            CaveMeshes meshes = MeshGenerator.Generate(wallGrid, CaveType.Isometric, heightMap, heightMap);
+            mesh = meshes.ExtractFloorMesh();
         }
 
         void Reset()

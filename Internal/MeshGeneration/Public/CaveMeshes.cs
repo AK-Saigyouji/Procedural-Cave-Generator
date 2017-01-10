@@ -1,26 +1,65 @@
-﻿/* The primary purpose of this class is to provide a container for all the meshes for an appropriate editor script
- * to convert into mesh assets. */
+﻿/* This class stores the output of the mesh generator system, and is designed to hide a bit of complexity 
+ having to do with the fact that Meshes cannot be created or manipulated outside of the main thread. Originally,
+ using the cave generator required three steps: creating a mesh generator, calling a generate method which did the
+ work of determining the cave geometry, and then extracting the meshes which built actual Mesh objects. 
+ The first two steps could be done on multiple threads, but the third had to be done on the main thread.
+ 
+  Ideally, the mesh generator should be a static, stateless class, and generation should be doable with a single
+ static method. This class was designed to facilitate this, through lazy initialization. Instead of returning
+ the meshes, the cave generator returns this object, which builds the meshes when they're requested.*/
 
 using UnityEngine;
 
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Readonly storage class to hold generated meshes.
+    /// Output of the mesh generator, containing the meshes needed to produce a cave.
     /// </summary>
     public sealed class CaveMeshes
     {
-        public Mesh Floor { get; private set; }
-        public Mesh Walls { get; private set; }
-        public Mesh Ceiling { get; private set; }
-        public string Index { get; private set; }
+        Mesh floorMesh;
+        Mesh wallMesh;
+        Mesh ceilingMesh;
 
-        public CaveMeshes(Mesh floor, Mesh walls, Mesh ceiling, string index)
+        MeshData floorData;
+        MeshData wallData;
+        MeshData ceilingData;
+
+        internal CaveMeshes(MeshData floor, MeshData walls, MeshData ceiling)
         {
-            Floor = floor;
-            Walls = walls;
-            Ceiling = ceiling;
-            Index = index;
+            floorData = floor;
+            wallData = walls;
+            ceilingData = ceiling;
+        }
+
+        public Mesh ExtractFloorMesh()
+        {
+            if (floorMesh == null)
+            {
+                floorMesh = floorData.CreateMesh();
+                floorData = null;
+            }
+            return floorMesh;
+        }
+
+        public Mesh ExtractWallMesh()
+        {
+            if (wallMesh == null)
+            {
+                wallMesh = wallData.CreateMesh();
+                wallData = null;
+            }
+            return wallMesh;
+        }
+
+        public Mesh ExtractCeilingMesh()
+        {
+            if (ceilingMesh == null)
+            {
+                ceilingMesh = ceilingData.CreateMesh();
+                ceilingData = null;
+            }
+            return ceilingMesh;
         }
     } 
 }

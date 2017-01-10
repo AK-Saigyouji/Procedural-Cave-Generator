@@ -1,11 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public sealed class Walls : CaveComponent
+namespace CaveGeneration
 {
-    internal Walls(Mesh mesh, string name) : base(mesh, name)
+    sealed class Walls : CaveComponent
     {
-        AddMeshCollider();
-    }
+        internal Walls(Mesh mesh, string name) : base(mesh, name)
+        {
+            AddMeshCollider();
+        }
+    }  
 }

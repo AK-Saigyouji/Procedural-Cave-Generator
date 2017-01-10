@@ -1,11 +1,12 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 
-public sealed class Floor : CaveComponent
+namespace CaveGeneration
 {
-    internal Floor(Mesh mesh, string name) : base(mesh, name)
+    sealed class Floor : CaveComponent
     {
-        AddMeshCollider();
-    }
+        internal Floor(Mesh mesh, string name) : base(mesh, name)
+        {
+            AddMeshCollider();
+        }
+    } 
 }

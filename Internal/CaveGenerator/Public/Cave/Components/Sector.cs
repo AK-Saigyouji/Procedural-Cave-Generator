@@ -1,34 +1,40 @@
 ﻿using UnityEngine;
 using CaveGeneration.MeshGeneration;
 
-public sealed class Sector
+namespace CaveGeneration
 {
-    public GameObject GameObject { get; private set; }
-
-    public CaveComponent Ceiling { get; private set; }
-    public CaveComponent Walls { get; private set; }
-    public CaveComponent Floor { get; private set; }
-
-    internal Sector(CaveMeshes caveMeshes, string index)
+    public sealed class Sector
     {
-        GameObject = new GameObject(AppendIndex("Sector", index));
+        public GameObject GameObject { get; private set; }
 
-        Ceiling = new Ceiling(caveMeshes.Ceiling, AppendIndex("Ceiling", index));
-        Walls   = new Walls(caveMeshes.Walls, AppendIndex("Walls", index));
-        Floor   = new Floor(caveMeshes.Floor, AppendIndex("Floor", index));
+        public CaveComponent Ceiling { get; private set; }
+        public CaveComponent Walls { get; private set; }
+        public CaveComponent Floor { get; private set; }
 
-        SetChild(Ceiling);
-        SetChild(Walls);
-        SetChild(Floor);
-    }
+        internal Sector(CaveMeshChunk caveChunk)
+        {
+            string index = caveChunk.Index.ToString();
+            CaveMeshes caveMeshes = caveChunk.CaveMeshes;
+            
+            GameObject = new GameObject(AppendIndex("Sector", index));
 
-    void SetChild(CaveComponent component)
-    {
-        component.GameObject.transform.parent = GameObject.transform;
-    }
+            Ceiling = new Ceiling(caveMeshes.ExtractCeilingMesh(), AppendIndex("Ceiling", index));
+            Walls   = new Walls(caveMeshes.ExtractWallMesh(), AppendIndex("Walls", index));
+            Floor   = new Floor(caveMeshes.ExtractFloorMesh(), AppendIndex("Floor", index));
 
-    string AppendIndex(string name, string index)
-    {
-        return string.Format("{0} {1}", name, index);
-    }
+            SetChild(Ceiling);
+            SetChild(Walls);
+            SetChild(Floor);
+        }
+
+        void SetChild(CaveComponent component)
+        {
+            component.GameObject.transform.parent = GameObject.transform;
+        }
+
+        string AppendIndex(string name, string index)
+        {
+            return string.Format("{0} {1}", name, index);
+        }
+    } 
 }

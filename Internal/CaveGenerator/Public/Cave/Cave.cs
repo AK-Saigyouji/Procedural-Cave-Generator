@@ -31,7 +31,7 @@ namespace CaveGeneration
 
         Sector[] sectors;
 
-        internal Cave(CollisionTester collisionTester, IEnumerable<CaveMeshes> caveMeshes, CaveConfiguration caveConfiguration)
+        internal Cave(CollisionTester collisionTester, IEnumerable<CaveMeshChunk> caveMeshes, CaveConfiguration caveConfiguration)
         {
             Assert.IsNotNull(collisionTester);
             Assert.IsNotNull(caveMeshes);
@@ -41,7 +41,12 @@ namespace CaveGeneration
             Configuration = caveConfiguration.Clone();
             GameObject = new GameObject("Cave");
             CollisionTester = collisionTester;
+
             BuildSectors(caveMeshes);
+
+            AssignMaterial(GetWalls(), Configuration.WallMaterial);
+            AssignMaterial(GetFloors(), Configuration.FloorMaterial);
+            AssignMaterial(GetCeilings(), Configuration.CeilingMaterial);
         }
 
         public IEnumerable<CaveComponent> GetFloors()
@@ -69,12 +74,20 @@ namespace CaveGeneration
             return sectors;
         }
 
-        void BuildSectors(IEnumerable<CaveMeshes> caveMeshes)
+        void AssignMaterial(IEnumerable<CaveComponent> components, Material material)
+        {
+            foreach (CaveComponent component in components)
+            {
+                component.Material = material;
+            }
+        }
+
+        void BuildSectors(IEnumerable<CaveMeshChunk> caveChunks)
         {
             var sectors = new List<Sector>();
-            foreach (CaveMeshes caveMesh in caveMeshes)
+            foreach (CaveMeshChunk caveChunk in caveChunks)
             {
-                var sector = new Sector(caveMesh, caveMesh.Index);
+                var sector = new Sector(caveChunk);
                 sector.GameObject.transform.parent = GameObject.transform;
                 sectors.Add(sector);
             }
