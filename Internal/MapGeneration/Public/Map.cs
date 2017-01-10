@@ -19,20 +19,18 @@ namespace CaveGeneration.MapGeneration
 
     [Serializable]
     /// <summary>
-    /// The 2D grid-based Map. Points in the map are given by integer pairs like a 2d array. Each point is either 
+    /// A 2D grid-based Map. Points in the map are given by integer pairs like a 2d array. Each point is either 
     /// a floor or wall tile. Offers a variety of methods tailored to map construction.
     /// </summary>
     public sealed class Map
     {
         public int Length { get { return length; } }
         public int Width { get { return width; } }
-        public Coord Index { get { return index; } private set { index = value; } }
 
         Tile[,] grid;
 
         int length;
         int width;
-        Coord index;
 
         public Map(int length, int width)
         {
@@ -41,17 +39,14 @@ namespace CaveGeneration.MapGeneration
             this.width = width;
         }
 
-        public Map(int length, int width, Coord index) : this(length, width)
-        {
-            Index = index;
-        }
-
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public Tile this[int x, int y]
         {
             get { return grid[x, y]; }
             set { grid[x, y] = value; }
         }
 
+        /// <exception cref="IndexOutOfRangeException"></exception>
         public Tile this[Coord tile]
         {
             get { return grid[tile.x, tile.y]; }
@@ -88,7 +83,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public Map Clone()
         {
-            Map clone = new Map(length, width);
+            Map clone = (Map)MemberwiseClone();
             clone.Copy(this);
             return clone;
         }
@@ -228,7 +223,7 @@ namespace CaveGeneration.MapGeneration
         /// <exception cref="IndexOutOfRangeException"></exception>
         public bool IsWall(Coord tile)
         {
-            return grid[tile.x,tile.y] == Tile.Wall;
+            return grid[tile.x, tile.y] == Tile.Wall;
         }
 
         /// <summary>

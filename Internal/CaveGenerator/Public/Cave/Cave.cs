@@ -36,6 +36,7 @@ namespace CaveGeneration
             Assert.IsNotNull(collisionTester);
             Assert.IsNotNull(caveMeshes);
             Assert.IsNotNull(caveConfiguration);
+            Assert.IsFalse(caveMeshes.Contains(null));
 
             Configuration = caveConfiguration.Clone();
             GameObject = new GameObject("Cave");
@@ -56,6 +57,11 @@ namespace CaveGeneration
         public IEnumerable<CaveComponent> GetCeilings()
         {
             return sectors.Select(sector => sector.Ceiling);
+        }
+
+        public IEnumerable<CaveComponent> GetAllComponents()
+        {
+            return GetFloors().Concat(GetWalls()).Concat(GetCeilings());
         }
 
         public IEnumerable<Sector> GetSectors()

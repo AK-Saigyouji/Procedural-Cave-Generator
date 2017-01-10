@@ -11,7 +11,7 @@ end, maintaining a table of visited vertices to avoid duplicating outlines. Ther
 The first is that we might start in the middle of an outline, not necessarily the beginning. The second is that some
 outlines will loop back to themselves, while others will not. 
 
-To handle both complications, perform the following steps:
+To handle both complications, perform the following steps: 
 First, travel backwards along the outline until reaching the starting point or running out of vertices in the outline.
 Second, reverse the points discovered so far.
 Third, check if the starting point was reached. If so, terminate. Otherwise, travel fowards along the outline
@@ -58,36 +58,32 @@ namespace CaveGeneration.MeshGeneration
         {
             byte[,] configurations = MarchingSquares.ComputeConfigurations(grid);
             int numOutlineEdges = CountOutlineEdges(configurations);
-            var forwardLookup  = new Dictionary<LocalPosition, LocalPosition>(numOutlineEdges);
-            var backwardLookup = new Dictionary<LocalPosition, LocalPosition>(numOutlineEdges);
-            PopulateLookupTables(forwardLookup, backwardLookup, configurations);
+            TwoWayLookup outlineLookup = CreateLookupTable(numOutlineEdges, configurations);
 
             var outlines = new List<Vector3[]>();
-            var visited = new HashSet<LocalPosition>(); 
-            var reusableList = new List<LocalPosition>(backwardLookup.Count);
-            foreach (var pair in backwardLookup)
+            var visited = new HashSet<LocalPosition>();
+            foreach (var pair in outlineLookup.EnumerateBackwards())
             {
                 if (!visited.Contains(pair.Key))
                 {
                     LocalPosition start = pair.Key;
                     LocalPosition next = pair.Value;
-                    reusableList.Clear();
-                    List<LocalPosition> outline = reusableList;
-                    AddToOutline(start, visited, outline);
-                    AddToOutline(next, visited, outline);
+                    var outline = new List<LocalPosition>();
+                    AddToOutline(outline, start, visited);
+                    AddToOutline(outline, next, visited);
                     // first do a backward pass until looping or running out of connected outline edges
-                    while (start != next && backwardLookup.TryGetValue(next, out next))
+                    while (start != next && outlineLookup.TryGetBackwardValue(next, out next))
                     {
-                        AddToOutline(next, visited, outline);
+                        AddToOutline(outline, next, visited);
                     }
                     outline.Reverse();
                     // if no loop, then do a forward pass from the starting point
-                    if (start != next) 
+                    if (start != next)
                     {
                         next = start;
-                        while (forwardLookup.TryGetValue(next, out next))
+                        while (outlineLookup.TryGetForwardValue(next, out next))
                         {
-                            AddToOutline(next, visited, outline);
+                            AddToOutline(outline, next, visited);
                         }
                     }
                     outlines.Add(ToGlobalPositions(outline, grid.Scale, grid.Position));
@@ -96,7 +92,7 @@ namespace CaveGeneration.MeshGeneration
             return outlines;
         }
 
-        static void AddToOutline(LocalPosition item, HashSet<LocalPosition> visited, List<LocalPosition> outline)
+        static void AddToOutline(List<LocalPosition> outline, LocalPosition item, HashSet<LocalPosition> visited)
         {
             visited.Add(item);
             outline.Add(item);
@@ -111,18 +107,16 @@ namespace CaveGeneration.MeshGeneration
             {
                 for (int x = 0; x < length; x++)
                 {
-                    // Each square has either 4 or 2 points, correspondinding to 2 or 1 outlines.
+                    // Each square has 1 or 2 outlines running through it. This corresponds to 2 or 4 points in the array.
                     numOutlinePoints += outlineTable[configurations[x, y]].Length;
                 }
             }
             return numOutlinePoints / 2;
         }
 
-        static void PopulateLookupTables(
-            Dictionary<LocalPosition, LocalPosition> forward, 
-            Dictionary<LocalPosition, LocalPosition> backward,
-            byte[,] configurations)
+        static TwoWayLookup CreateLookupTable(int capacity, byte[,] configurations)
         {
+            var lookupTable = new TwoWayLookup(capacity);
             int length = configurations.GetLength(0);
             int width = configurations.GetLength(1);
             for (int y = 0; y < width; y++)
@@ -132,14 +126,14 @@ namespace CaveGeneration.MeshGeneration
                     byte[] outlineData = outlineTable[configurations[x, y]];
                     for (int i = 0; i < outlineData.Length; i += 2)
                     {
-                        LocalPosition a = new LocalPosition(x, y, outlineData[i]);
-                        LocalPosition b = new LocalPosition(x, y, outlineData[i + 1]);
+                        var a = new LocalPosition(x, y, outlineData[i]);
+                        var b = new LocalPosition(x, y, outlineData[i + 1]);
 
-                        forward[a] = b;
-                        backward[b] = a;
+                        lookupTable.AddPair(a, b);
                     }
                 }
             }
+            return lookupTable;
         }
 
         static Vector3[] ToGlobalPositions(List<LocalPosition> localPositions, int scale, Vector3 basePosition)
@@ -151,5 +145,50 @@ namespace CaveGeneration.MeshGeneration
             }
             return vertices;
         }
+
+        sealed class TwoWayLookup
+        {
+            readonly Dictionary<LocalPosition, LocalPosition> forwardLookup;
+            readonly Dictionary<LocalPosition, LocalPosition> backwardLookup;
+
+            public TwoWayLookup(int capacity)
+            {
+                forwardLookup = new Dictionary<LocalPosition, LocalPosition>(capacity);
+                backwardLookup = new Dictionary<LocalPosition, LocalPosition>(capacity);
+            }
+
+            public void AddPair(LocalPosition start, LocalPosition end)
+            {
+                forwardLookup[start] = end;
+                backwardLookup[end] = start;
+            }
+
+            public bool TryGetForwardValue(LocalPosition key, out LocalPosition value)
+            {
+                return forwardLookup.TryGetValue(key, out value);
+            }
+
+            public bool TryGetBackwardValue(LocalPosition key, out LocalPosition value)
+            {
+                return backwardLookup.TryGetValue(key, out value);
+            }
+
+            public IEnumerable<KeyValuePair<LocalPosition, LocalPosition>> EnumerateForwards()
+            {
+                foreach (var pair in forwardLookup)
+                {
+                    yield return pair;
+                }
+            }
+
+            public IEnumerable<KeyValuePair<LocalPosition, LocalPosition>> EnumerateBackwards()
+            {
+                foreach (var pair in backwardLookup)
+                {
+                    yield return pair;
+                }
+            }
+        }
+
     }
 }

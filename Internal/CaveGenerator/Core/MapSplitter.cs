@@ -16,9 +16,9 @@ namespace CaveGeneration
         /// <summary>
         /// Divide the map into smaller Map chunks.
         /// </summary>
-        public static Map[] Subdivide(Map map)
+        public static MapChunk[] Subdivide(Map map)
         {
-            var maps = new List<Map>();
+            var maps = new List<MapChunk>();
             int xNumComponents = Mathf.CeilToInt(map.Length / (float)CHUNK_SIZE);
             int yNumComponents = Mathf.CeilToInt(map.Width / (float)CHUNK_SIZE);
             for (int x = 0; x < xNumComponents; x++)
@@ -31,7 +31,7 @@ namespace CaveGeneration
             return maps.ToArray();
         }
 
-        static Map GenerateSubMap(Map map, int xIndex, int yIndex)
+        static MapChunk GenerateSubMap(Map map, int xIndex, int yIndex)
         {
             int xStart = xIndex * CHUNK_SIZE, yStart = yIndex * CHUNK_SIZE;
             int xEnd = ComputeSubmapEndPoint(xStart, map.Length);
@@ -39,8 +39,8 @@ namespace CaveGeneration
 
             int length = xEnd - xStart;
             int width = yEnd - yStart;
-            Coord index = new Coord(xIndex, yIndex);
-            Map subMap = new Map(length, width, index);
+            
+            Map subMap = new Map(length, width);
 
             for (int x = xStart; x < xEnd; x++)
             {
@@ -49,7 +49,8 @@ namespace CaveGeneration
                     subMap[x - xStart, y - yStart] = map[x, y];
                 }
             }
-            return subMap;
+            Coord index = new Coord(xIndex, yIndex);
+            return new MapChunk(subMap, index);
         }
 
         static int ComputeSubmapEndPoint(int start, int max)
@@ -58,4 +59,18 @@ namespace CaveGeneration
         }
     }
 
+    /// <summary>
+    /// Simple wrapper for a map carrying a label to identify its position in a grid of map chunks.
+    /// </summary>
+    sealed class MapChunk
+    {
+        public Map Map { get; private set; }
+        public Coord Index { get; private set; }
+
+        public MapChunk(Map map, Coord index)
+        {
+            Map = map;
+            Index = index;
+        }
+    }
 }

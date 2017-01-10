@@ -16,13 +16,15 @@ namespace CaveGeneration.MapGeneration
         {
             Assert.IsNotNull(map);
             var regions = new List<TileRegion>();
-            bool[,] visited = InitializeVisitedArray(map, tileType);
+            bool[,] visited = map.ToBoolArray(GetOpposite(tileType));
+            int regionsFound = 0;
             map.ForEach((x, y) =>
             {
                 if (!visited[x, y])
                 {
                     List<Coord> region = GetConnectedRegion(x, y, visited);
-                    regions.Add(new TileRegion(region));
+                    regions.Add(new TileRegion(region, regionsFound));
+                    regionsFound++;
                 }
             });
             return regions;
@@ -37,7 +39,8 @@ namespace CaveGeneration.MapGeneration
         public static void RemoveSmallRegions(Map map, Tile tileType, int threshold)
         {
             Assert.IsNotNull(map);
-            bool[,] visited = InitializeVisitedArray(map, tileType);
+            Tile oppositeTileType = GetOpposite(tileType);
+            bool[,] visited = map.ToBoolArray(oppositeTileType);
             map.ForEach((x, y) =>
             {
                 if (!visited[x, y])
@@ -45,18 +48,15 @@ namespace CaveGeneration.MapGeneration
                     List<Coord> region = GetConnectedRegion(x, y, visited);
                     if (region.Count < threshold)
                     {
-                        FillRegion(map, region, GetOpposite(tileType));
+                        FillRegion(map, region, oppositeTileType);
                     }
                 }
             });
         }
 
-        static bool[,] InitializeVisitedArray(Map map, Tile tileType)
-        {
-            bool[,] visited = map.ToBoolArray(GetOpposite(tileType));
-            return visited;
-        }
-
+        // By using an appropriate initialized visited array, this BFS does not need a reference to the map at all:
+        // All the tiles of the wrong type have already been marked as visited, so by discovering all unvisited 
+        // regions, we're getting exactly the regions of the desired type.
         static List<Coord> GetConnectedRegion(int xStart, int yStart, bool[,] visited)
         {
             int xMax = visited.GetLength(0);
@@ -71,7 +71,8 @@ namespace CaveGeneration.MapGeneration
                 Coord currentTile = queue.Dequeue();
                 tiles.Add(currentTile);
 
-                // Unpacking the foreach loop for the following four checks offers a dramatic speedup.
+                // Unpacking the foreach loop for the following four checks offers a dramatic speedup, and this
+                // is a performance hot spot in the generator as a whole.
                 int x = currentTile.x, y = currentTile.y;
                 int left = x - 1, right = x + 1, up = y + 1, down = y - 1;
 
@@ -100,7 +101,7 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Fill each tile in the region with tiles of the opposite type.
+        /// Fill each tile in the region with tiles of the specified type.
         /// </summary>
         static void FillRegion(Map map, List<Coord> region, Tile tileType)
         {

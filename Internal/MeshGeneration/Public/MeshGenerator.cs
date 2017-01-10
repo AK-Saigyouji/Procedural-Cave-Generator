@@ -18,8 +18,6 @@
  */
 
 using UnityEngine;
-using UnityEngine.Assertions;
-using UnityEngine.Profiling;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -102,9 +100,9 @@ namespace CaveGeneration.MeshGeneration
 
         void GenerateIsometric(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
+            floorMesh   = MeshBuilder.BuildFloor(grid, floorHeightMap);
             ceilingMesh = MeshBuilder.BuildCeiling(grid, ceilingHeightMap);
             wallMesh    = MeshBuilder.BuildWalls(grid, floorHeightMap, ceilingHeightMap);
-            floorMesh   = MeshBuilder.BuildFloor(grid, floorHeightMap);
         }
 
         void GenerateEnclosed(WallGrid grid, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)

@@ -15,15 +15,18 @@ namespace CaveGeneration.MapGeneration
     {
         Coord[] tiles;
         public int Count { get { return tiles.Length; } }
+        public int Index { get; private set; }
 
-        public TileRegion(List<Coord> tiles)
+        public TileRegion(List<Coord> tiles, int index)
         {
+            UnityEngine.Assertions.Assert.IsNotNull(tiles);
             Coord[] tilesCopy = new Coord[tiles.Count];
             for (int i = 0; i < tiles.Count; i++)
             {
                 tilesCopy[i] = tiles[i];
             }
             this.tiles = tilesCopy;
+            Index = index;
         }
 
         public Coord this[int index]

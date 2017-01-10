@@ -95,12 +95,12 @@ namespace CaveGeneration.MapGeneration.Connectivity
                     }
                 }
             }
-            return new TileRegion(edgeTiles);
+            return new TileRegion(edgeTiles, region.Index);
         }
 
         static Coord GetStartingEdgeTile(Map map, TileRegion region)
         {
-            // Note that in practice, this should return the very first item in alltiles, but that may change in the future.
+            // Note that in practice, this should return the very first item in alltiles.
             return region.First(tile => map.IsAdjacentToWallFast(tile.x, tile.y));
         }
 

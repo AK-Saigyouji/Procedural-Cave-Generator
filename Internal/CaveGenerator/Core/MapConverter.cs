@@ -16,17 +16,19 @@ namespace CaveGeneration
         /// <summary>
         /// Converts a map for consumption by the mesh generation system.
         /// </summary>
-        public static WallGrid ToWallGrid(Map map, int scale)
+        public static WallGrid ToWallGrid(MapChunk mapChunk, int scale)
         {
-            Assert.IsNotNull(map);
+            Assert.IsNotNull(mapChunk);
             Assert.IsTrue(scale > 0, "Scale must be positive");
 
-            Vector3 position = IndexToPosition(map.Index, scale);
-            return new WallGrid(map.ToByteArray(), position, scale);
+            Vector3 position = IndexToPosition(mapChunk.Index, scale);
+            return new WallGrid(mapChunk.Map.ToByteArray(), position, scale);
         }
 
         public static CollisionTester ToCollisionTester(Map map, int scale)
         {
+            Assert.IsNotNull(map);
+            Assert.IsTrue(scale > 0, "Scale must be positive");
             /*
              This is a bit round-about, but it's a result of passing through multiple systems. 
              CollisionTester is a class written in CaveGeneration to consume and build upon FloorTester.
@@ -37,6 +39,11 @@ namespace CaveGeneration
              Map is how a grid of walls is represented in the MapGeneration system. MeshGeneration and 
              MapGeneration have no knowledge of each other to avoid unnecessary dependencies. */
             return new CollisionTester(new FloorTester(ToWallGrid(map, scale)));
+        }
+
+        static WallGrid ToWallGrid(Map map, int scale)
+        {
+            return new WallGrid(map.ToByteArray(), Vector3.zero, scale);
         }
 
         static Vector3 IndexToPosition(Coord index, int scale)

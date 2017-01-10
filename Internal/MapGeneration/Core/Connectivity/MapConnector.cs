@@ -67,7 +67,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
             TileRegion[] rooms = ExtractEdges(map, regions);
             ConnectionInfo[] allConnections = GetAllRoomConnections(rooms);
             ConnectionInfo[] sortedConnections = SortConnections(allConnections);
-            return PruneConnections(sortedConnections, rooms.Length);
+            return PruneConnections(sortedConnections);
         }
 
         static TileRegion[] ExtractEdges(Map map, List<TileRegion> regions)
@@ -89,10 +89,9 @@ namespace CaveGeneration.MapGeneration.Connectivity
             int connectionIndex = 0;
             for (int a = 0; a < numRooms; a++)
             {
-                var roomA = room[a];
                 for (int b = a + 1; b < numRooms; b++)
                 {
-                    allConnections[connectionIndex] = ConnectionFinder.FindConnection(roomA, room[b], a, b);
+                    allConnections[connectionIndex] = ConnectionFinder.FindConnection(room[a], room[b]);
                     connectionIndex++;
                 }
             }
@@ -140,9 +139,9 @@ namespace CaveGeneration.MapGeneration.Connectivity
             return sortedConnections;
         }
 
-        static ConnectionInfo[] PruneConnections(ConnectionInfo[] connections, int numRooms)
+        static ConnectionInfo[] PruneConnections(ConnectionInfo[] connections)
         {
-            return MST.ComputeMST(connections, numRooms);
+            return MST.ComputeMST(connections);
         }
     } 
 }

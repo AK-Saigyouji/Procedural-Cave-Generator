@@ -3,9 +3,7 @@ using CaveGeneration.MeshGeneration;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
-using UnityEngine.Assertions;
 
 #if UNITY_EDITOR
 using Stopwatch = System.Diagnostics.Stopwatch;
@@ -98,10 +96,12 @@ namespace CaveGeneration
 
         IEnumerator GenerateCaveAsync(Action callback)
         {
-            Setup();
+            IsGenerating = true;
+            EditorOnlyLog("Generating cave...");
             yield return ExecuteTask(GenerateCoreData);
             yield return BuildCave();
-            TearDown();
+            EditorOnlyLog("Finished!");
+            IsGenerating = false;
             if (callback != null) callback();
         }
 
@@ -112,9 +112,9 @@ namespace CaveGeneration
         void GenerateCoreData()
         {
             Map map = MapGenerator.GenerateMap(config.MapParameters);
-            Map[] submaps = MapSplitter.Subdivide(map);
-            MeshGenerator[] meshGenerators = PrepareMeshGenerators(submaps);
+            MeshGenerator[] meshGenerators = PrepareMeshGenerators(map);
             CollisionTester collisionTester = MapConverter.ToCollisionTester(map, config.Scale);
+
             this.collisionTester = collisionTester;
             this.meshGenerators = meshGenerators;
         }
@@ -128,31 +128,45 @@ namespace CaveGeneration
                 yield return null;
             }
             Cave cave = new Cave(collisionTester, caveMeshes, config);
-            AssignMaterials(cave.GetFloors(),   config.FloorMaterial);
-            AssignMaterials(cave.GetCeilings(), config.CeilingMaterial);
-            AssignMaterials(cave.GetWalls(),    config.WallMaterial);
-
+            AssignMaterial(cave.GetFloors(),   config.FloorMaterial);
+            AssignMaterial(cave.GetCeilings(), config.CeilingMaterial);
+            AssignMaterial(cave.GetWalls(),    config.WallMaterial);
             this.Cave = cave;
+            yield return null;
         }
 
-        MeshGenerator PrepareMeshGenerator(MeshGenerator meshGenerator, Map map)
+        MeshGenerator[] PrepareMeshGenerators(Map map)
         {
-            WallGrid wallGrid = MapConverter.ToWallGrid(map, config.Scale);
+            MapChunk[] mapChunks = MapSplitter.Subdivide(map);
+            var meshGenerators = new MeshGenerator[mapChunks.Length];
+            var actions = new Action[meshGenerators.Length];
+            for (int i = 0; i < meshGenerators.Length; i++)
+            {
+                var meshGenerator = new MeshGenerator(mapChunks[i].Index.ToString());
+                int indexCopy = i; // using i directly would result in each action using the same value of i
+                actions[i] = (() => meshGenerators[indexCopy] = GenerateMeshData(meshGenerator, mapChunks[indexCopy]));
+            }
+            ExecuteActions(actions);
+            return meshGenerators;
+        }
+
+        MeshGenerator GenerateMeshData(MeshGenerator meshGenerator, MapChunk mapChunk)
+        {
+            WallGrid wallGrid = MapConverter.ToWallGrid(mapChunk, config.Scale);
             meshGenerator.Generate(wallGrid, config.CaveType, floorHeightMap, ceilingHeightMap);
             return meshGenerator;
         }
 
-        MeshGenerator[] PrepareMeshGenerators(Map[] submaps)
+        void AssignMaterial(IEnumerable<CaveComponent> components, Material material)
         {
-            var meshGenerators = new MeshGenerator[submaps.Length];
-            var actions = new Action[meshGenerators.Length];
-            for (int i = 0; i < meshGenerators.Length; i++)
+            foreach (CaveComponent component in components)
             {
-                Map currentMap = submaps[i];
-                MeshGenerator meshGenerator = InitializeMeshGenerator(currentMap);
-                int indexCopy = i; // using i directly would result in each action using the same value of i
-                actions[i] = (() => meshGenerators[indexCopy] = PrepareMeshGenerator(meshGenerator, currentMap));
+                component.Material = material;
             }
+        }
+
+        void ExecuteActions(Action[] actions)
+        {
             if (config.DebugMode)
             {
                 Array.ForEach(actions, action => action.Invoke());
@@ -161,32 +175,6 @@ namespace CaveGeneration
             {
                 Utility.Threading.ParallelExecute(actions);
             }
-            return meshGenerators;
-        }
-
-        MeshGenerator InitializeMeshGenerator(Map map)
-        {
-            return new MeshGenerator(map.Index.ToString());
-        }
-
-        void AssignMaterials(IEnumerable<CaveComponent> components, Material material)
-        {
-            foreach (CaveComponent component in components)
-            {
-                component.Material = material;
-            }
-        }
-
-        void Setup()
-        {
-            IsGenerating = true;
-            EditorOnlyLog("Generating cave...");
-        }
-
-        void TearDown()
-        {
-            EditorOnlyLog("Finished!");
-            IsGenerating = false;
         }
 
         IEnumerator ExecuteTask(Action action)

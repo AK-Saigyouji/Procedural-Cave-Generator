@@ -2,9 +2,9 @@
  * The original idea was to consider all pairs of edge tiles from each room, selecting the pair with minimum distance.
  * This was responsible for over half the run time of the original cave generator for smaller maps, and completely 
  * dominated for larger maps. The current version is over 1000 times faster (8ms versus 18000ms) than the
- * original method for map of size 300 by 300 and now scales linearly. 
+ * original method for maps of size 300 by 300 and now scales linearly. 
  * 
- * To optimize, a small amount of error was accepted, based on the following observation:
+ * To optimize, a small amount of error was accepted based on the following observation:
  * the larger the distance between the rooms, the more slack can be given in terms of finding a 
  * suboptimal connection. e.g. finding a 300 tile connection versus a 280 tile connection isn't an issue, but finding 
  * a 2 tile connection versus a 22 tile connection is problematic. So each time we compute a distance, we skip a 
@@ -18,43 +18,56 @@
  * cases, the error is small.
  */
 
+using UnityEngine.Assertions;
 namespace CaveGeneration.MapGeneration.Connectivity
 {
     static class ConnectionFinder
     {
-        public static ConnectionInfo FindConnection(TileRegion regionA, TileRegion regionB, int roomIndexA, int roomIndexB)
+        public static ConnectionInfo FindConnection(TileRegion regionA, TileRegion regionB)
         {
-            Coord bestTileA = new Coord();
-            Coord bestTileB = new Coord();
-            float bestDistance = float.MaxValue;
+            Assert.IsNotNull(regionA);
+            Assert.IsNotNull(regionB);
+            Assert.AreNotEqual(regionA, regionB);
 
+            var bestConnection = new TempConnection(new Coord(), new Coord(), float.MaxValue);
             int indexA = 0;
             while (indexA < regionA.Count)
             {
                 int indexB = 0;
-                Coord tileA = regionA[indexA];
-                Coord bestTileBThisLoop = new Coord();
-                float bestDistanceThisLoop = float.MaxValue;
+                var bestThisLoop = new TempConnection(regionA[indexA], new Coord(), float.MaxValue);
                 while (indexB < regionB.Count)
                 {
                     Coord tileB = regionB[indexB];
-                    float distance = tileA.Distance(tileB);
-                    if (distance < bestDistanceThisLoop)
+                    float distance = bestThisLoop.tileA.Distance(tileB);
+                    if (distance < bestThisLoop.distance)
                     {
-                        bestDistanceThisLoop = distance;
-                        bestTileBThisLoop = tileB;
+                        bestThisLoop = new TempConnection(bestThisLoop.tileA, tileB, distance);
                     }
-                    indexB += (int)distance;
+                    indexB += (int)distance; // distance is never < 1, as minimum occurs with diagonally adjacent tiles
                 }
-                if (bestDistanceThisLoop < bestDistance)
+                if (bestThisLoop.distance < bestConnection.distance)
                 {
-                    bestTileA = tileA;
-                    bestTileB = bestTileBThisLoop;
-                    bestDistance = bestDistanceThisLoop;
+                    bestConnection = bestThisLoop;
                 }
-                indexA += (int)bestDistanceThisLoop;
+                indexA += (int)bestThisLoop.distance;
             }
-            return new ConnectionInfo(bestTileA, bestTileB, roomIndexA, roomIndexB, bestDistance);
+            return new ConnectionInfo(bestConnection.tileA, bestConnection.tileB, regionA.Index, regionB.Index, bestConnection.distance);
+        }
+
+        // This is used exclusively by ConnectionFinder to group three pieces of related connection data together
+        // without having to build a full ConnectionInfo each time. 
+        struct TempConnection
+        {
+            public readonly float distance;
+            public readonly Coord tileA;
+            public readonly Coord tileB;
+
+            public TempConnection(Coord tileA, Coord tileB, float distance)
+            {
+                this.distance = distance;
+                this.tileA = tileA;
+                this.tileB = tileB;
+            }
         }
     } 
 }

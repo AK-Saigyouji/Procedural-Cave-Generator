@@ -49,8 +49,7 @@ namespace CaveGeneration.Utility
         /// </summary>
         public static IEnumerator ExecuteAndAwait(Action action)
         {
-            const float PAUSE_DURATION = 0.005f;
-            var pause = new WaitForSeconds(PAUSE_DURATION);
+            var pause = new WaitForFixedUpdate();
             IAsyncResult result = action.BeginInvoke(null, null);
             while (!result.IsCompleted)
             {

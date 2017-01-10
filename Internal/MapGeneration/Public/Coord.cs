@@ -6,7 +6,7 @@ namespace CaveGeneration.MapGeneration
 {
     /// <summary>
     /// Similar to Vector2 but for integers, Coord is designed with coordinate grids (2d arrays) in mind. 
-    /// Handles coordinates between -32768 and 32767.
+    /// Handles coordinates between -32768 and 32767. Unlike Vector2, Coord is immutable.
     /// </summary>
     public struct Coord : IEquatable<Coord>
     {

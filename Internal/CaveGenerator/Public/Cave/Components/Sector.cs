@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
-using CaveGeneration;
+﻿using UnityEngine;
 using CaveGeneration.MeshGeneration;
 
 public sealed class Sector
