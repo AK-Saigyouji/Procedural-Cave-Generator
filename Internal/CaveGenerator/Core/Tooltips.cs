@@ -4,15 +4,6 @@ namespace CaveGeneration
 {
     static class Tooltips
     {
-        public const string CAVE_GEN_DEBUG_MODE = 
-            "Disables multithreading for profiling and debugging purposes.";
-
-        public const string CAVE_GEN_SCALE = 
-            "How many game units each 'tile' in the cave should occupy.";
-
-        public const string HEIGHT_MAP_CONSTANT =
-            "Should the height of this component be constant?";
-
         public const string HEIGHT_MAP_MIN_HEIGHT =
             "Minimum y-value for the height map.";
 

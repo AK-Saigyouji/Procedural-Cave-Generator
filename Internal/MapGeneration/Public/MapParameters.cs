@@ -47,16 +47,8 @@ namespace CaveGeneration.MapGeneration
         [SerializeField] int seed;
         public int Seed
         {
-            get { return useRandomSeed ? CreateRandomSeed() : seed; }
+            get { return seed; }
             set { seed = value; }
-        }
-
-        [Tooltip(Tooltips.MAP_USE_RANDOM_SEED)]
-        [SerializeField] bool useRandomSeed;
-        public bool UseRandomSeed
-        {
-            get { return useRandomSeed; }
-            set { useRandomSeed = value; }
         }
 
         [Tooltip(Tooltips.MAP_BORDER_SIZE)]
@@ -83,29 +75,31 @@ namespace CaveGeneration.MapGeneration
             set { minFloorSize = value; }
         }
 
-        const int MINIMUM_LENGTH          = 5;
-        const int MAXIMUM_LENGTH          = short.MaxValue;
+        const int MINIMUM_LENGTH = 5;
+        const int DEFAULT_LENGTH = 75;
+        const int MAXIMUM_LENGTH = short.MaxValue;
 
-        const int MINIMUM_WIDTH           = 5;
-        const int MAXIMUM_WIDTH           = short.MaxValue;
+        const int MINIMUM_WIDTH = 5;
+        const int DEFAULT_WIDTH = 75;
+        const int MAXIMUM_WIDTH = short.MaxValue;
 
-        const int MINIMUM_BORDER_SIZE     = 0;
+        const int MINIMUM_BORDER_SIZE = 0;
+        const int DEFAULT_BORDER_SIZE = 0;
+        const int MAXIMUM_BORDER_SIZE = short.MaxValue / 2;
 
         const int MINIMUM_FLOOR_EXPANSION = 0;
-
-        const float MINIMUM_MAP_DENSITY   = 0f;
-        const float MAXIMUM_MAP_DENSITY   = 1f;
-
-        const float DEFAULT_DENSITY       = 0.5f;
-        const bool DEFAULT_SEED_STATUS    = true;
-        const int DEFAULT_SEED            = 0;
-        const int DEFAULT_LENGTH          = 75;
-        const int DEFAULT_WIDTH           = 75;
-        const int DEFAULT_BORDER_SIZE     = 0;
         const int DEFAULT_FLOOR_EXPANSION = 0;
-        const int DEFAULT_WALL_THRESHOLD  = 50;
+        const int MAXIMUM_FLOOR_EXPANSION = short.MaxValue;
+
+        const float MINIMUM_MAP_DENSITY = 0f;
+        const float DEFAULT_MAP_DENSITY = 0.5f;
+        const float MAXIMUM_MAP_DENSITY = 1f;
+
+        const int MINIMUM_FLOOR_THRESHOLD = 0;
         const int DEFAULT_FLOOR_THRESHOLD = 50;
-        const int DEFAULT_WALL_HEIGHT     = 3;
+
+        const int MINIMUM_WALL_THRESHOLD = 0;
+        const int DEFAULT_WALL_THRESHOLD = 50;
 
         public MapParameters()
         {
@@ -125,13 +119,13 @@ namespace CaveGeneration.MapGeneration
         {
             length            = DEFAULT_LENGTH;
             width             = DEFAULT_WIDTH;
-            initialMapDensity = DEFAULT_DENSITY;
+            initialMapDensity = DEFAULT_MAP_DENSITY;
             floorExpansion    = DEFAULT_FLOOR_EXPANSION;
-            useRandomSeed     = DEFAULT_SEED_STATUS;
-            seed              = DEFAULT_SEED;
             borderSize        = DEFAULT_BORDER_SIZE;
             minWallSize       = DEFAULT_WALL_THRESHOLD;
             minFloorSize      = DEFAULT_FLOOR_THRESHOLD;
+
+            seed = CreateRandomSeed();
         }
 
         public void OnValidate()
@@ -139,13 +133,14 @@ namespace CaveGeneration.MapGeneration
             length            = Mathf.Clamp(length, MINIMUM_LENGTH, MAXIMUM_LENGTH);
             width             = Mathf.Clamp(width, MINIMUM_WIDTH, MAXIMUM_WIDTH);
             initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
-            floorExpansion    = Mathf.Max(floorExpansion, MINIMUM_FLOOR_EXPANSION);
-            borderSize        = Mathf.Max(borderSize, MINIMUM_BORDER_SIZE);
+            floorExpansion    = Mathf.Clamp(floorExpansion, MINIMUM_FLOOR_EXPANSION, MAXIMUM_FLOOR_EXPANSION);
+            borderSize        = Mathf.Clamp(borderSize, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
         }
 
         int CreateRandomSeed()
         {
-            return Guid.NewGuid().GetHashCode();
+            seed = Guid.NewGuid().GetHashCode();
+            return seed;
         }
 
         void SetLength(int value)
@@ -160,12 +155,12 @@ namespace CaveGeneration.MapGeneration
 
         void SetBorderSize(int value)
         {
-            SetParameter(ref borderSize, value, MINIMUM_BORDER_SIZE, int.MaxValue);
+            SetParameter(ref borderSize, value, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
         }
 
         void SetFloorExpansion(int value)
         {
-            SetParameter(ref floorExpansion, value, MINIMUM_FLOOR_EXPANSION, int.MaxValue);
+            SetParameter(ref floorExpansion, value, MINIMUM_FLOOR_EXPANSION, MAXIMUM_FLOOR_EXPANSION);
         }
 
         void SetMapDensity(float value)

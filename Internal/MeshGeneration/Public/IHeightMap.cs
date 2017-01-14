@@ -1,8 +1,8 @@
 ﻿namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// A height map gives a height value for each pair of floats. BaseHeight is a constant offset, and GetHeight
-    /// provides the variation in the form of a float between 0 and MaxHeight for each pair of input floats.
+    /// Height maps provide a float y for each coordinate pair x,z of floats. MinHeight and MaxHeight
+    /// indicate the lower and upper bounds for the height values. 
     /// </summary>
     public interface IHeightMap
     {

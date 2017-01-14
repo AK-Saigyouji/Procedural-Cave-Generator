@@ -1,8 +1,12 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using CaveGeneration.MeshGeneration;
 
 namespace CaveGeneration
 {
+    /// <summary>
+    /// Represents a chunk of the cave. Contains references to a floor, ceiling and walls.
+    /// </summary>
     public sealed class Sector
     {
         public GameObject GameObject { get; private set; }
@@ -11,16 +15,21 @@ namespace CaveGeneration
         public CaveComponent Walls { get; private set; }
         public CaveComponent Floor { get; private set; }
 
+        public const string wallName = "Walls";
+        public const string ceilingName = "Ceiling";
+        public const string floorName = "Floor";
+        public const string sectorName = "Sector";
+
         internal Sector(CaveMeshChunk caveChunk)
         {
             string index = caveChunk.Index.ToString();
             CaveMeshes caveMeshes = caveChunk.CaveMeshes;
             
-            GameObject = new GameObject(AppendIndex("Sector", index));
+            GameObject = new GameObject(AppendIndex(sectorName, index));
 
-            Ceiling = new Ceiling(caveMeshes.ExtractCeilingMesh(), AppendIndex("Ceiling", index));
-            Walls   = new Walls(caveMeshes.ExtractWallMesh(), AppendIndex("Walls", index));
-            Floor   = new Floor(caveMeshes.ExtractFloorMesh(), AppendIndex("Floor", index));
+            Ceiling = new Ceiling(caveMeshes.ExtractCeilingMesh(), AppendIndex(ceilingName, index));
+            Walls   = new Walls(caveMeshes.ExtractWallMesh(), AppendIndex(wallName, index));
+            Floor   = new Floor(caveMeshes.ExtractFloorMesh(), AppendIndex(floorName, index));
 
             SetChild(Ceiling);
             SetChild(Walls);

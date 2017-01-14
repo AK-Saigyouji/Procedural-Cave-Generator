@@ -1,56 +1,58 @@
-﻿/* A component that allows the visualization of heightmaps, updating instantly in response to changes
- in the parameters. The relationship between a height map's properties and the final result is quite complicated,
- so this class allows the visual exploration of that relationship.
- 
-  On a side note, this visualizer illustrates a benefit of completely decoupling the MeshGenerator from the 
- MapGenerator. We're able to use the MeshGenerator to visualize the mesh without having to touch anything
- in the MapGeneration namespace.*/
+﻿/* A MonoBehaviour that allows the visualization of a heightmap. Any changes to the height map component
+ will be immediately updated by the visualizer, allowing for an exploration of how the properties of a given
+ height map affect the final result.*/
 
 using UnityEngine;
 using CaveGeneration.MeshGeneration;
 
-namespace CaveGeneration
+namespace CaveGeneration.Modules
 {
     [ExecuteInEditMode]
     public class HeightMapVisualizer : MonoBehaviour
     {
-        [SerializeField] HeightMapProperties parameters;
+        [SerializeField] HeightMapModule heightMapComponent;
         [SerializeField] Material material;
         [SerializeField] int size;
-
+        [SerializeField] int scale;
+        
         Mesh mesh;
 
         const int MIN_SIZE = 10;
         const int MAX_SIZE = 200;
         const int DEFAULT_SIZE = 75;
 
+        const int MIN_SCALE = 1;
+        const int DEFAULT_SCALE = 1;
+
         void CreateMesh()
         {
-            var wallGrid = new WallGrid(new byte[size, size], Vector3.zero);
-            IHeightMap heightMap = parameters.ToHeightMap();
-            CaveMeshes meshes = MeshGenerator.Generate(wallGrid, CaveType.Isometric, heightMap, heightMap);
-            mesh = meshes.ExtractFloorMesh();
+            var wallGrid = new WallGrid(new byte[size, size], Vector3.zero, scale);
+            IHeightMap heightMap = heightMapComponent.GetHeightMap();
+            mesh = MeshBuilder.BuildFloor(wallGrid, heightMap).CreateMesh();
         }
 
         void Reset()
         {
-            parameters = new HeightMapProperties(0);
             size = DEFAULT_SIZE;
+            scale = DEFAULT_SCALE;
         }
 
         void Update()
         {
-            if (mesh != null)
+            if (!Application.isPlaying) // Only draw in editor.
             {
-                Graphics.DrawMesh(mesh, Matrix4x4.identity, material, 0);
+                if (heightMapComponent != null)
+                {
+                    CreateMesh();
+                    Graphics.DrawMesh(mesh, Matrix4x4.identity, material, 0);
+                }
             }
         }
 
         void OnValidate()
         {
-            parameters.OnValidate();
             size = Mathf.Clamp(size, MIN_SIZE, MAX_SIZE);
-            CreateMesh();
+            scale = Mathf.Max(scale, MIN_SCALE);
         }
     } 
 }

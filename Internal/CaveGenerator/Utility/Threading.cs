@@ -49,7 +49,7 @@ namespace CaveGeneration.Utility
         /// </summary>
         public static IEnumerator ExecuteAndAwait(Action action)
         {
-            var pause = new WaitForFixedUpdate();
+            var pause = new WaitForSecondsRealtime(0.017f); // Checks about 60 times per second
             IAsyncResult result = action.BeginInvoke(null, null);
             while (!result.IsCompleted)
             {

@@ -1,10 +1,10 @@
 ﻿using UnityEngine;
-using UnityEngine.Assertions;
 using UnityEditor;
 using CaveGeneration;
 using System.Collections.Generic;
+using System.Linq;
 
-[CustomEditor(typeof(CaveGenerator))]
+[CustomEditor(typeof(CaveGeneratorUI))]
 public class CaveGeneratorEditor : Editor
 {
     // Asset folder names
@@ -14,162 +14,145 @@ public class CaveGeneratorEditor : Editor
     const string WALL_FOLDER = "WallMeshes";
     const string CEILING_FOLDER = "CeilingMeshes";
 
-    // Property names. If the inspector breaks after changing a property name, update it here.
-    const string CONFIG = "config";
-    const string CAVE_TYPE = "caveType";
-    const string MAP_PARAMS = "mapParameters";
-    const string CEILING_MAT = "ceilingMaterial";
-    const string FLOOR_MAT = "floorMaterial";
-    const string WALL_MAT = "wallMaterial";
-    const string SCALE = "scale";
-    const string DEBUG_MODE = "debugMode";
-    const string FLOOR_HEIGHT_MAP = "floorHeight";
-    const string CEILING_HEIGHT_MAP = "ceilingHeight";
-    const string HEIGHT_MAP_IS_CONSTANT = "isConstant";
-    const string HEIGHT_MAP_HEIGHT = "minHeight";
-
-    const string CONSTANT_HEIGHT_LABEL = "Height";
-
-    SerializedProperty config, caveType, mapParameters, ceilingMat, wallMat, floorMat, scale, debugMode;
-    SerializedProperty floorHeight, ceilingHeight;
-
-    void OnEnable()
-    {
-        /* Using strings for the property names like this is troublesome, as it means it will break if the names or paths
-        in the respective classes are ever changed. But given the need to use the reflection API to find private
-        properties, it's generally unavoidable. The alternative is to iterate over all properties and dynamically
-        determine which need to be drawn and how, but that becomes much harder to fix if something breaks.*/
-        config        = serializedObject.FindProperty(CONFIG);
-        caveType      = FindProperty(CAVE_TYPE);
-        mapParameters = FindProperty(MAP_PARAMS);
-        ceilingMat    = FindProperty(CEILING_MAT);
-        wallMat       = FindProperty(WALL_MAT);
-        floorMat      = FindProperty(FLOOR_MAT);
-        scale         = FindProperty(SCALE);
-        debugMode     = FindProperty(DEBUG_MODE);
-        floorHeight   = FindProperty(FLOOR_HEIGHT_MAP);
-        ceilingHeight = FindProperty(CEILING_HEIGHT_MAP);
-    }
+    const string CAVE_NAME = "Cave";
+    const string PREFAB_NAME = "Cave.prefab";
 
     public override void OnInspectorGUI()
     {
-        DrawProperties();
-        serializedObject.ApplyModifiedProperties();
-
-        CaveGenerator caveGenerator = (CaveGenerator)target;
+        DrawDefaultInspector();
+        CaveGeneratorUI caveGenerator = (CaveGeneratorUI)target;
         if (Application.isPlaying)
         {
             if (GUILayout.Button("Generate New Map"))
             {
+                DestroyCave();
                 caveGenerator.Generate();
             }
 
             if (GUILayout.Button("Create Prefab"))
             {
-                CreatePrefab(caveGenerator);
+                TryCreatePrefab();
+                DestroyCave();
             }
         }
     }
 
-    void DrawProperties()
+    void DestroyCave()
     {
-        DrawProperty(caveType);
-        DrawProperty(mapParameters);
-
-        DrawHeightMapProperty(floorHeight);
-        DrawHeightMapProperty(ceilingHeight);
-
-        DrawProperty(ceilingMat);
-        DrawProperty(wallMat);
-        DrawProperty(floorMat);
-        DrawProperty(scale);
-        DrawProperty(debugMode);
-    }
-
-    void CreatePrefab(CaveGenerator caveGenerator)
-    {
-        Cave cave = caveGenerator.ExtractCave();
-        Assert.IsNotNull(cave, "Internal error: extracted null cave.");
-
-        string path = CreateFolder(ROOT_FOLDER, CAVE_FOLDER);
-
-        CreateMeshAssets(cave.GetFloors(), FLOOR_FOLDER, path);
-        CreateMeshAssets(cave.GetCeilings(), CEILING_FOLDER, path);
-        CreateMeshAssets(cave.GetWalls(), WALL_FOLDER, path);
-        CreateCavePrefab(cave.GameObject, path);
-
-        Destroy(cave.GameObject);
-    }
-
-    void DrawHeightMapProperty(SerializedProperty property)
-    {
-        // Editor scripting is generally a hacky ordeal. Here we want to either reveal
-        // all the properties for height maps, or just a single height value, based on whether the
-        // variable Constant is flagged.
-        SerializedProperty isConstant = property.FindPropertyRelative(HEIGHT_MAP_IS_CONSTANT);
-        if (isConstant.boolValue)
+        Transform[] caves = FindChildCaves();
+        foreach (Transform child in caves)
         {
-            property.isExpanded = EditorGUILayout.Foldout(property.isExpanded, property.displayName);
-            if (property.isExpanded)
+            Destroy(child.gameObject);
+        }
+    }
+
+    Transform[] FindChildCaves()
+    {
+        var generator = (CaveGeneratorUI)target;
+        var children = new List<Transform>();
+        foreach (Transform child in generator.transform)
+        {
+            children.Add(child);
+        }
+        Transform[] childCaves = children.Where(child => child.name == CAVE_NAME).ToArray();
+        return childCaves;
+    }
+
+    void TryCreatePrefab()
+    {
+        // The cavegenerator should have only one cave as a child.
+        Transform[] childCaves = FindChildCaves();
+
+        if (childCaves.Length == 0)
+        {
+            Debug.LogError("No cave found to convert. Cave must be a child of this generator and labelled " + CAVE_NAME);
+            return;
+        }
+
+        if (childCaves.Length > 1)
+        {
+            Debug.LogError("Unexpected: multiple caves found under this generator. Must have only one.");
+            return;
+        }
+
+        GameObject cave = childCaves[0].gameObject;
+        CreatePrefab(cave);
+    }
+
+    void CreatePrefab(GameObject cave)
+    {
+        string caveFolderPath = EditorHelpers.CreateFolder(ROOT_FOLDER, CAVE_FOLDER);
+
+        cave = CreateCavePrefab(cave, caveFolderPath);
+        try
+        {
+            CreateMeshAssets(cave.transform, caveFolderPath);
+        }
+        catch (System.InvalidOperationException)
+        {
+            AssetDatabase.DeleteAsset(caveFolderPath); 
+            throw;
+        }
+    }
+
+    void CreateMeshAssets(Transform cave, string path)
+    {
+        string floorFolder   = EditorHelpers.CreateFolder(path, FLOOR_FOLDER);
+        string ceilingFolder = EditorHelpers.CreateFolder(path, CEILING_FOLDER);
+        string wallFolder    = EditorHelpers.CreateFolder(path, WALL_FOLDER);
+        foreach (Transform sector in cave.transform)
+        {
+            foreach (Transform component in sector)
             {
-                SerializedProperty height = property.FindPropertyRelative(HEIGHT_MAP_HEIGHT);
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(height, new GUIContent(CONSTANT_HEIGHT_LABEL));
-                DrawProperty(isConstant);
-                EditorGUI.indentLevel--;
+                string name = component.name;
+
+                if (name.Contains(Sector.floorName))
+                {
+                    CreateMeshAsset(component, floorFolder);
+                }
+                else if (name.Contains(Sector.ceilingName))
+                {
+                    CreateMeshAsset(component, ceilingFolder);
+                }
+                else if (name.Contains(Sector.wallName))
+                {
+                    CreateMeshAsset(component, wallFolder);
+                }
+                else
+                {
+                    throw new System.InvalidOperationException("Unexpected cave hierarchy: unidentified sector child.");
+                }
             }
         }
-        else
-        {
-            DrawProperty(property);
-        }
     }
 
-    void CreateMeshAssets(IEnumerable<CaveComponent> components, string folderName, string path)
+    void CreateMeshAsset(Transform component, string path)
     {
-        string folderPath = CreateFolder(path, folderName);
-        foreach (CaveComponent component in components)
-        {
-            CreateMeshAsset(component.Mesh, component.Name, folderPath);
-        }
-    }
-
-    /// <summary>
-    /// Similar to AssetDatabase.CreateFolder but returns the path to the created folder instead of the guid.
-    /// </summary>
-    string CreateFolder(string path, string name)
-    {
-        string guid = AssetDatabase.CreateFolder(path, name);
-        string folderPath = AssetDatabase.GUIDToAssetPath(guid);
-        return folderPath;
-    }
-
-    void CreateMeshAsset(Mesh mesh, string name, string path)
-    {
-        string fullName = string.Format("{0}.asset", name);
-        string assetPath = AppendToPath(path, fullName);
+        Mesh mesh = ExtractMesh(component);
+        string name = string.Format("{0}.asset", mesh.name);
+        string assetPath = EditorHelpers.AppendToPath(path, name);
         AssetDatabase.CreateAsset(mesh, assetPath);
     }
 
-    void CreateCavePrefab(GameObject cave, string path)
+    GameObject CreateCavePrefab(GameObject cave, string path)
     {
-        string name = "Cave.prefab";
-        string cavePath = AppendToPath(path, name);
-        PrefabUtility.CreatePrefab(cavePath, cave);
+        string cavePath = EditorHelpers.AppendToPath(path, PREFAB_NAME);
+        return PrefabUtility.CreatePrefab(cavePath, cave);
     }
 
-    string AppendToPath(string path, string toAppend)
+    Mesh ExtractMesh(Transform component)
     {
-        return string.Format("{0}/{1}", path, toAppend);
-    }
+        const string errorMessage = "Prefab creation failed, unexpected cave hierarchy: sector child with no mesh.";
+        MeshFilter meshFilter = component.GetComponent<MeshFilter>();
 
-    SerializedProperty FindProperty(string relativePath)
-    {
-        return config.FindPropertyRelative(relativePath);
-    }
+        if (meshFilter == null)
+            throw new System.InvalidOperationException(errorMessage);
 
-    void DrawProperty(SerializedProperty property)
-    {
-        EditorGUILayout.PropertyField(property, true);
+        Mesh mesh = meshFilter.sharedMesh;
+
+        if (mesh == null)
+            throw new System.InvalidOperationException(errorMessage);
+
+        return mesh;
     }
 }

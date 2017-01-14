@@ -19,10 +19,6 @@
             "The seed uniquely identifies which map gets generated. If using random seed, getting the seed will " +
             "randomly reset its value.";
 
-        public const string MAP_USE_RANDOM_SEED =
-            "If set to true, a random map will be generated. If false, the seed property will be used to specify the map." +
-            "While true, the seed property will return random values. Disable before attemping to read or set a specific seed.";
-
         public const string MAP_BORDER_SIZE = 
             "The width of extra boundary around the map.";
 
