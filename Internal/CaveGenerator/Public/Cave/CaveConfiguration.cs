@@ -126,7 +126,7 @@ namespace CaveGeneration
         /// </summary>
         public void RandomizeSeeds()
         {
-            int randomSeed = new Guid().GetHashCode();
+            int randomSeed = Guid.NewGuid().GetHashCode();
             TrySetSeed(mapGenerator, randomSeed);
             TrySetSeed(floorHeightMap, randomSeed);
             TrySetSeed(ceilingHeightMap, randomSeed);
