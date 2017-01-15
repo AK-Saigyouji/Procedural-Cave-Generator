@@ -27,11 +27,10 @@ namespace CaveGeneration
         Sector[] sectors;
         CaveConfiguration configuration;
 
-        internal Cave(IEnumerable<CaveMeshChunk> caveMeshes, CaveConfiguration caveConfig)
+        internal Cave(CaveMeshes[,] caveMeshes, CaveConfiguration caveConfig)
         {
             Assert.IsNotNull(caveMeshes);
             Assert.IsNotNull(caveConfig);
-            Assert.IsFalse(caveMeshes.Contains(null));
 
             configuration = caveConfig;
             GameObject = new GameObject("Cave");
@@ -100,14 +99,17 @@ namespace CaveGeneration
             }
         }
 
-        void BuildSectors(IEnumerable<CaveMeshChunk> caveChunks)
+        void BuildSectors(CaveMeshes[,] caveChunks)
         {
             var sectors = new List<Sector>();
-            foreach (CaveMeshChunk caveChunk in caveChunks)
+            for (int y = 0; y < caveChunks.GetLength(1); y++)
             {
-                var sector = new Sector(caveChunk);
-                sector.GameObject.transform.parent = GameObject.transform;
-                sectors.Add(sector);
+                for (int x = 0; x < caveChunks.GetLength(0); x++)
+                {
+                    var sector = new Sector(caveChunks[x, y], new Coord(x, y));
+                    sector.GameObject.transform.parent = GameObject.transform;
+                    sectors.Add(sector);
+                }
             }
             this.sectors = sectors.ToArray();
         }

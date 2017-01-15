@@ -1,5 +1,6 @@
 ﻿using System;
 using UnityEngine;
+using CaveGeneration.MapGeneration;
 using CaveGeneration.MeshGeneration;
 
 namespace CaveGeneration
@@ -20,10 +21,9 @@ namespace CaveGeneration
         public const string floorName = "Floor";
         public const string sectorName = "Sector";
 
-        internal Sector(CaveMeshChunk caveChunk)
+        internal Sector(CaveMeshes caveMeshes, Coord coordinates)
         {
-            string index = caveChunk.Index.ToString();
-            CaveMeshes caveMeshes = caveChunk.CaveMeshes;
+            string index = coordinates.ToString();
             
             GameObject = new GameObject(AppendIndex(sectorName, index));
 

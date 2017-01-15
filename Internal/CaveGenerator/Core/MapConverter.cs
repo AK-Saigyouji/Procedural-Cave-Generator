@@ -16,13 +16,13 @@ namespace CaveGeneration
         /// <summary>
         /// Converts a map for consumption by the mesh generation system.
         /// </summary>
-        public static WallGrid ToWallGrid(MapChunk mapChunk, int scale)
+        public static WallGrid ToWallGrid(Map mapChunk, int scale, Coord index)
         {
             Assert.IsNotNull(mapChunk);
             Assert.IsTrue(scale > 0, "Scale must be positive");
 
-            Vector3 position = IndexToPosition(mapChunk.Index, scale);
-            return new WallGrid(mapChunk.Map.ToByteArray(), position, scale);
+            Vector3 position = IndexToPosition(index, scale);
+            return new WallGrid(mapChunk.ToByteArray(), position, scale);
         }
 
         public static CollisionTester ToCollisionTester(Map map, int scale)

@@ -16,24 +16,25 @@ namespace CaveGeneration
         /// <summary>
         /// Divide the map into smaller Map chunks.
         /// </summary>
-        public static MapChunk[] Subdivide(Map map)
+        public static Map[,] Subdivide(Map map)
         {
-            var maps = new List<MapChunk>();
             int xNumComponents = Mathf.CeilToInt(map.Length / (float)CHUNK_SIZE);
             int yNumComponents = Mathf.CeilToInt(map.Width / (float)CHUNK_SIZE);
+            Map[,] mapChunks = new Map[xNumComponents, yNumComponents];
             for (int x = 0; x < xNumComponents; x++)
             {
                 for (int y = 0; y < yNumComponents; y++)
                 {
-                    maps.Add(GenerateSubMap(map, x, y));
+                    mapChunks[x, y] = GenerateSubMap(map, x, y);
                 }
             }
-            return maps.ToArray();
+            return mapChunks;
         }
 
-        static MapChunk GenerateSubMap(Map map, int xIndex, int yIndex)
+        static Map GenerateSubMap(Map map, int xIndex, int yIndex)
         {
-            int xStart = xIndex * CHUNK_SIZE, yStart = yIndex * CHUNK_SIZE;
+            int xStart = xIndex * CHUNK_SIZE;
+            int yStart = yIndex * CHUNK_SIZE;
             int xEnd = ComputeSubmapEndPoint(xStart, map.Length);
             int yEnd = ComputeSubmapEndPoint(yStart, map.Width);
 
@@ -49,28 +50,19 @@ namespace CaveGeneration
                     subMap[x - xStart, y - yStart] = map[x, y];
                 }
             }
-            Coord index = new Coord(xIndex, yIndex);
-            return new MapChunk(subMap, index);
+            return subMap;
         }
 
         static int ComputeSubmapEndPoint(int start, int max)
         {
-            return (start + CHUNK_SIZE >= max) ? max : start + CHUNK_SIZE + 1;
-        }
-    }
-
-    /// <summary>
-    /// Simple wrapper for a map carrying a label to identify its position in a grid of map chunks.
-    /// </summary>
-    sealed class MapChunk
-    {
-        public Map Map { get; private set; }
-        public Coord Index { get; private set; }
-
-        public MapChunk(Map map, Coord index)
-        {
-            Map = map;
-            Index = index;
+            if (start + CHUNK_SIZE >= max)
+            {
+                return max;
+            }
+            else
+            {
+                return start + CHUNK_SIZE + 1;
+            }
         }
     }
 }

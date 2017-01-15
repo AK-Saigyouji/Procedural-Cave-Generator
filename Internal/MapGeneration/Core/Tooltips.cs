@@ -16,8 +16,7 @@
             "Expand floor regions in every direction by given quantity.";
 
         public const string MAP_SEED =
-            "The seed uniquely identifies which map gets generated. If using random seed, getting the seed will " +
-            "randomly reset its value.";
+            "The seed fixed the randomness in the map.";
 
         public const string MAP_BORDER_SIZE = 
             "The width of extra boundary around the map.";

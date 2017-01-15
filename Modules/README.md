@@ -75,7 +75,7 @@ namespace CaveGeneration.Modules
 
         public override IHeightMap GetHeightMap()
         {
-            return HeightMapFactory.Build(GetHeight, 0, 1);
+            return HeightMapFactory.Build(GetHeight, -1, 1);
         }
 
         float GetHeight(float x, float z)
@@ -110,7 +110,7 @@ namespace CaveGeneration.Modules
 
         public override IHeightMap GetHeightMap()
         {
-            return HeightMapFactory.Build(GetHeight, minHeight, minHeight + amplitude);
+            return HeightMapFactory.Build(GetHeight, minHeight - amplitude, minHeight + amplitude);
         }
 
         float GetHeight(float x, float z)

@@ -12,6 +12,9 @@ namespace CaveGeneration.MapGeneration
     {
         [Tooltip(Tooltips.MAP_LENGTH)]
         [SerializeField] int length;
+        /// <summary>
+        /// Must be between 5 and 32767.
+        /// </summary>
         public int Length
         {
             get { return length; }
@@ -20,6 +23,9 @@ namespace CaveGeneration.MapGeneration
 
         [Tooltip(Tooltips.MAP_WIDTH)]
         [SerializeField] int width;
+        /// <summary>
+        /// Must be between 5 and 32767.
+        /// </summary>
         public int Width
         {
             get { return width; }
@@ -29,6 +35,11 @@ namespace CaveGeneration.MapGeneration
         [Tooltip(Tooltips.MAP_DENSITY)]
         [Range(MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY)]
         [SerializeField] float initialMapDensity;
+        /// <summary>
+        /// Initial map density, from 0 (all floors) to 1 (all walls). Note that the final density will differ, based
+        /// on what other processing steps are used. Less than 0.4 or greater than 0.6 will likely result in a map
+        /// consisting entirely of floors or walls.
+        /// </summary>
         public float InitialDensity
         {
             get { return initialMapDensity; }
@@ -37,6 +48,11 @@ namespace CaveGeneration.MapGeneration
 
         [Tooltip(Tooltips.MAP_FLOOR_EXPANSION)]
         [SerializeField] int floorExpansion;
+        /// <summary>
+        /// Expand every floor tile by this many tiles in every direction. Substantially reduces wall tiles in the 
+        /// map, so use conservatively. Must be between 0 and 32767, though values larger than 5 are unlikely to be 
+        /// practical.
+        /// </summary>
         public int FloorExpansion
         {
             get { return floorExpansion; }
@@ -53,6 +69,9 @@ namespace CaveGeneration.MapGeneration
 
         [Tooltip(Tooltips.MAP_BORDER_SIZE)]
         [SerializeField] int borderSize;
+        /// <summary>
+        /// Adds a border of walls this thick on each side of the map. Must be between 0 and 1000.
+        /// </summary>
         public int BorderSize
         {
             get { return borderSize; }
@@ -61,6 +80,9 @@ namespace CaveGeneration.MapGeneration
 
         [Tooltip(Tooltips.MAP_MIN_WALL_SIZE)]
         [SerializeField] int minWallSize;
+        /// <summary>
+        /// Prunes regions of wall with fewer than this many tiles. Min value of 0.
+        /// </summary>
         public int MinWallSize
         {
             get { return minWallSize; }
@@ -69,6 +91,9 @@ namespace CaveGeneration.MapGeneration
 
         [Tooltip(Tooltips.MAP_MIN_FLOOR_SIZE)]
         [SerializeField] int minFloorSize;
+        /// <summary>
+        /// Prunes regions of floor with fewer than this many tiles. Min value of 0.
+        /// </summary>
         public int MinFloorSize
         {
             get { return minFloorSize; }
@@ -85,7 +110,7 @@ namespace CaveGeneration.MapGeneration
 
         const int MINIMUM_BORDER_SIZE = 0;
         const int DEFAULT_BORDER_SIZE = 0;
-        const int MAXIMUM_BORDER_SIZE = short.MaxValue / 2;
+        const int MAXIMUM_BORDER_SIZE = 1000;
 
         const int MINIMUM_FLOOR_EXPANSION = 0;
         const int DEFAULT_FLOOR_EXPANSION = 0;
@@ -115,6 +140,15 @@ namespace CaveGeneration.MapGeneration
             return newParameters;
         }
 
+        internal void OnValidate()
+        {
+            length = Mathf.Clamp(length, MINIMUM_LENGTH, MAXIMUM_LENGTH);
+            width = Mathf.Clamp(width, MINIMUM_WIDTH, MAXIMUM_WIDTH);
+            initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
+            floorExpansion = Mathf.Clamp(floorExpansion, MINIMUM_FLOOR_EXPANSION, MAXIMUM_FLOOR_EXPANSION);
+            borderSize = Mathf.Clamp(borderSize, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
+        }
+
         void Reset()
         {
             length            = DEFAULT_LENGTH;
@@ -124,23 +158,6 @@ namespace CaveGeneration.MapGeneration
             borderSize        = DEFAULT_BORDER_SIZE;
             minWallSize       = DEFAULT_WALL_THRESHOLD;
             minFloorSize      = DEFAULT_FLOOR_THRESHOLD;
-
-            seed = CreateRandomSeed();
-        }
-
-        public void OnValidate()
-        {
-            length            = Mathf.Clamp(length, MINIMUM_LENGTH, MAXIMUM_LENGTH);
-            width             = Mathf.Clamp(width, MINIMUM_WIDTH, MAXIMUM_WIDTH);
-            initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
-            floorExpansion    = Mathf.Clamp(floorExpansion, MINIMUM_FLOOR_EXPANSION, MAXIMUM_FLOOR_EXPANSION);
-            borderSize        = Mathf.Clamp(borderSize, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
-        }
-
-        int CreateRandomSeed()
-        {
-            seed = Guid.NewGuid().GetHashCode();
-            return seed;
         }
 
         void SetLength(int value)
