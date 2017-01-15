@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Linq;
 using System.Threading;
 using UnityEngine;
 
@@ -15,7 +16,9 @@ namespace CaveGeneration.Utility
     {
         // Max number of work items to send to threadpool. Exceeding 64 will throw an exception due to limitation
         // on number of reset handles.
-        const int threadCount = 8;
+        const int MAX_WORK_ITEM_COUNT = 8;
+
+        static object locker = new object();
 
         /// <summary>
         /// Implementation of a parallel foreach.
@@ -24,23 +27,48 @@ namespace CaveGeneration.Utility
         /// </summary>
         static public void ParallelExecute(params Action[] actions)
         {
-            int workItemCount = Math.Min(threadCount, actions.Length);
-            UnityEngine.Assertions.Assert.IsTrue(workItemCount <= 64);
+            if (actions == null)
+                throw new ArgumentNullException("actions");
+
+            if (actions.Contains(null))
+                throw new ArgumentException("Cannot execute null action");
+
+            int workItemCount = Math.Min(MAX_WORK_ITEM_COUNT, actions.Length);
             var resetEvents = new ManualResetEvent[workItemCount];
+            Exception workerException = null;
             for (int i = 0; i < workItemCount; i++)
             {
                 resetEvents[i] = new ManualResetEvent(false);
                 ThreadPool.QueueUserWorkItem(new WaitCallback((object index) =>
                 {
                     int workerIndex = (int)index;
-                    for (int actionIndex = workerIndex; actionIndex < actions.Length; actionIndex += workItemCount)
+                    try
                     {
-                        actions[actionIndex]();
+                        for (int actionIndex = workerIndex; actionIndex < actions.Length; actionIndex += workItemCount)
+                        {
+                            actions[actionIndex]();
+                        }
+                        resetEvents[workerIndex].Set();
                     }
-                    resetEvents[workerIndex].Set();
+                    catch (Exception e)
+                    {
+                        lock (locker)
+                        {
+                            workerException = e;
+                        }
+                        Array.ForEach(resetEvents, ev => ev.Set()); 
+                    }
                 }), i);
             }
             WaitHandle.WaitAll(resetEvents);
+            // Control returns to main thread, so exception can be thrown.
+            lock (locker) // Prevent any lingering threads from writing a new exception mid-throw.
+            {
+                if (workerException != null)
+                {
+                    throw workerException;
+                }
+            }
         }
 
         /// <summary>
@@ -49,6 +77,9 @@ namespace CaveGeneration.Utility
         /// </summary>
         public static IEnumerator ExecuteAndAwait(Action action)
         {
+            if (action == null)
+                throw new ArgumentNullException("action");
+
             var pause = new WaitForSecondsRealtime(0.017f); // Checks about 60 times per second
             IAsyncResult result = action.BeginInvoke(null, null);
             while (!result.IsCompleted)
