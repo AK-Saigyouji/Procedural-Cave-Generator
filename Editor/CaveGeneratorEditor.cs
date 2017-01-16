@@ -83,10 +83,10 @@ public class CaveGeneratorEditor : Editor
     {
         string caveFolderPath = EditorHelpers.CreateFolder(ROOT_FOLDER, CAVE_FOLDER);
 
-        cave = CreateCavePrefab(cave, caveFolderPath);
         try
         {
             CreateMeshAssets(cave.transform, caveFolderPath);
+            CreateCavePrefab(cave, caveFolderPath);
         }
         catch (System.InvalidOperationException)
         {
