@@ -20,10 +20,10 @@ namespace CaveGeneration.MeshGeneration
             return BuildFlatMesh(grid, heightMap);
         }
 
-        public static MeshData BuildEnclosure(MeshData floor, IHeightMap heightMap)
+        public static MeshData BuildEnclosure(WallGrid grid, IHeightMap heightMap)
         {
-            MeshData mesh = floor.Clone();
-            ApplyHeightMap(mesh.vertices, heightMap);
+            WallGrid invertedGrid = grid.Invert();
+            MeshData mesh = BuildFlatMesh(invertedGrid, heightMap);
             FlipVisibility(mesh);
             return mesh;
         }
@@ -38,13 +38,12 @@ namespace CaveGeneration.MeshGeneration
 
         static Vector2[] ComputeFlatUVArray(Vector3[] vertices)
         {
-            const float UVSCALE = 50;
+            const float UVSCALE = 50f;
             var uv = new Vector2[vertices.Length];
             for (int i = 0; i < vertices.Length; i++)
             {
-                float percentX = vertices[i].x / UVSCALE;
-                float percentY = vertices[i].z / UVSCALE;
-                uv[i] = new Vector2(percentX, percentY);
+                uv[i].x = vertices[i].x / UVSCALE;
+                uv[i].y = vertices[i].z / UVSCALE;
             }
             return uv;
         }
@@ -58,7 +57,7 @@ namespace CaveGeneration.MeshGeneration
             }
         }
 
-        // The floor is visible from above, but the ceiling should be visible from below. By reversing
+        // The floor is visible from above, but the enclosure should be visible from below. By reversing
         // the triangles we flip the direction of visibility.
         static void FlipVisibility(MeshData mesh)
         {

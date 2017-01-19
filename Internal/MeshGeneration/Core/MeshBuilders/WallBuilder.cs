@@ -1,6 +1,8 @@
 ﻿/* The task of building the walls is sufficiently complicated that it warranted a separate class. The basic
  idea is simple: taking a 2D outline of the walls, build a quad on each edge of the outline. The difficult
  part is the task of assigning texture coordinates.
+
+ The task of determining the outlines for a grid is delegated to a separate class.
 */
 
 using UnityEngine;

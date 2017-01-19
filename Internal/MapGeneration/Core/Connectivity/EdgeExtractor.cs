@@ -8,6 +8,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Assertions;
 
 namespace CaveGeneration.MapGeneration.Connectivity
 {
@@ -74,7 +75,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
         /// <param name="region">Must not be empty.</param>
         public TileRegion Extract(TileRegion region)
         {
-            UnityEngine.Assertions.Assert.AreNotEqual(region.Count, 0, "Room is empty!");
+            Assert.AreNotEqual(region.Count, 0, "Room is empty!");
             var edgeTiles = new List<Coord>(region.Count);
             var stack = new Stack<Coord>();
             Coord firstTile = GetStartingEdgeTile(map, region);
@@ -87,7 +88,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
                 Coord tile = stack.Pop();
                 foreach (Coord adj in GetAdjacentCoords(tile, adjacentTiles))
                 {
-                    if (!visited[adj.x, adj.y] && FoundEdgeTile(tile, adj, map))
+                    if (map.Contains(adj) && !visited[adj.x, adj.y] && FoundEdgeTile(tile, adj, map))
                     {
                         visited[adj.x, adj.y] = true;
                         stack.Push(adj);
@@ -101,11 +102,11 @@ namespace CaveGeneration.MapGeneration.Connectivity
         static Coord GetStartingEdgeTile(Map map, TileRegion region)
         {
             // Note that in practice, this should return the very first item in alltiles.
-            return region.First(tile => map.IsAdjacentToWallFast(tile.x, tile.y));
+            return region.First(tile => map.IsAdjacentToWall(tile.x, tile.y));
         }
 
         /// <summary>
-        /// Have we found a valid edge tile for this room?
+        /// Have we found a valid edge tile for this room? Source and target must both be contained in map.
         /// </summary>
         /// <param name="source">The tile from which the new tile was discovered. Used to ensure they belong to the 
         /// same room.</param>
@@ -114,7 +115,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
         {
             int x = target.x, y = target.y;
             return map.IsFloor(x, y)
-                && map.IsAdjacentToWallFast(x, y)
+                && (map.IsBoundaryTile(x, y) || map.IsAdjacentToWall(x, y))
                 && IsValidJump(source, target, map);
         }
 

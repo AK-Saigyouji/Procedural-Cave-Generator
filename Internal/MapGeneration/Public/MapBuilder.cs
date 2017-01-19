@@ -1,11 +1,10 @@
-﻿/* MapBuilder is a low-level class that offers a library of extension methods for map generation. 
-The intention is to write light-weight, higher-level map generator classes that can easily be customized 
-by choosing which of the methods in this class should be used and in what order. See the default map generator 
-for an example. 
+﻿/* MapBuilder offers a library of extension methods for map generation. 
+ The intention is to write light-weight, higher-level map generator components that can mix and match 
+ various methods from this class.
  
   Each public method is an extension method for the Map class, and returns the resulting Map object, allowing
-the methods to be chained together. Each method is a pure function: they don't mutate any state (in particular,
-the input map) and instead output a copy of the map with the resulting changes.*/
+ the methods to be chained together. Each method is a pure function: they don't mutate any state (in particular,
+ the input map) and instead output a copy of the map with the resulting changes.*/
 
 using System;
 using System.Collections.Generic;
@@ -25,22 +24,19 @@ namespace CaveGeneration.MapGeneration
         const int MAX_SMOOTHING_ITERATIONS = 10;
 
         /// <summary>
-        /// Fills the map as follows: the outer most boundary is filled with wall tiles. The rest of the map is filled with
-        /// wall tiles randomly based on the map density: e.g. if the map density is 0.45 then roughly 45% will be filled
-        /// with wall tiles (excluding boundary) and the rest with floor tiles. 
+        /// The map is filled with wall tiles randomly based on the map density: e.g. if the map density is 0.45 
+        /// then roughly 45% will be filled with wall tiles (excluding boundary) and the rest with floor tiles. 
         /// </summary>
         public static Map InitializeRandomMap(int length, int width, float mapDensity, int seed)
         {
             Map map = new Map(length, width);
-            // Unity's Random seed cannot be set in a secondary thread, so System.Random is used instead.
-            var random = new System.Random(seed);
-            map.TransformBoundary((x, y) => Tile.Wall);
-            map.TransformInterior((x, y) => random.NextDouble() < mapDensity ? Tile.Wall : Tile.Floor);
+            var random = new System.Random(seed); // UnityEngine.Random's seed must be set in main thread only
+            map.Transform((x, y) => random.NextDouble() < mapDensity ? Tile.Wall : Tile.Floor);
             return map;
         }
 
         /// <summary>
-        /// Smooth out the grid by making each point in the interior more like its neighbours. i.e. floors surounded
+        /// Smooth out the grid by making each point more like its neighbours. i.e. floors surounded
         /// by walls become walls, and vice versa. Caution: may affect connectivity.
         /// </summary>
         /// <param name="iterations">The number of smoothing passes to perform. The default is sufficient to
@@ -53,6 +49,7 @@ namespace CaveGeneration.MapGeneration
             Map smoothedMap = inputMap.Clone();
             for (int i = 0; i < iterations; i++)
             {
+                //smoothedMap.TransformBoundary((x, y) => GetSmoothedBoundaryTile(currentMap, x, y));
                 smoothedMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y));
                 Swap(ref currentMap, ref smoothedMap);
             }
@@ -64,34 +61,18 @@ namespace CaveGeneration.MapGeneration
         /// connectivity. 
         /// </summary>
         /// <param name="iterations">The number of smoothing passes to perform. Higher than 10 will be clamped to 10.</param>
-        public static Map SmoothOnlyWalls(this Map inputMap, int iterations = SMOOTHING_ITERATIONS)
+        public static Map SmoothOnlyWalls(this Map inputMap, int iterations = 1)
         {
             iterations = Mathf.Min(MAX_SMOOTHING_ITERATIONS, iterations);
             Map currentMap = inputMap.Clone();
             Map smoothedMap = inputMap.Clone();
             for (int i = 0; i < iterations; i++)
             {
+                smoothedMap.TransformBoundary((x, y) => GetSmoothedBoundaryTile(currentMap, x, y), currentMap.IsWall);
                 smoothedMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y), currentMap.IsWall);
                 Swap(ref currentMap, ref smoothedMap);
             }
             return currentMap;
-        }
-
-        /// <summary>
-        /// Expand each floor region by a number of tiles in each direction based on the provided argument. Use cautiously,
-        /// as this method will dramatically reduce the proportion of walls in the map even for a small radius.
-        /// </summary>
-        public static Map ExpandRegions(this Map inputMap, int radius)
-        {
-            if (radius < 0) throw new ArgumentException("Cannot expand regions by a negative number.", "radius");
-            if (radius == 0) return inputMap.Clone();
-
-            Map map = inputMap.Clone();
-            inputMap.ForEachInterior((x, y) => 
-            {
-                if (inputMap.IsFloor(x, y)) ClearNeighbours(map, x, y, radius);
-            });
-            return map;
         }
 
         /// <summary>
@@ -166,19 +147,27 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         static Tile GetSmoothedTile(Map map, int x, int y)
         {
-            int neighbourCount = map.GetSurroundingWallCount(x, y);
-            if (neighbourCount > SMOOTHING_THRESHOLD)
+            return map.GetSurroundingWallCount(x, y) > SMOOTHING_THRESHOLD ? Tile.Wall : Tile.Floor;
+        }
+
+        // The method for the boundary case handles the above interior case as well, but with much poorer performance.
+        static Tile GetSmoothedBoundaryTile(Map map, int centerX, int centerY)
+        {
+            int left  = Mathf.Max(centerX - 1, 0);
+            int bot   = Mathf.Max(centerY - 1, 0);
+            int right = Mathf.Min(centerX + 1, map.Length - 1);
+            int top   = Mathf.Min(centerY + 1, map.Width - 1);
+            int numWalls = 0;
+            int numTiles = 0;
+            for (int y = bot; y <= top; y++)
             {
-                return Tile.Wall;
+                for (int x = left; x <= right; x++)
+                {
+                    numWalls += (int)map[x, y];
+                    numTiles++;
+                }
             }
-            else if (neighbourCount < SMOOTHING_THRESHOLD)
-            {
-                return Tile.Floor;
-            }
-            else
-            {
-                return map[x, y];
-            }
+            return 2 * numWalls >= numTiles ? Tile.Wall : Tile.Floor;
         }
 
         static void CreatePassage(Map map, ConnectionInfo connection, int tunnelingRadius)
@@ -190,15 +179,15 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Replace nearby tiles with floors. Does not affect boundary tiles.
+        /// Replace nearby tiles with floors.
         /// </summary>
         static void ClearNeighbours(Map map, Coord center, int radius)
         {
-            // These computations ensure that only interior (non-boundary) tiles are affected.
-            int xMin = Mathf.Max(1, center.x - radius);
-            int yMin = Mathf.Max(1, center.y - radius);
-            int xMax = Mathf.Min(map.Length - 2, center.x + radius);
-            int yMax = Mathf.Min(map.Width - 2, center.y + radius);
+            // Ensure we don't step off the map and into an index exception
+            int xMin = Mathf.Max(0, center.x - radius);
+            int yMin = Mathf.Max(0, center.y - radius);
+            int xMax = Mathf.Min(map.Length - 1, center.x + radius);
+            int yMax = Mathf.Min(map.Width - 1, center.y + radius);
             // Look at each x,y in a square surrounding the center, but only remove those that fall within
             // the circle of given radius. 
             int squaredRadius = radius * radius;

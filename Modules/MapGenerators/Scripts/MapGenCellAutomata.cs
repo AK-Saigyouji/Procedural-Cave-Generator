@@ -4,6 +4,9 @@ using System;
 
 namespace CaveGeneration.Modules
 {
+    /// <summary>
+    /// Produces maps based on cellular automata. Outermost boundary always consists of wall tiles.
+    /// </summary>
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + "Cellular Automata (Default)")]
     public sealed class MapGenCellAutomata : MapGenModule, IRandomizable
     {
@@ -20,16 +23,17 @@ namespace CaveGeneration.Modules
             }
         }
 
-        const int BASE_TUNNEL_RADIUS = 1;
+        const int TUNNEL_RADIUS = 1;
 
         public override Map Generate()
         {
-            return MapBuilder
-                .InitializeRandomMap(properties.Length, properties.Width, properties.InitialDensity, properties.Seed)
+            Map map = MapBuilder.InitializeRandomMap(properties.Length, properties.Width, properties.InitialDensity, properties.Seed);
+            map.TransformBoundary((x, y) => Tile.Wall);
+             
+            return map
                 .Smooth()
                 .RemoveSmallFloorRegions(properties.MinFloorSize)
-                .ExpandRegions(properties.FloorExpansion)
-                .ConnectFloors(BASE_TUNNEL_RADIUS + properties.FloorExpansion)
+                .ConnectFloors(TUNNEL_RADIUS)
                 .SmoothOnlyWalls()
                 .RemoveSmallWallRegions(properties.MinWallSize)
                 .ApplyBorder(properties.BorderSize);

@@ -35,13 +35,14 @@ namespace CaveGeneration.Modules
         {
             var wallGrid = new WallGrid(new byte[size, size], Vector3.zero, scale);
             IHeightMap heightMap = heightMapModule.GetHeightMap();
-            return MeshBuilder.BuildFloor(wallGrid, heightMap).CreateMesh();
+            return MeshGenerator.GenerateFloorMesh(wallGrid, heightMap);
         }
 
-        void Reset()
+        void Awake()
         {
-            size = DEFAULT_SIZE;
-            scale = DEFAULT_SCALE;
+            #if !UNITY_EDITOR
+                Destroy(this);
+            #endif
         }
 
         void Update()
@@ -50,6 +51,12 @@ namespace CaveGeneration.Modules
             {
                 Graphics.DrawMesh(mesh, Matrix4x4.identity, material, 0);
             }
+        }
+
+        void Reset()
+        {
+            size = DEFAULT_SIZE;
+            scale = DEFAULT_SCALE;
         }
 
         bool CanDraw()
@@ -62,15 +69,6 @@ namespace CaveGeneration.Modules
             size = Mathf.Clamp(size, MIN_SIZE, MAX_SIZE);
             scale = Mathf.Max(scale, MIN_SCALE);
             mesh = CreateMesh();
-        }
-
-        // This destroys the script if it's accidentally left in an actual build, where it does nothing
-        // but waste resources.
-        void OnEnable() 
-        {
-            #if !UNITY_EDITOR
-                Destroy(this);
-            #endif
         }
     } 
 }

@@ -16,10 +16,10 @@ namespace CaveGeneration
         public CaveComponent Walls { get; private set; }
         public CaveComponent Floor { get; private set; }
 
-        public const string wallName = "Walls";
-        public const string ceilingName = "Ceiling";
-        public const string floorName = "Floor";
-        public const string sectorName = "Sector";
+        const string sectorName = "Sector";
+        const string wallName = "Walls";
+        const string ceilingName = "Ceiling";
+        const string floorName = "Floor";
 
         internal Sector(CaveMeshes caveMeshes, Coord coordinates)
         {
@@ -34,6 +34,30 @@ namespace CaveGeneration
             SetChild(Ceiling);
             SetChild(Walls);
             SetChild(Floor);
+        }
+
+        public static bool IsFloor(Transform transform)
+        {
+            if (transform == null)
+                return false;
+
+            return transform.name.Contains(floorName);
+        }
+
+        public static bool IsWall(Transform transform)
+        {
+            if (transform == null)
+                return false;
+
+            return transform.name.Contains(wallName);
+        }
+
+        public static bool IsCeiling(Transform transform)
+        {
+            if (transform == null)
+                return false;
+
+            return transform.name.Contains(ceilingName);
         }
 
         void SetChild(CaveComponent component)

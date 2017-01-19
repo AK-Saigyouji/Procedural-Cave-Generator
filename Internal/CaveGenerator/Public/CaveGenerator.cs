@@ -4,28 +4,33 @@ using CaveGeneration.MeshGeneration;
 
 namespace CaveGeneration
 {
-    static class CaveGenerator
+    public static class CaveGenerator
     {
         /// <param name="randomizeSeeds">Will reroll the random seeds on each randomizable component.</param>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="ArgumentException"></exception>
         public static Cave Generate(CaveConfiguration config, bool randomizeSeeds)
         {
+            if (config == null)
+                throw new ArgumentNullException("config");
+
             if (config.MapGenerator == null)
-                throw new InvalidOperationException("Must assign Map Generator before generating.");
+                throw new ArgumentException("Config must contain a map generation module.");
 
-            if (config.FloorHeightMap == null)
-                throw new InvalidOperationException("Must assign Floor Height Map Component before generating.");
+            if (config.FloorHeightMapModule == null)
+                throw new ArgumentException("Config must contain a height map module for the floor.");
 
-            if (config.CeilingHeightMap == null)
-                throw new InvalidOperationException("Must assign Ceiling Height Map Component before generating.");
+            if (config.CeilingHeightMapModule == null)
+                throw new ArgumentException("Config must contain a height map module for the ceiling.");
 
             if (randomizeSeeds)
                 config.RandomizeSeeds();
 
             Map map = config.MapGenerator.Generate();
-            IHeightMap floor = config.FloorHeightMap.GetHeightMap();
-            IHeightMap ceiling = config.CeilingHeightMap.GetHeightMap();
+            IHeightMap floor = config.FloorHeightMapModule.GetHeightMap();
+            IHeightMap ceiling = config.CeilingHeightMapModule.GetHeightMap();
 
-            var mapChunks = MapSplitter.Subdivide(map);
+            Map[,] mapChunks = MapSplitter.Subdivide(map);
             int xNumChunks = mapChunks.GetLength(0);
             int yNumChunks = mapChunks.GetLength(1);
             var caveChunks = new CaveMeshes[xNumChunks, yNumChunks];

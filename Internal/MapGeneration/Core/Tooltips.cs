@@ -12,9 +12,6 @@
             "Initial proportion of walls in the map, from 0 to 1. Note that the final proportion will likely be " +
             "very different due to the various processing steps. Experiment to achieve desired proportion.";
 
-        public const string MAP_FLOOR_EXPANSION = 
-            "Expand floor regions in every direction by given quantity.";
-
         public const string MAP_SEED =
             "The seed fixed the randomness in the map.";
 

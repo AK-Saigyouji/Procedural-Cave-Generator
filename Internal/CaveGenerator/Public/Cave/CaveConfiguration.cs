@@ -24,7 +24,7 @@ namespace CaveGeneration
             }
         }
 
-        public HeightMapModule FloorHeightMap
+        public HeightMapModule FloorHeightMapModule
         {
             get { return floorHeightMap; }
             set
@@ -34,7 +34,7 @@ namespace CaveGeneration
             }
         }
 
-        public HeightMapModule CeilingHeightMap
+        public HeightMapModule CeilingHeightMapModule
         {
             get { return ceilingHeightMap; }
             set
@@ -130,6 +130,25 @@ namespace CaveGeneration
             TrySetSeed(mapGenerator, randomSeed);
             TrySetSeed(floorHeightMap, randomSeed);
             TrySetSeed(ceilingHeightMap, randomSeed);
+        }
+
+        public static HeightMapModule GetSampleFloorHeightMapModule()
+        {
+            var floor = ScriptableObject.CreateInstance<HeightMapConstant>();
+            floor.Height = 0;
+            return floor;
+        }
+
+        public static HeightMapModule GetSampleCeilingHeightMapModule()
+        {
+            var ceiling = ScriptableObject.CreateInstance<HeightMapRocky>();
+            ceiling.Properties.SetHeightRange(3f, 7f);
+            return ceiling;
+        }
+
+        public static MapGenModule GetSampleMapGenerator()
+        {
+            return ScriptableObject.CreateInstance<MapGenCellAutomata>();
         }
 
         void TrySetSeed(ScriptableObject module, int seed)

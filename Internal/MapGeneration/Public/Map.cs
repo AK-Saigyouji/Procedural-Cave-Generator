@@ -31,7 +31,7 @@ namespace CaveGeneration.MapGeneration
 
         int length;
         int width;
-
+        
         public Map(int length, int width)
         {
             grid = new Tile[length, width];
@@ -60,7 +60,9 @@ namespace CaveGeneration.MapGeneration
         /// <exception cref="ArgumentNullException"></exception>
         public void Copy(Map other)
         {
-            if (other == null) throw new ArgumentNullException();
+            if (other == null)
+                throw new ArgumentNullException();
+
             if (length != other.length || width != other.width)
                 throw new ArgumentException("Cannot copy map with different dimensions!");
 
@@ -89,25 +91,14 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
-        /// so use only if this tile is in the interior of the map.
+        /// Is the tile adjacent to a wall tile?
         /// </summary>
-        /// <exception cref="IndexOutOfRangeException"></exception>
-        public bool IsAdjacentToWallFast(int x, int y)
+        public bool IsAdjacentToWall(int x, int y)
         {
-            return grid[x - 1, y] == Tile.Wall || grid[x + 1, y] == Tile.Wall 
-                || grid[x, y + 1] == Tile.Wall || grid[x, y - 1] == Tile.Wall;
-        }
-
-        /// <summary>
-        /// Is the tile adjacent to a wall tile? Assumes the tile is not along the boundary (throws exception otherwise)
-        /// so use only if this tile is in the interior of the map.
-        /// </summary>
-        /// <exception cref="IndexOutOfRangeException"></exception>
-        public bool IsAdjacentToFloorFast(int x, int y)
-        {
-            return grid[x - 1, y] == Tile.Floor || grid[x + 1, y] == Tile.Floor
-                || grid[x, y + 1] == Tile.Floor || grid[x, y - 1] == Tile.Floor;
+            return (x > 0          && grid[x - 1, y] == Tile.Wall)
+                || (y > 0          && grid[x, y - 1] == Tile.Wall)
+                || (x + 1 < length && grid[x + 1, y] == Tile.Wall)
+                || (y + 1 < width  && grid[x, y + 1] == Tile.Wall);
         }
 
         /// <summary>
@@ -134,9 +125,10 @@ namespace CaveGeneration.MapGeneration
         /// <exception cref="IndexOutOfRangeException"></exception>
         public int GetSurroundingWallCount(int x, int y)
         {
-            return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]  // top-left, top, top-right
-                 + (int)grid[x - 1, y    ] +                       (int)grid[x + 1, y    ]  // middle-left, middle-right
-                 + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1]; // bottom-left, bottom, bottom-right
+            // Unpacking the loop like this makes a big performance difference.
+            return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]
+                 + (int)grid[x - 1, y    ] + (int)grid[x, y    ] + (int)grid[x + 1, y    ]
+                 + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1];
         }
 
         /// <summary>
@@ -226,11 +218,16 @@ namespace CaveGeneration.MapGeneration
             return grid[tile.x, tile.y] == Tile.Wall;
         }
 
+        #region FunctionalExtensions
+
         /// <summary>
         /// Perform an action for each tile.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         public void ForEach(Action<int, int> action)
         {
+            ThrowIfNull(action);
+
             for (int y = 0; y < width; y++)
             {
                 for (int x = 0; x < length; x++)
@@ -243,8 +240,11 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Perform an action for each boundary tile.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         public void ForEachBoundary(Action<int, int> action)
         {
+            ThrowIfNull(action);
+
             for (int x = 0; x < length; x++)
             {
                 action(x, 0);
@@ -260,8 +260,11 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Perform an action for each interior tile.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         public void ForEachInterior(Action<int, int> action)
         {
+            ThrowIfNull(action);
+
             for (int y = 1; y < width - 1; y++)
             {
                 for (int x = 1; x < length - 1; x++)
@@ -274,8 +277,11 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Reassigns every tile in the map using the provided function.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Transform(Func<int, int, Tile> transformation)
         {
+            ThrowIfNull(transformation);
+
             for (int y = 0; y < width; y++)
             {
                 for (int x = 0; x < length; x++)
@@ -288,8 +294,11 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Reassigns every boundary tile in the map using the provided function.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         public void TransformBoundary(Func<int, int, Tile> transformation)
         {
+            ThrowIfNull(transformation);
+
             for (int x = 0; x < length; x++)
             {
                 grid[x, 0] = transformation(x, 0);
@@ -305,8 +314,11 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Reassigns every interior tile in the map using the provided function.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         public void TransformInterior(Func<int, int, Tile> transformation)
         {
+            ThrowIfNull(transformation);
+
             for (int y = 1; y < width - 1; y++)
             {
                 for (int x = 1; x < length - 1; x++)
@@ -319,8 +331,12 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Reassigns every tile that satisfies the provided predicate, using the provided transformation.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         public void Transform(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
         {
+            ThrowIfNull(transformation);
+            ThrowIfNull(predicate);
+
             for (int y = 0; y < width; y++)
             {
                 for (int x = 0; x < length; x++)
@@ -336,8 +352,12 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Reassigns every boundary tile that satisfies the provided predicate, using the provided transformation.
         /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
         public void TransformBoundary(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
         {
+            ThrowIfNull(transformation);
+            ThrowIfNull(predicate);
+
             for (int x = 0; x < length; x++)
             {
                 if (predicate(x, 0))          grid[x, 0] = transformation(x, 0);
@@ -352,9 +372,13 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// Reassigns every interior tile satisfying the provided predicate, using the provided transformation.
-        /// </summary>
+        /// </summary
+        /// <exception cref="ArgumentNullException"></exception>
         public void TransformInterior(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
         {
+            ThrowIfNull(transformation);
+            ThrowIfNull(predicate);
+
             for (int y = 1; y < width - 1; y++)
             {
                 for (int x = 1; x < length - 1; x++)
@@ -366,5 +390,29 @@ namespace CaveGeneration.MapGeneration
                 }
             }
         }
+
+        #endregion
+
+        #region ExceptionHelpers
+
+        void ThrowIfNull(Func<int, int, Tile> transformation)
+        {
+            if (transformation == null)
+                throw new ArgumentNullException("transformation");
+        }
+
+        void ThrowIfNull(Func<int, int, bool> predicate)
+        {
+            if (predicate == null)
+                throw new ArgumentNullException("predicate");
+        }
+
+        void ThrowIfNull(Action<int, int> action)
+        {
+            if (action == null)
+                throw new ArgumentNullException("action");
+        }
+
+        #endregion
     }
 }

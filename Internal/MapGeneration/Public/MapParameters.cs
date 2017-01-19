@@ -46,19 +46,6 @@ namespace CaveGeneration.MapGeneration
             set { SetMapDensity(value); }
         }
 
-        [Tooltip(Tooltips.MAP_FLOOR_EXPANSION)]
-        [SerializeField] int floorExpansion;
-        /// <summary>
-        /// Expand every floor tile by this many tiles in every direction. Substantially reduces wall tiles in the 
-        /// map, so use conservatively. Must be between 0 and 32767, though values larger than 5 are unlikely to be 
-        /// practical.
-        /// </summary>
-        public int FloorExpansion
-        {
-            get { return floorExpansion; }
-            set { SetFloorExpansion(value); }
-        }
-
         [Tooltip(Tooltips.MAP_SEED)]
         [SerializeField] int seed;
         public int Seed
@@ -112,10 +99,6 @@ namespace CaveGeneration.MapGeneration
         const int DEFAULT_BORDER_SIZE = 0;
         const int MAXIMUM_BORDER_SIZE = 1000;
 
-        const int MINIMUM_FLOOR_EXPANSION = 0;
-        const int DEFAULT_FLOOR_EXPANSION = 0;
-        const int MAXIMUM_FLOOR_EXPANSION = short.MaxValue;
-
         const float MINIMUM_MAP_DENSITY = 0f;
         const float DEFAULT_MAP_DENSITY = 0.5f;
         const float MAXIMUM_MAP_DENSITY = 1f;
@@ -142,11 +125,10 @@ namespace CaveGeneration.MapGeneration
 
         internal void OnValidate()
         {
-            length = Mathf.Clamp(length, MINIMUM_LENGTH, MAXIMUM_LENGTH);
-            width = Mathf.Clamp(width, MINIMUM_WIDTH, MAXIMUM_WIDTH);
+            length            = Mathf.Clamp(length, MINIMUM_LENGTH, MAXIMUM_LENGTH);
+            width             = Mathf.Clamp(width, MINIMUM_WIDTH, MAXIMUM_WIDTH);
             initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
-            floorExpansion = Mathf.Clamp(floorExpansion, MINIMUM_FLOOR_EXPANSION, MAXIMUM_FLOOR_EXPANSION);
-            borderSize = Mathf.Clamp(borderSize, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
+            borderSize        = Mathf.Clamp(borderSize, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
         }
 
         void Reset()
@@ -154,7 +136,6 @@ namespace CaveGeneration.MapGeneration
             length            = DEFAULT_LENGTH;
             width             = DEFAULT_WIDTH;
             initialMapDensity = DEFAULT_MAP_DENSITY;
-            floorExpansion    = DEFAULT_FLOOR_EXPANSION;
             borderSize        = DEFAULT_BORDER_SIZE;
             minWallSize       = DEFAULT_WALL_THRESHOLD;
             minFloorSize      = DEFAULT_FLOOR_THRESHOLD;
@@ -173,11 +154,6 @@ namespace CaveGeneration.MapGeneration
         void SetBorderSize(int value)
         {
             SetParameter(ref borderSize, value, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
-        }
-
-        void SetFloorExpansion(int value)
-        {
-            SetParameter(ref floorExpansion, value, MINIMUM_FLOOR_EXPANSION, MAXIMUM_FLOOR_EXPANSION);
         }
 
         void SetMapDensity(float value)

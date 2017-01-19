@@ -18,7 +18,7 @@ namespace CaveGeneration.Utility
         // on number of reset handles.
         const int MAX_WORK_ITEM_COUNT = 8;
 
-        static object locker = new object();
+        static readonly object locker = new object();
 
         /// <summary>
         /// Implementation of a parallel foreach.
@@ -73,7 +73,8 @@ namespace CaveGeneration.Utility
 
         /// <summary>
         /// A very basic substitute for async/await usable in coroutines. May use secondary threads, so ensure
-        /// the action does not touch the Unity API. 
+        /// the action does not touch the Unity API. Intended for relatively long-running operations, as
+        /// it may introduce 20+ ms of overhead.
         /// </summary>
         public static IEnumerator ExecuteAndAwait(Action action)
         {
@@ -86,6 +87,9 @@ namespace CaveGeneration.Utility
             {
                 yield return pause;
             }
+            // EndInvoke is called purely to ensure unhandled exceptions caused by action are thrown
+            // on the main thread (otherwise, action will have failed silently). 
+            action.EndInvoke(result); 
         }
     }
 }

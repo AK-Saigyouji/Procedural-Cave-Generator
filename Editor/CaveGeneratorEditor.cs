@@ -90,7 +90,7 @@ public class CaveGeneratorEditor : Editor
         }
         catch (System.InvalidOperationException)
         {
-            AssetDatabase.DeleteAsset(caveFolderPath); 
+            AssetDatabase.DeleteAsset(caveFolderPath);
             throw;
         }
     }
@@ -104,17 +104,15 @@ public class CaveGeneratorEditor : Editor
         {
             foreach (Transform component in sector)
             {
-                string name = component.name;
-
-                if (name.Contains(Sector.floorName))
+                if (Sector.IsFloor(component))
                 {
                     CreateMeshAsset(component, floorFolder);
                 }
-                else if (name.Contains(Sector.ceilingName))
+                else if (Sector.IsCeiling(component))
                 {
                     CreateMeshAsset(component, ceilingFolder);
                 }
-                else if (name.Contains(Sector.wallName))
+                else if (Sector.IsWall(component))
                 {
                     CreateMeshAsset(component, wallFolder);
                 }

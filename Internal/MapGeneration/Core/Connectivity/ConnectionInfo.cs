@@ -33,5 +33,10 @@ namespace CaveGeneration.MapGeneration.Connectivity
             this.roomIndexB = (ushort)roomIndexB;
             this.distance = distance;
         }
+
+        public override string ToString()
+        {
+            return string.Format("{0} to {1}, distance of {2}.", tileA, tileB, distance);
+        }
     } 
 }

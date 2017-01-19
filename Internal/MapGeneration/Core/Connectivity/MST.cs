@@ -38,11 +38,10 @@ namespace CaveGeneration.MapGeneration.Connectivity
                     components.Union(indexA, indexB);
                 }
             }
-
             return prunedConnections.ToArray();
         }
 
-        public static int CountNumberOfRooms(ConnectionInfo[] connections)
+        static int CountNumberOfRooms(ConnectionInfo[] connections)
         {
             int maxRoomIndex = -1;
             foreach (ConnectionInfo connection in connections)
