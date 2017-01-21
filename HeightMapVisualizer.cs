@@ -9,8 +9,8 @@
  
   Note that this script will destroy itself if it's used in a live build (i.e. it's editor-only)*/
 
-using UnityEngine;
 using CaveGeneration.MeshGeneration;
+using UnityEngine;
 
 namespace CaveGeneration.Modules
 {
@@ -21,8 +21,6 @@ namespace CaveGeneration.Modules
         [SerializeField] Material material;
         [SerializeField] int size;
         [SerializeField] int scale;
-
-        Mesh mesh;
 
         const int MIN_SIZE = 10;
         const int MAX_SIZE = 200;
@@ -49,6 +47,7 @@ namespace CaveGeneration.Modules
         {
             if (CanDraw()) 
             {
+                Mesh mesh = CreateMesh();
                 Graphics.DrawMesh(mesh, Matrix4x4.identity, material, 0);
             }
         }
@@ -61,14 +60,13 @@ namespace CaveGeneration.Modules
 
         bool CanDraw()
         {
-            return !Application.isPlaying && heightMapModule != null && material != null && mesh != null;
+            return !Application.isPlaying && heightMapModule != null && material != null;
         }
 
         void OnValidate()
         {
             size = Mathf.Clamp(size, MIN_SIZE, MAX_SIZE);
             scale = Mathf.Max(scale, MIN_SCALE);
-            mesh = CreateMesh();
         }
     } 
 }
