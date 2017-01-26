@@ -31,6 +31,14 @@ namespace CaveGeneration
             IHeightMap ceiling = config.CeilingHeightMapModule.GetHeightMap();
 
             Map[,] mapChunks = MapSplitter.Subdivide(map);
+            CaveMeshes[,] caveChunks = GenerateCaveChunks(mapChunks, config, floor, ceiling);
+            Cave cave = new Cave(caveChunks, config);
+
+            return cave;
+        }
+
+        static CaveMeshes[,] GenerateCaveChunks(Map[,] mapChunks, CaveConfiguration config, IHeightMap floor, IHeightMap ceiling)
+        {
             int xNumChunks = mapChunks.GetLength(0);
             int yNumChunks = mapChunks.GetLength(1);
             var caveChunks = new CaveMeshes[xNumChunks, yNumChunks];
@@ -39,17 +47,17 @@ namespace CaveGeneration
             {
                 for (int x = 0; x < xNumChunks; x++)
                 {
-                    int xCopy = x, yCopy = y;
+                    Map mapChunk = mapChunks[x, y];
+                    Coord index = new Coord(x, y);
                     actions[y * xNumChunks + x] = new Action(() =>
                     {
-                        WallGrid wallGrid = MapConverter.ToWallGrid(mapChunks[xCopy, yCopy], config.Scale, new Coord(xCopy, yCopy));
-                        caveChunks[xCopy, yCopy] = MeshGenerator.Generate(wallGrid, config.CaveType, floor, ceiling);
+                        WallGrid wallGrid = MapConverter.ToWallGrid(mapChunk, config.Scale, index);
+                        caveChunks[index.x, index.y] = MeshGenerator.Generate(wallGrid, config.CaveType, floor, ceiling);
                     });
                 }
             }
             Utility.Threading.ParallelExecute(actions);
-            Cave cave = new Cave(caveChunks, config);
-            return cave;
+            return caveChunks;
         }
     }
 }

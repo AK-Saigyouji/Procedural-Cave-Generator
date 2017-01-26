@@ -32,7 +32,7 @@ namespace CaveGeneration
             Assert.IsNotNull(caveMeshes);
             Assert.IsNotNull(caveConfig);
 
-            configuration = caveConfig;
+            configuration = caveConfig.Clone();
             GameObject = new GameObject("Cave");
 
             BuildSectors(caveMeshes);
@@ -45,8 +45,7 @@ namespace CaveGeneration
         /// <summary>
         /// Retrieve a copy of the configuration used to produce this cave. If the components used to construct the
         /// cave produce a deterministic result with respect to its properties, then it's possible to rebuild the 
-        /// same cave using this configuration. An example of when this is not possible is when using the default 
-        /// map generator component configured to use a random seed.
+        /// same cave using this configuration. 
         /// </summary>
         public CaveConfiguration GetConfiguration()
         {
@@ -54,7 +53,9 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Builds a utility object that allows for testing if objects collide with this cave's walls. 
+        /// Builds a utility object that allows for testing if objects collide with this cave's walls. Mainly
+        /// intended for content placement - the cave comes equipped with appropriate colliders to handle
+        /// normal collisions.
         /// </summary>
         public CollisionTester BuildCollisionTester()
         {

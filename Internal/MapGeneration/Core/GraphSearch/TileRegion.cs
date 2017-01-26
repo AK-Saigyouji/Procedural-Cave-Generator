@@ -1,12 +1,13 @@
 ﻿/* The main motivation for creating this class was to avoid having objects of type "List<List<Coord>>" or "List<Coord[]>" 
- * in the code. Thus the class exposes exposes functionality that is a struct subset of what would be provided by 
+ * in the code. Thus the class exposes exposes functionality that is a strict subset of what would be provided by 
  * by an array of Coords. */
 
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine.Assertions;
 
-namespace CaveGeneration.MapGeneration
+namespace CaveGeneration.MapGeneration.Connectivity
 {
     /// <summary>
     /// A simple, readonly collection of tiles in the map.
@@ -19,7 +20,7 @@ namespace CaveGeneration.MapGeneration
 
         public TileRegion(List<Coord> tiles, int index)
         {
-            UnityEngine.Assertions.Assert.IsNotNull(tiles);
+            Assert.IsNotNull(tiles);
             Coord[] tilesCopy = new Coord[tiles.Count];
             for (int i = 0; i < tiles.Count; i++)
             {

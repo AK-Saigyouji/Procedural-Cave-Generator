@@ -1,4 +1,14 @@
-﻿using System;
+﻿/* A 2d integer vector. Shorts were chosen as the backing integer type as a trade off between performance
+ and flexibility. Coords often have to be used in large collections, where data compression can have a substantial
+ affect on cache performance, so choosing the smallest appropriate integer type can affect performance significantly.
+ On the other hand, choosing a byte or sbyte would severely restrict the applicability of this type.
+ A short is large enough to handle practical map sizes: Unity transforms issue a warning when working with 
+ values much larger than the range of a short.
+ 
+  The other non-trivial design decision was to make Coord immutable, in contrast to Vector2. This is in keeping
+ with best practices when dealing with C# structs.*/
+
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -105,6 +115,9 @@ namespace CaveGeneration.MapGeneration
         /// <returns>List of Coords between this and the other coord (inclusive).</returns>
         public List<Coord> GetLineTo(Coord other)
         {
+            if (this == other)
+                return new List<Coord>(1) { this };
+
             var startVector = new Vector2(x, y);
             var line = new List<Coord>();
 

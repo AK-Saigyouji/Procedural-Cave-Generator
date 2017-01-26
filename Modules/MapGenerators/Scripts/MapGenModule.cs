@@ -4,8 +4,7 @@ using CaveGeneration.MapGeneration;
 namespace CaveGeneration.Modules
 {
     /// <summary>
-    /// Abstract base class for map generator components (scriptable objects). Implement this to define a custom map 
-    /// generator. 
+    /// Base class for map generator modules. Implement this to define a custom map generator. 
     /// </summary>
     public abstract class MapGenModule : ScriptableObject
     {

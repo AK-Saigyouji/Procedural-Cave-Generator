@@ -96,7 +96,7 @@ namespace CaveGeneration.MapGeneration
         const int MAXIMUM_WIDTH = short.MaxValue;
 
         const int MINIMUM_BORDER_SIZE = 0;
-        const int DEFAULT_BORDER_SIZE = 0;
+        const int DEFAULT_BORDER_SIZE = 1;
         const int MAXIMUM_BORDER_SIZE = 1000;
 
         const float MINIMUM_MAP_DENSITY = 0f;

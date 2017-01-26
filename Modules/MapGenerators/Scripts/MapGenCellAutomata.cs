@@ -29,14 +29,12 @@ namespace CaveGeneration.Modules
         {
             Map map = MapBuilder.InitializeRandomMap(properties.Length, properties.Width, properties.InitialDensity, properties.Seed);
             map.TransformBoundary((x, y) => Tile.Wall);
-             
-            return map
-                .Smooth()
-                .RemoveSmallFloorRegions(properties.MinFloorSize)
-                .ConnectFloors(TUNNEL_RADIUS)
-                .SmoothOnlyWalls()
-                .RemoveSmallWallRegions(properties.MinWallSize)
-                .ApplyBorder(properties.BorderSize);
+            MapBuilder.Smooth(map);
+            MapBuilder.RemoveSmallFloorRegions(map, properties.MinFloorSize);
+            MapBuilder.ConnectFloors(map, TUNNEL_RADIUS);
+            MapBuilder.SmoothOnlyWalls(map);
+            MapBuilder.RemoveSmallWallRegions(map, properties.MinWallSize);
+            return MapBuilder.ApplyBorder(map, properties.BorderSize);
         }
 
         int IRandomizable.Seed { set { properties.Seed = value; } }

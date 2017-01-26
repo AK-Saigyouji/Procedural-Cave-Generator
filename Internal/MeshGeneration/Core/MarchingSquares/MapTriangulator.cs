@@ -4,9 +4,11 @@
  * based on which of the four corners are walls (giving rise to 16 configurations). The vertices of the triangles are taken
  * from the four corners of the square plus the four midpoints of the square. 
  * 
- * A specialized data structure is used to cache vertices during triangulation to avoid doubling up on vertices. */
+ * A specialized data structure is used to cache vertices during triangulation to avoid doubling up on vertices. 
+ */
 
 using UnityEngine;
+using UnityEngine.Assertions;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -23,21 +25,23 @@ namespace CaveGeneration.MeshGeneration
 
             var localVertices = new LocalPosition[meshSizes.NumVertices];
             var triangles = new int[meshSizes.NumTriangles];
-            int numVertices = 0;
+            ushort numVertices = 0;
             int numTriangles = 0;
 
-            var vertexIndices = new int[MarchingSquares.MAX_VERTICES_IN_TRIANGULATION];
+            var vertexIndices = new ushort[MarchingSquares.MAX_VERTICES_IN_TRIANGULATION];
             var vertexCache = new VertexLookup(wallGrid.Length);
 
-            for (int y = 0; y < configurations.GetLength(1); y++)
+            int width = configurations.GetLength(1);
+            int length = configurations.GetLength(0);
+            for (byte y = 0; y < width; y++)
             {
-                for (int x = 0; x < configurations.GetLength(0); x++)
+                for (byte x = 0; x < length; x++)
                 {
                     byte[] points = MarchingSquares.GetPoints(configurations[x, y]);
                     for (int i = 0; i < points.Length; i++)
                     {
-                        int point = points[i];
-                        int vertexIndex;
+                        byte point = points[i];
+                        ushort vertexIndex;
                         if (!vertexCache.TryGetCachedVertex(x, y, point, out vertexIndex))
                         {
                             vertexIndex = numVertices++;
@@ -93,7 +97,7 @@ namespace CaveGeneration.MeshGeneration
         }
 
         // This exists simply to return these two pieces of data from a single function call.
-        class MeshSizes
+        sealed class MeshSizes
         {
             public readonly int NumVertices;
             public readonly int NumTriangles;

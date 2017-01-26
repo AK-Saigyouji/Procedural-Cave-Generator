@@ -1,10 +1,5 @@
-﻿/* MapBuilder offers a library of extension methods for map generation. 
- The intention is to write light-weight, higher-level map generator components that can mix and match 
- various methods from this class.
- 
-  Each public method is an extension method for the Map class, and returns the resulting Map object, allowing
- the methods to be chained together. Each method is a pure function: they don't mutate any state (in particular,
- the input map) and instead output a copy of the map with the resulting changes.*/
+﻿/* MapBuilder offers a library of methods for map generation. The intention is to write light-weight, higher-level 
+ map generator modules that can mix and match various methods from this class.*/
 
 using System;
 using System.Collections.Generic;
@@ -14,8 +9,7 @@ using CaveGeneration.MapGeneration.Connectivity;
 namespace CaveGeneration.MapGeneration
 {
     /// <summary>
-    /// Offers a variety of extension methods for generating Map objects. All methods leave the original intact,
-    /// returning a copy with the modifications.
+    /// Offers a variety of methods for generating Map objects.
     /// </summary>
     public static class MapBuilder
     {
@@ -42,18 +36,18 @@ namespace CaveGeneration.MapGeneration
         /// <param name="iterations">The number of smoothing passes to perform. The default is sufficient to
         /// turn completely random noise into smooth caverns. Can set to a lower number if map is already 
         /// well-structured but a bit jagged. Higher than 10 will be clamped to 10.</param>
-        public static Map Smooth(this Map inputMap, int iterations = SMOOTHING_ITERATIONS)
+        public static void Smooth(Map inputMap, int iterations = SMOOTHING_ITERATIONS)
         {
             iterations = Mathf.Min(MAX_SMOOTHING_ITERATIONS, iterations);
             Map currentMap = inputMap.Clone();
             Map smoothedMap = inputMap.Clone();
             for (int i = 0; i < iterations; i++)
             {
-                //smoothedMap.TransformBoundary((x, y) => GetSmoothedBoundaryTile(currentMap, x, y));
+                smoothedMap.TransformBoundary((x, y) => GetSmoothedBoundaryTile(currentMap, x, y));
                 smoothedMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y));
                 Swap(ref currentMap, ref smoothedMap);
             }
-            return currentMap;
+            inputMap.Copy(currentMap);
         }
 
         /// <summary>
@@ -61,7 +55,7 @@ namespace CaveGeneration.MapGeneration
         /// connectivity. 
         /// </summary>
         /// <param name="iterations">The number of smoothing passes to perform. Higher than 10 will be clamped to 10.</param>
-        public static Map SmoothOnlyWalls(this Map inputMap, int iterations = 1)
+        public static void SmoothOnlyWalls(Map inputMap, int iterations = 1)
         {
             iterations = Mathf.Min(MAX_SMOOTHING_ITERATIONS, iterations);
             Map currentMap = inputMap.Clone();
@@ -72,7 +66,7 @@ namespace CaveGeneration.MapGeneration
                 smoothedMap.TransformInterior((x, y) => GetSmoothedTile(currentMap, x, y), currentMap.IsWall);
                 Swap(ref currentMap, ref smoothedMap);
             }
-            return currentMap;
+            inputMap.Copy(currentMap);
         }
 
         /// <summary>
@@ -80,9 +74,9 @@ namespace CaveGeneration.MapGeneration
         /// sequence of vertical and horizontal steps through walls. 
         /// </summary>
         /// <param name="threshold">Number of tiles a region must have to not be removed.</param>
-        public static Map RemoveSmallWallRegions(this Map inputMap, int threshold)
+        public static void RemoveSmallWallRegions(Map inputMap, int threshold)
         {
-            return RemoveSmallRegions(inputMap, threshold, Tile.Wall);
+            RemoveSmallRegions(inputMap, threshold, Tile.Wall);
         }
 
         /// <summary>
@@ -90,25 +84,25 @@ namespace CaveGeneration.MapGeneration
         /// by a sequence of vertical and horizontal steps through floor tiles. 
         /// </summary>
         /// <param name="threshold">Number of tiles a region must have to not be removed.</param>
-        public static Map RemoveSmallFloorRegions(this Map inputMap, int threshold)
+        public static void RemoveSmallFloorRegions(Map inputMap, int threshold)
         {
-            return RemoveSmallRegions(inputMap, threshold, Tile.Floor);
+            RemoveSmallRegions(inputMap, threshold, Tile.Floor);
         }
 
         /// <summary>
         /// Ensure connectivity between all regions of floors in the map. It is recommended that you first prune
         /// small floor regions in order to avoid creating tunnels to tiny regions.
         /// </summary>
-        public static Map ConnectFloors(this Map inputMap, int tunnelRadius)
+        public static void ConnectFloors(Map inputMap, int tunnelRadius)
         {
             if (tunnelRadius < 0) throw new ArgumentException("Cannot tunnel a negative radius", "tunnelRadius");
-            if (tunnelRadius == 0) return inputMap.Clone();
+            if (tunnelRadius == 0) return;
 
             Map map = inputMap.Clone();
             List<TileRegion> floors = BFS.GetConnectedRegions(map, Tile.Floor);
             ConnectionInfo[] finalConnections = MapConnector.GetConnections(map, floors);
             Array.ForEach(finalConnections, connection => CreatePassage(map, connection, tunnelRadius));
-            return map;
+            inputMap.Copy(map);
         }
 
         /// <summary>
@@ -116,7 +110,7 @@ namespace CaveGeneration.MapGeneration
         /// width and length of the resulting map.
         /// </summary>
         /// <param name="borderSize">How thick the border should be on each side.</param>
-        public static Map ApplyBorder(this Map inputMap, int borderSize)
+        public static Map ApplyBorder(Map inputMap, int borderSize)
         {
             if (borderSize < 0) throw new ArgumentException("Cannot add a border of negative size.", "borderSize");
             if (borderSize == 0) return inputMap.Clone();
@@ -131,14 +125,12 @@ namespace CaveGeneration.MapGeneration
             return borderedMap;
         }
 
-        static Map RemoveSmallRegions(Map inputMap, int threshold, Tile tileType)
+        static void RemoveSmallRegions(Map inputMap, int threshold, Tile tileType)
         {
             if (threshold < 0) throw new ArgumentException("Removal threshold cannot be negative.", "threshold");
-            if (threshold == 0) return inputMap.Clone();
+            if (threshold == 0) return;
 
-            Map map = inputMap.Clone();
-            BFS.RemoveSmallRegions(map, tileType, threshold);
-            return map;
+            BFS.RemoveSmallRegions(inputMap, tileType, threshold);
         }
 
         /// <summary>

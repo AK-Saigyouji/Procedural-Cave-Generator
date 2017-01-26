@@ -1,5 +1,4 @@
-﻿using CaveGeneration.MapGeneration;
-using CaveGeneration.MeshGeneration;
+﻿using CaveGeneration.MeshGeneration;
 using CaveGeneration.Modules;
 using System;
 using UnityEngine;
@@ -8,7 +7,7 @@ namespace CaveGeneration
 {
     [Serializable]
     /// <summary>
-    /// Complete set of serializable information necessary to build a cave. 
+    /// Complete set of information necessary to build a cave. 
     /// </summary>
     public sealed class CaveConfiguration
     {
@@ -130,25 +129,6 @@ namespace CaveGeneration
             TrySetSeed(mapGenerator, randomSeed);
             TrySetSeed(floorHeightMap, randomSeed);
             TrySetSeed(ceilingHeightMap, randomSeed);
-        }
-
-        public static HeightMapModule GetSampleFloorHeightMapModule()
-        {
-            var floor = ScriptableObject.CreateInstance<HeightMapConstant>();
-            floor.Height = 0;
-            return floor;
-        }
-
-        public static HeightMapModule GetSampleCeilingHeightMapModule()
-        {
-            var ceiling = ScriptableObject.CreateInstance<HeightMapRocky>();
-            ceiling.Properties.SetHeightRange(3f, 7f);
-            return ceiling;
-        }
-
-        public static MapGenModule GetSampleMapGenerator()
-        {
-            return ScriptableObject.CreateInstance<MapGenCellAutomata>();
         }
 
         void TrySetSeed(ScriptableObject module, int seed)

@@ -19,8 +19,11 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     sealed class VertexLookup
     {
-        int[,] currentRow;
-        int[,] previousRow;
+        // The use of unsigned shorts reflects the fact that there can only be 2^16 vertices in a mesh. 
+        // Using 2 bytes instead of 4 like this improves cache performance quite a bit, and resulted in about
+        // a 15% performance improvement.
+        ushort[,] currentRow;
+        ushort[,] previousRow;
 
         // left side of a square corresponds to 0, 6, 7
         readonly bool[] isOnLeft = new[]
@@ -52,20 +55,21 @@ namespace CaveGeneration.MeshGeneration
         // -1 represents an invalid entry
 
         // 0, 7, 6 to 2, 3, 4 respectively (topleft, left, bottomleft to topright, right, bottomright)
-        readonly int[] leftOffset = new[] { 2, -1, -1, -1, -1, -1, 4, 3 };
+        readonly sbyte[] leftOffset = new sbyte[] { 2, -1, -1, -1, -1, -1, 4, 3 };
 
         // 4, 5, 6 to 2, 1, 0 respectively (bottomright, bottom, bottomleft to topright, top, topleft)
-        readonly int[] bottomOffset = new[] { -1, -1, -1, -1, 2, 1, 0, -1 };
+        readonly sbyte[] bottomOffset = new sbyte[] { -1, -1, -1, -1, 2, 1, 0, -1 };
 
+        // how many points in each square we cache (just the first five).
         const int perSquareCacheSize = 5;
 
         public VertexLookup(int rowLength)
         {
-            currentRow = new int[perSquareCacheSize, rowLength];
-            previousRow = new int[perSquareCacheSize, rowLength];
+            currentRow = new ushort[perSquareCacheSize, rowLength];
+            previousRow = new ushort[perSquareCacheSize, rowLength];
         }
 
-        public bool TryGetCachedVertex(int x, int y, int squarePoint, out int vertexIndex)
+        public bool TryGetCachedVertex(byte x, byte y, byte squarePoint, out ushort vertexIndex)
         {
             if (isOnBottom[squarePoint] && y > 0)
             {
@@ -81,7 +85,7 @@ namespace CaveGeneration.MeshGeneration
             return false;
         }
 
-        public void CacheVertex(int x, int point, int vertexIndex)
+        public void CacheVertex(byte x, byte point, ushort vertexIndex)
         {
             if (point < perSquareCacheSize) // Only the first five points (0,1,2,3,4) need to be stored
             {

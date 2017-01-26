@@ -85,7 +85,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         public Map Clone()
         {
-            Map clone = (Map)MemberwiseClone();
+            Map clone = new Map(length, width);
             clone.Copy(this);
             return clone;
         }
