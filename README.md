@@ -48,7 +48,7 @@ The two major subsystems are Map Generation and Mesh Generation. Map Generation 
 
 ### 4.1 Map generation
 
-The purpose of map generation is to produce a Map object, which is a grid of tiles (internally, a 2d byte array of 0s and 1s) corresponding to floors and walls. I've created an application that offers a visualization of the default map generator and a fairly detailed overview of the underlying algorithms and their run times. It can be accessed [here](https://ak-saigyouji.github.io). The overall structure is dictated by cellular automata, and connectivity is enforced using a standard minimal spanning tree algorithm (Kruskal's). 
+The purpose of map generation is to produce a Map object, which is a grid of tiles (internally, a 2d byte array of 0s and 1s) corresponding to floors and walls. The overall structure is dictated by cellular automata, and connectivity is enforced using a standard minimal spanning tree algorithm (Kruskal's). 
 
 ### 4.2 Mesh generation
 
