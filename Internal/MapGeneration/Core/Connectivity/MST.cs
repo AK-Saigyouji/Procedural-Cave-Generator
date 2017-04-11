@@ -3,6 +3,7 @@
  * It takes as input edges in a connected graph. It returns a smaller collection of edges such that the resulting
  * subgraph is still connected, but the total distance/weight of the sum of edges is minimized.*/
 
+using System;
 using System.Collections.Generic;
 
 namespace CaveGeneration.MapGeneration.Connectivity
@@ -13,16 +14,16 @@ namespace CaveGeneration.MapGeneration.Connectivity
     static class MST
     {
         /// <summary>
-        /// Compute the minimum spanning tree from the given connections/egdes. Resulting connections
+        /// Compute the minimum spanning tree from the given connections/edges. Resulting connections
         /// are guaranteed to form a connected subgraph only if input connections form a connected graph. If
         /// input is unsorted, a spanning tree will still be produced but may not be optimal. 
         /// </summary>
         /// <param name="connections">Array of connections sorted in increasing order by weight.</param>
         /// <returns>Connections specifying a minimum spanning tree.</returns>
-        /// <exception cref="System.ArgumentNullException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public static ConnectionInfo[] ComputeMST(ConnectionInfo[] connections)
         {
-            if (connections == null) throw new System.ArgumentNullException("connections");
+            if (connections == null) throw new ArgumentNullException("connections");
 
             int numRooms = CountNumberOfRooms(connections);
             var components = new UnionFind(numRooms);
@@ -46,8 +47,8 @@ namespace CaveGeneration.MapGeneration.Connectivity
             int maxRoomIndex = -1;
             foreach (ConnectionInfo connection in connections)
             {
-                maxRoomIndex = System.Math.Max(connection.roomIndexA, maxRoomIndex);
-                maxRoomIndex = System.Math.Max(connection.roomIndexB, maxRoomIndex);
+                maxRoomIndex = Math.Max(connection.roomIndexA, maxRoomIndex);
+                maxRoomIndex = Math.Max(connection.roomIndexB, maxRoomIndex);
             }
             // if indices are 0, 1, 2, 3, then maxRoomIndex is 3 but the number of rooms is 4.
             return maxRoomIndex + 1;

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// Uncomment this preprocessor directive to disable multithreading:
+// #define SINGLE_THREAD
+
+using System;
 using CaveGeneration.MapGeneration;
 using CaveGeneration.MeshGeneration;
 
@@ -56,8 +59,17 @@ namespace CaveGeneration
                     });
                 }
             }
-            Utility.Threading.ParallelExecute(actions);
+            Execute(actions);
             return caveChunks;
+        }
+
+        static void Execute(Action[] actions)
+        {
+#if SINGLE_THREAD
+            Array.ForEach(actions, action => action.Invoke());
+#else
+            Utility.Threading.ParallelExecute(actions);
+#endif
         }
     }
 }

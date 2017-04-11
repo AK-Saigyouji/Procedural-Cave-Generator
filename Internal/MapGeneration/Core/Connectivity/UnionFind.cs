@@ -1,5 +1,7 @@
 ﻿/* This is a general implementation of the UnionFind (also known as Disjoint Set) data structure.*/
 
+using System;
+
 namespace CaveGeneration.MapGeneration.Connectivity
 {
     sealed class UnionFind
@@ -10,11 +12,11 @@ namespace CaveGeneration.MapGeneration.Connectivity
         readonly int maxIndex;
 
         /// <param name="numNodes">Must be at least 1.</param>
-        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public UnionFind(int numNodes)
         {
             if (numNodes < 1)
-                throw new System.ArgumentOutOfRangeException("numNodes");
+                throw new ArgumentOutOfRangeException("numNodes");
 
             parents = GetRange(numNodes + 1);
             ranks = new int[numNodes + 1];
@@ -50,7 +52,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
             }
         }
 
-        /// <exception cref="System.ArgumentOutOfRangeException"></exception>
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public int Find(int node)
         {
             if (0 > node || node > maxIndex)
@@ -78,10 +80,10 @@ namespace CaveGeneration.MapGeneration.Connectivity
             return range;
         }
 
-        System.ArgumentOutOfRangeException GetArgumentRangeException(string paramName, int value)
+        ArgumentOutOfRangeException GetArgumentRangeException(string paramName, int value)
         {
             string errorMessage = string.Format("Must be between 0 and {0}. Actual: {1}.", maxIndex, value);
-            return new System.ArgumentOutOfRangeException(paramName, errorMessage);
+            return new ArgumentOutOfRangeException(paramName, errorMessage);
         }
     }
 }

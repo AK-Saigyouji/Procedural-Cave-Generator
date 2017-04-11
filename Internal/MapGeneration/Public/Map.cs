@@ -118,10 +118,11 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// The number of walls adjacent to the given point. Both horizontal/vertical and diagonal tiles count.
+        /// The number of walls adjacent to the given point, including the point itself. 
+        /// Both horizontal/vertical and diagonal tiles count.
         /// Note that the input coordinates must be contained in the interior of the map (not on the boundary);
         /// </summary>
-        /// <returns>Number of walls surrounding the given tile, between 0 and 8 inclusive.</returns>
+        /// <returns>Number of walls surrounding the given tile, between 0 and 9 inclusive.</returns>
         /// <exception cref="IndexOutOfRangeException"></exception>
         public int GetSurroundingWallCount(int x, int y)
         {

@@ -100,7 +100,7 @@ namespace CaveGeneration.MeshGeneration
         }
 
         // This exists simply to return these two pieces of data from a single function call.
-        sealed class MeshSizes
+        struct MeshSizes
         {
             public readonly int NumVertices;
             public readonly int NumTriangles;

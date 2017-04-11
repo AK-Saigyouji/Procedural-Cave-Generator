@@ -40,7 +40,6 @@ namespace CaveGeneration.MeshGeneration
         public static CaveMeshes Generate(WallGrid grid, CaveType type, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
             ValidateInput(grid, floorHeightMap, ceilingHeightMap);
-            // This could be handled with polymorphism instead, but at this scale it's simpler like this.
             switch (type)
             {
                 case CaveType.Isometric:
@@ -53,7 +52,7 @@ namespace CaveGeneration.MeshGeneration
         }
 
         // In some cases, generating the entire cave is wasteful - these methods give the option
-        // of just generating individual pieces. The return meshes directly, and thus must be called on main thread.
+        // of just generating individual pieces. They return meshes directly, and thus must be called on main thread.
 
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>

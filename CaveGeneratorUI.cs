@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace CaveGeneration
 {    
-    public class CaveGeneratorUI : MonoBehaviour
+    public sealed class CaveGeneratorUI : MonoBehaviour
     {
         [SerializeField] CaveConfiguration caveConfig = new CaveConfiguration();
 

@@ -19,12 +19,12 @@ namespace CaveGeneration.MapGeneration
 
         /// <summary>
         /// The map is filled with wall tiles randomly based on the map density: e.g. if the map density is 0.45 
-        /// then roughly 45% will be filled with wall tiles (excluding boundary) and the rest with floor tiles. 
+        /// then roughly 45% will be filled with wall tiles and the rest with floor tiles. 
         /// </summary>
         public static Map InitializeRandomMap(int length, int width, float mapDensity, int seed)
         {
             Map map = new Map(length, width);
-            var random = new System.Random(seed); // UnityEngine.Random's seed must be set in main thread only
+            var random = new System.Random(seed); // UnityEngine.Random's seed can only be set in main thread
             map.Transform((x, y) => random.NextDouble() < mapDensity ? Tile.Wall : Tile.Floor);
             return map;
         }
@@ -142,7 +142,7 @@ namespace CaveGeneration.MapGeneration
             return map.GetSurroundingWallCount(x, y) > SMOOTHING_THRESHOLD ? Tile.Wall : Tile.Floor;
         }
 
-        // The method for the boundary case handles the above interior case as well, but with much poorer performance.
+        // The method for the boundary case handles the interior case as well, but with inferior performance.
         static Tile GetSmoothedBoundaryTile(Map map, int centerX, int centerY)
         {
             int left  = Mathf.Max(centerX - 1, 0);
