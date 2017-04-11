@@ -21,7 +21,8 @@ namespace CaveGeneration.MeshGeneration
         public static MeshData Triangulate(WallGrid wallGrid)
         {
             byte[,] configurations = MarchingSquares.ComputeConfigurations(wallGrid);
-            MeshSizes meshSizes = ComputeMeshSizes(configurations);
+            byte[][] configurationTable = MarchingSquares.BuildConfigurationTable();
+            MeshSizes meshSizes = ComputeMeshSizes(configurations, configurationTable);
 
             var localVertices = new LocalPosition[meshSizes.NumVertices];
             var triangles = new int[meshSizes.NumTriangles];
@@ -37,7 +38,8 @@ namespace CaveGeneration.MeshGeneration
             {
                 for (byte x = 0; x < length; x++)
                 {
-                    byte[] points = MarchingSquares.GetPoints(configurations[x, y]);
+                    int config = configurations[x, y];
+                    byte[] points = configurationTable[config];
                     for (int i = 0; i < points.Length; i++)
                     {
                         byte point = points[i];
@@ -75,7 +77,7 @@ namespace CaveGeneration.MeshGeneration
             return vertices;
         }
 
-        static MeshSizes ComputeMeshSizes(byte[,] configurations)
+        static MeshSizes ComputeMeshSizes(byte[,] configurations, byte[][] configurationTable)
         {
             int width = configurations.GetLength(1);
             int length = configurations.GetLength(0);
@@ -85,7 +87,8 @@ namespace CaveGeneration.MeshGeneration
             {
                 for (int x = 0; x < length; x++)
                 {
-                    int numVertices = MarchingSquares.GetPoints(configurations[x, y]).Length;
+                    int config = configurations[x, y];
+                    int numVertices = configurationTable[config].Length;
                     totalVertices += numVertices;
                     // As an example, the points 0, 1, 5, 6 give us the two triangles
                     // 0,1,5 and 0,5,6. Each triangle contributes three elements to the triangles array. Hence
