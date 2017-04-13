@@ -24,7 +24,7 @@ The Internals folder contains the source code for the bulk of the project. You d
 
 Create a new empty game object, and attach the CaveGeneratorUI script. Set the properties in the inspector. You can find sample modules for the Map Generator, Floor Height Map and Ceiling Height Map slots in the Modules folder.
 
-Run the scene, and you will see two buttons appear in the inspector: Generate New Cave and Create Prefab. Generating a new map will create a new cave, overwriting any previously generated cave. Creating a prefab will convert the current cave into a prefab and save it into your directory in a folder called "GeneratedCave" along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. Once a cave has been converted to a prefab, it retains no dependency on the CaveGenerator, nor on any script from this project: it's composed entirely of core Unity objects. 
+Run the scene, and you will see two buttons appear in the inspector: Generate New Cave and Create Prefab. Generating a new map will create a new cave, overwriting any previously generated cave. Creating a prefab will convert the current cave into a prefab and save it into your directory in a folder called "GeneratedCave" along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. Once a cave has been converted to a prefab, it retains no dependency on the CaveGenerator, nor on any script from this project: it's composed entirely of core Unity objects.
 
 The modules required by the generator are Scriptable Objects and can themselves be configured through their inspectors. You can also create additional ones by going through the menu: Assets -> Create -> Cave Generation and selecting the appropriate options. This allows you to define specific configurations of the various modules and save them as independent assets. 
 
@@ -50,6 +50,8 @@ The two major subsystems are Map Generation and Mesh Generation. Map Generation 
 
 The purpose of map generation is to produce a Map object, which is a grid of tiles (internally, a 2d byte array of 0s and 1s) corresponding to floors and walls. The overall structure is dictated by cellular automata, and connectivity is enforced using a standard minimal spanning tree algorithm (Kruskal's). 
 
+I've written a visualization (in Unity) that covers the algorithms used by map generation in greater detail, showing them in action. It can be accessed [here](https://ak-saigyouji.github.io/).
+
 ### 4.2 Mesh generation
 
 The primary algorithm driving mesh generation is Marching Squares, which offers way to triangulate a 2d grid into a smoother mesh. This is used to generate flat ceiling and floor meshes. Walls are built by attaching the outlines of the walls and ceilings with a series of quads. 
@@ -59,6 +61,12 @@ Outline generation, map triangulation, and even collision detection all use algo
 ### 4.3 Height maps
 
 The variations in height are by default generated using height maps based on multiple layers of perlin noise. These are supplied to the Mesh Generation system in the form of objects implementing the IHeightMap interface. 
+
+### 4.4 Dynamic content placement
+
+The Cave class has a method to build a collision tester, useful for placing content at run-time with no advanced knowledge of the structure of the cave. In general, writing an algorithm to place content at run-time like this is a difficult matter. The collision tester offers some low level functionality that can be built upon for this purpose.
+
+It supports both point queries and box queries. i.e. given a point or an axis aligned (bounding) box, also known as a Bounds object in Unity, it will report whether the point or box intersects the walls of the cave. It handles the query extremely efficiently (in O(1) or constant time) no matter the size of the box. This is done by using a dynamic programming algorithm to compute submatrix sums in constant time. The algorithm sometimes goes by the name Summed Area Table. 
 
 ## 5. Acknowledgements
 
