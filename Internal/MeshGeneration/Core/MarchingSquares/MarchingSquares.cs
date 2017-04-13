@@ -8,12 +8,50 @@
 
 using UnityEngine;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CaveGeneration.MeshGeneration
 {
+    [Flags]
+    enum Square
+    {
+        None = 0,
+        TopLeft = 1,
+        Top = 2,
+        TopRight = 4,
+        Right = 8,
+        BotRight = 16,
+        Bot = 32,
+        BotLeft = 64,
+        Left = 128,
+    }
+
     static class MarchingSquares
     {
         public const int MAX_VERTICES_IN_TRIANGULATION = 6;
+
+        const Square AllEightPoints = (Square)0xFF;
+
+        const Square BottomLeftTriangle  = Square.Bot | Square.BotLeft  | Square.Left;
+        const Square BottomRightTriangle = Square.Bot | Square.BotRight | Square.Right;
+        const Square TopRightTriangle    = Square.Top | Square.TopRight | Square.Right;
+        const Square TopLeftTriangle     = Square.Top | Square.TopLeft  | Square.Left;
+
+        const Square BottomHalf = Square.BotRight | Square.Left | Square.Right | Square.BotLeft;
+        const Square RightHalf  = Square.BotRight | Square.Top  | Square.Bot   | Square.TopRight;
+        const Square TopHalf    = Square.TopRight | Square.Left | Square.Right | Square.TopLeft;
+        const Square LeftHalf   = Square.TopLeft  | Square.Bot  | Square.Top   | Square.BotLeft;
+
+        const Square AllButTopLeft  = Square.Top | Square.TopRight | Square.BotRight | Square.BotLeft | Square.Left;
+        const Square AllButTopRight = Square.Top | Square.BotRight | Square.BotLeft  | Square.TopLeft | Square.Right;
+        const Square AllButBotRight = Square.Bot | Square.TopRight | Square.BotLeft  | Square.TopLeft | Square.Right;
+        const Square AllButBotLeft  = Square.Bot | Square.TopRight | Square.BotRight | Square.TopLeft | Square.Left;
+
+        const Square AllButTopLeftOrBotRight = TopRightTriangle | BottomLeftTriangle;
+        const Square AllButTopRightOrBotLeft = TopLeftTriangle  | BottomRightTriangle;
+
+        const Square FullSquare = Square.TopLeft | Square.TopRight | Square.BotRight | Square.BotLeft;
 
         /// <summary>
         /// Does the point intersect a triangle in the given configuration for a unit square? i.e. if we 
@@ -77,31 +115,43 @@ namespace CaveGeneration.MeshGeneration
             return botLeft + 2 * botRight + 4 * topRight + 8 * topLeft;
         }
 
-        /// <summary>
-        /// Returns a jagged array where the first variable corresponds to configuration (0 to 15 inclusive) and 
-        /// the second the points in the triangulation for that square, from 0 (top left) to 7 (top mid) inclusive.
-        /// </summary>
         public static byte[][] BuildConfigurationTable()
         {
-            return new byte[][]
+            // This may seem like a peculiar way to define this method, but is done to maximize readability without
+            // relying on comments and to avoid storing data in static fields. 
+            return new Square[]
             {
-                new byte[] { },                 //  0: empty
-                new byte[] {5, 6, 7 },          //  1: bottom-left triangle
-                new byte[] {3, 4, 5 },          //  2: bottom-right triangle
-                new byte[] {3, 4, 6, 7 },       //  3: bottom half
-                new byte[] {1, 2, 3 },          //  4: top-right triangle
-                new byte[] {1, 2, 3, 5, 6, 7 }, //  5: all but top-left and bottom-right triangles
-                new byte[] {1, 2, 4, 5 },       //  6: right half
-                new byte[] {1, 2, 4, 6, 7 },    //  7: all but top-left triangle
-                new byte[] {0, 1, 7 },          //  8: top-left triangle
-                new byte[] {0, 1, 5, 6 },       //  9: left half
-                new byte[] {0, 1, 3, 4, 5, 7 }, // 10: all but bottom-left and top-right
-                new byte[] {0, 1, 3, 4, 6 },    // 11: all but top-right
-                new byte[] {0, 2, 3, 7 },       // 12: top half
-                new byte[] {0, 2, 3, 5, 6 },    // 13: all but bottom-right
-                new byte[] {0, 2, 4, 5, 7 },    // 14: all but bottom-left
-                new byte[] {0, 2, 4, 6}         // 15: full square
-            };
+                Square.None,              //  0
+                BottomLeftTriangle,       //  1
+                BottomRightTriangle,      //  2
+                BottomHalf,               //  3
+                TopRightTriangle,         //  4
+                AllButTopLeftOrBotRight,  //  5
+                RightHalf,                //  6
+                AllButTopLeft,            //  7
+                TopLeftTriangle,          //  8 
+                LeftHalf,                 //  9
+                AllButTopRightOrBotLeft,  // 10
+                AllButTopRight,           // 11
+                TopHalf,                  // 12
+                AllButBotRight,           // 13
+                AllButBotLeft,            // 14
+                FullSquare                // 15
+            }.Select(UnpackSquare).ToArray();
+        }
+
+        static byte[] UnpackSquare(Square square)
+        {
+            var unpackedSquare = new List<byte>();
+            byte squareValue = 1;
+            for (byte i = 0; i < 8; i++, squareValue *= 2)
+            {
+                if ((square & (Square)squareValue) > 0)
+                {
+                    unpackedSquare.Add(i);
+                }
+            }
+            return unpackedSquare.ToArray();
         }
 
         public static byte[,] ComputeConfigurations(WallGrid wallGrid)
