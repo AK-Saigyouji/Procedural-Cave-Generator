@@ -16,12 +16,6 @@ namespace CaveGeneration.MeshGeneration
     /// </summary>
     static class MapTriangulator
     {
-        const int topLeftIndex = 0;
-        const int topIndex = 1;
-        const int topRightIndex = 2;
-        const int rightIndex = 3;
-        const int bottomRightIndex = 4;
-
         const int perSquareCacheSize = 5;
 
         public static MeshData Triangulate(WallGrid wallGrid)
