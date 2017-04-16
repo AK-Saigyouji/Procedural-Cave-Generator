@@ -107,7 +107,7 @@ namespace CaveGeneration.MeshGeneration
             MeshData floor   = MeshBuilder.BuildFloor(grid, floorHeightMap);
             MeshData ceiling = MeshBuilder.BuildCeiling(grid, ceilingHeightMap);
             MeshData wall    = MeshBuilder.BuildWalls(grid, floorHeightMap, ceilingHeightMap);
-            return new CaveMeshes(floor, ceiling, wall);
+            return new CaveMeshes(floor, wall, ceiling);
         }
 
         static CaveMeshes GenerateEnclosed(WallGrid grid, IHeightMap floorHeightMap, IHeightMap enclosureHeightMap)
