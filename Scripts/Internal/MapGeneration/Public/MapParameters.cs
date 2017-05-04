@@ -10,7 +10,8 @@ namespace CaveGeneration.MapGeneration
     [Serializable]
     public sealed class MapParameters
     {
-        [Tooltip(Tooltips.MAP_LENGTH)]
+        #region PARAMETERS
+        [Tooltip(MAP_LENGTH)]
         [SerializeField] int length;
         /// <summary>
         /// Must be between 5 and 32767.
@@ -21,7 +22,7 @@ namespace CaveGeneration.MapGeneration
             set { SetLength(value); }
         }
 
-        [Tooltip(Tooltips.MAP_WIDTH)]
+        [Tooltip(MAP_WIDTH)]
         [SerializeField] int width;
         /// <summary>
         /// Must be between 5 and 32767.
@@ -32,7 +33,7 @@ namespace CaveGeneration.MapGeneration
             set { SetWidth(value); }
         }
 
-        [Tooltip(Tooltips.MAP_DENSITY)]
+        [Tooltip(MAP_DENSITY)]
         [Range(MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY)]
         [SerializeField] float initialMapDensity;
         /// <summary>
@@ -46,7 +47,7 @@ namespace CaveGeneration.MapGeneration
             set { SetMapDensity(value); }
         }
 
-        [Tooltip(Tooltips.MAP_SEED)]
+        [Tooltip(MAP_SEED)]
         [SerializeField] int seed;
         public int Seed
         {
@@ -54,7 +55,7 @@ namespace CaveGeneration.MapGeneration
             set { seed = value; }
         }
 
-        [Tooltip(Tooltips.MAP_BORDER_SIZE)]
+        [Tooltip(MAP_BORDER_SIZE)]
         [SerializeField] int borderSize;
         /// <summary>
         /// Adds a border of walls this thick on each side of the map. Must be between 0 and 1000.
@@ -65,7 +66,7 @@ namespace CaveGeneration.MapGeneration
             set { SetBorderSize(value); }
         }
 
-        [Tooltip(Tooltips.MAP_MIN_WALL_SIZE)]
+        [Tooltip(MAP_MIN_WALL_SIZE)]
         [SerializeField] int minWallSize;
         /// <summary>
         /// Prunes regions of wall with fewer than this many tiles. Min value of 0.
@@ -76,7 +77,7 @@ namespace CaveGeneration.MapGeneration
             set { minWallSize = value; }
         }
 
-        [Tooltip(Tooltips.MAP_MIN_FLOOR_SIZE)]
+        [Tooltip(MAP_MIN_FLOOR_SIZE)]
         [SerializeField] int minFloorSize;
         /// <summary>
         /// Prunes regions of floor with fewer than this many tiles. Min value of 0.
@@ -86,7 +87,33 @@ namespace CaveGeneration.MapGeneration
             get { return minFloorSize; }
             set { minFloorSize = value; }
         }
+        #endregion
 
+        #region TOOLTIPS
+        const string MAP_LENGTH =
+            @"Number of units across in the x-axis occupied by the map.";
+
+        const string MAP_WIDTH =
+            @"Number of units across in the z-axis occupied by the map.";
+
+        const string MAP_DENSITY = 
+            @"Initial proportion of walls in the map, from 0 to 1. Note that the final proportion will likely be
+ very different due to the various processing steps. Experiment to achieve desired proportion.";
+
+        const string MAP_SEED =
+            @"The seed fixed the randomness in the map.";
+
+        const string MAP_BORDER_SIZE =
+            @"The width of extra boundary around the map.";
+
+        const string MAP_MIN_WALL_SIZE =
+            @"Contiguous sections of wall with a tile count below this number will be removed (turned to floor tiles).";
+
+        const string MAP_MIN_FLOOR_SIZE = 
+            @"Contiguous sections of floor with a tile count below this number will be removed (turned to wall tiles).";
+        #endregion
+
+        #region VALUES
         const int MINIMUM_LENGTH = 5;
         const int DEFAULT_LENGTH = 75;
         const int MAXIMUM_LENGTH = short.MaxValue;
@@ -108,6 +135,7 @@ namespace CaveGeneration.MapGeneration
 
         const int MINIMUM_WALL_THRESHOLD = 0;
         const int DEFAULT_WALL_THRESHOLD = 50;
+        #endregion
 
         public MapParameters()
         {

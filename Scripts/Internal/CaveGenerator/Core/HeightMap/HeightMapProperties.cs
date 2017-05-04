@@ -6,35 +6,35 @@ namespace CaveGeneration
     [Serializable]
     public sealed class LayeredNoiseParameters
     {
-        [Tooltip(Tooltips.HEIGHT_MAP_MIN_HEIGHT)]
+        [Tooltip(HEIGHT_MAP_MIN_HEIGHT)]
         [SerializeField]
         float minHeight;
         public float MinHeight { get { return minHeight; } }
 
-        [Tooltip(Tooltips.HEIGHT_MAP_MAX_HEIGHT)]
+        [Tooltip(HEIGHT_MAP_MAX_HEIGHT)]
         [SerializeField]
         float maxHeight;
         public float MaxHeight { get { return maxHeight; } }
 
-        [Tooltip(Tooltips.HEIGHT_MAP_SMOOTHNESS)]
+        [Tooltip(HEIGHT_MAP_SMOOTHNESS)]
         [Range(MIN_SMOOTHNESS, MAX_SMOOTHNESS)]
         [SerializeField]
         float smoothness;
         public float Smoothness { get { return smoothness; } }
 
-        [Tooltip(Tooltips.HEIGHT_MAP_NUM_LAYERS)]
+        [Tooltip(HEIGHT_MAP_NUM_LAYERS)]
         [Range(MIN_NUM_LAYERS, MAX_NUM_LAYERS)]
         [SerializeField]
         int numLayers;
         public int NumLayers { get { return numLayers; } }
 
-        [Tooltip(Tooltips.HEIGHT_MAP_CONTRIBUTION_MULT)]
+        [Tooltip(HEIGHT_MAP_CONTRIBUTION_MULT)]
         [Range(MIN_CONTRIBUTION_MULT, MAX_CONTRIBUTION_MULT)]
         [SerializeField]
         float contributionMult;
         public float ContributionMult { get { return contributionMult; } }
 
-        [Tooltip(Tooltips.HEIGHT_MAP_COMPRESSION_MULT)]
+        [Tooltip(HEIGHT_MAP_COMPRESSION_MULT)]
         [Range(MIN_COMPRESSION_MULT, MAX_COMPRESSION_MULT)]
         [SerializeField]
         float compressionMult;
@@ -47,6 +47,26 @@ namespace CaveGeneration
             get { return seed; }
             set { seed = value; }
         }
+
+        const string HEIGHT_MAP_MIN_HEIGHT =
+            @"Minimum y-value for the height map.";
+
+        const string HEIGHT_MAP_MAX_HEIGHT =
+            @"Maximum y-value for the height map.";
+
+        const string HEIGHT_MAP_SMOOTHNESS =
+            @"How smooth the height map is initially - think rolling hills vs jagged mountains.";
+
+        const string HEIGHT_MAP_NUM_LAYERS =
+            @"The number of height maps to stack onto eachother, each rockier and with smaller contribution to add
+finer variations. Set the next two properties to control the contribution of each layer.";
+
+        const string HEIGHT_MAP_CONTRIBUTION_MULT =
+            @"What proportion of each subsequent layer to use. e.g. 0.5 means each layer provides half the contribution
+ of the previous layer.";
+
+        const string HEIGHT_MAP_COMPRESSION_MULT =
+            @"How much rockier (less smooth) each layer becomes.";
 
         const int MIN_NUM_LAYERS = 1;
         const int DEFAULT_NUM_LAYERS = 1;
