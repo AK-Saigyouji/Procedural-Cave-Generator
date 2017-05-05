@@ -1,4 +1,4 @@
-﻿// Uncomment this preprocessor directive to disable multithreading:
+﻿// Uncomment this preprocessor directive to disable multithreading. 
 // #define SINGLE_THREAD
 
 using System;
@@ -54,7 +54,7 @@ namespace CaveGeneration
                     Coord index = new Coord(x, y);
                     actions[y * xNumChunks + x] = new Action(() =>
                     {
-                        WallGrid wallGrid = MapConverter.ToWallGrid(mapChunk, config.Scale, index);
+                        WallGrid wallGrid = MapConverter.MapToWallGrid(mapChunk, config.Scale, index);
                         caveChunks[index.x, index.y] = MeshGenerator.Generate(wallGrid, config.CaveType, floor, ceiling);
                     });
                 }
@@ -68,7 +68,7 @@ namespace CaveGeneration
 #if SINGLE_THREAD
             Array.ForEach(actions, action => action.Invoke());
 #else
-            Utility.Threading.ParallelExecute(actions);
+            Threading.Threading.ParallelExecute(actions);
 #endif
         }
     }

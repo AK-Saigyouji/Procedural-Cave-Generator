@@ -2,7 +2,7 @@
 using CaveGeneration.MeshGeneration;
 using UnityEngine;
 
-namespace CaveGeneration
+namespace CaveGeneration.HeightMaps
 {
     sealed class CustomHeightMap : IHeightMap
     {

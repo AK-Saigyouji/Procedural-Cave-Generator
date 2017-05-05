@@ -1,4 +1,4 @@
-﻿namespace CaveGeneration
+﻿namespace CaveGeneration.HeightMaps
 {
     /// <summary>
     /// A height map that has the same value for all coordinates.

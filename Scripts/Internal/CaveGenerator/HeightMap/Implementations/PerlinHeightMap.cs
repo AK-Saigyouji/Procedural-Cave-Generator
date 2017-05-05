@@ -1,4 +1,4 @@
-﻿namespace CaveGeneration
+﻿namespace CaveGeneration.HeightMaps
 {
     /// <summary>
     /// A generalization of perlin noise, this class allows the generation of continuously varying, random values

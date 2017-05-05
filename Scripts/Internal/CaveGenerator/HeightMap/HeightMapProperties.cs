@@ -1,7 +1,7 @@
 ﻿using System;
 using UnityEngine;
 
-namespace CaveGeneration
+namespace CaveGeneration.HeightMaps
 {
     [Serializable]
     public sealed class LayeredNoiseParameters

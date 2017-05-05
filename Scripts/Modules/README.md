@@ -8,15 +8,16 @@ Either use a sample module provided, or create one using the menu. Samples can b
 
 You may wish to create several versions of the same type of module, and name them to reflect their distinct customization. As a simple example, you could have multiple map generators of the same type named Dense, Standard, and Sparse, configured with relatively high, balanced and low wall densities respectively. They can then be loaded dynamically at run-time to generate caves on demand, rather than generating all the caves before-hand. Saving a cave as a prefab requires saving their meshes, and meshes are very large objects (i.e. take a lot of memory). 
 
+
 ## Defining your own modules
 
-In addition to using and customizing the provided modules, you can write your own based on custom logic and plug them into the cave generator. The rest of this readme covers this process. 
+In addition to using and customizing the provided modules, you can write your own based on custom logic and plug them into the cave generator. The bulk of this readme covers this process by going over examples of new module types. While the new types built here are not terribly useful or interesting, they will serve to cover the various tools available for building more interesting types.
 
 ### Define a new height map module
 
 In this example, we'll write a new height map module to illustrate how it's done. We'll need to create a new C# script and do three things: extend the HeightMapModule class, implement the GetHeightMap() method, and add a CreateAssetMenu attribute.
 
-As a simple example to illustrate the process, we'll create a sinusoidal height map (i.e. based on the Sin function). 
+As a simple example to illustrate the process, we'll create a simple sinusoidal height map (i.e. based on the Sin function). While not terribly exciting or useful, it will serve the illustrate the various tools available to build modules of this sort.
 
 Here's a template for implementing a new height map module:
 
@@ -24,6 +25,7 @@ Here's a template for implementing a new height map module:
 using System;
 using UnityEngine;
 using CaveGeneration.MeshGeneration;
+using CaveGeneration.HeightMaps;
 
 namespace CaveGeneration.Modules
 {
@@ -60,28 +62,25 @@ public IHeightMap Build(Func<float, float, float> heightFunction, float minHeigh
 
 Min and max height should be set to the lower and upper bounds of our function: the result of the height function will be clamped between those values.
 
-Naming our class more appropriately (note: script file must match class name) and using this helper class, we have the following:
+Naming our class more appropriately (note: script file must match class name) and using this helper class, we have the following (note: I've dropped the using and namespace statements as they won't change, but they must still be included):
 
 ```
-namespace CaveGeneration.Modules
+[CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
+public class HeightMapSinusoidal : HeightMapModule
 {
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
-    public class HeightMapSinusoidal : HeightMapModule
+    // This string determines the name of this type of height map in the menu.
+    const string menuName = "Sinusoidal";
+
+    // Insert properties to be set in the inspector here
+
+    public override IHeightMap GetHeightMap()
     {
-        // This string determines the name of this type of height map in the menu.
-        const string menuName = "Sinusoidal";
+        return HeightMapFactory.Build(GetHeight, -1, 1);
+    }
 
-        // Insert properties to be set in the inspector here
-
-        public override IHeightMap GetHeightMap()
-        {
-            return HeightMapFactory.Build(GetHeight, -1, 1);
-        }
-
-        float GetHeight(float x, float z)
-        {
-            return 0.5f * (Mathf.Sin(x) + Mathf.Sin(z));
-        }
+    float GetHeight(float x, float z)
+    {
+        return 0.5f * (Mathf.Sin(x) + Mathf.Sin(z));
     }
 }
 ```
@@ -91,43 +90,37 @@ We can now return to the editor and select Assets -> Create -> Cave Generation -
 This is pretty limited, however, as we can't configure any of this height map's properties through the inspector. To illustrate how to do that, let's add three features to our height map: base height, which will shift the height map up or down. Amplitude, which will stretch our height map in the y-direction. And frequency, which will compress our height map in the xz plane. The way we do this is no different from exposing properties on a MonoBehaviour. Here is a simple implementation:
 
 ```
-using System;
-using UnityEngine;
-using CaveGeneration.MeshGeneration;
-
-namespace CaveGeneration.Modules
+[CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
+public class HeightMapSinusoidal : HeightMapModule
 {
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
-    public class HeightMapSinusoidal : HeightMapModule
+    // This string determines the name of this type of height map in the menu.
+    const string menuName = "Sinusoidal";
+
+    // Insert properties to be set in the inspector here
+    public float baseHeight = 0f;
+    public float amplitude = 1f;
+    public float frequency = 1f;
+
+    public override IHeightMap GetHeightMap()
     {
-        // This string determines the name of this type of height map in the menu.
-        const string menuName = "Sinusoidal";
+        return HeightMapFactory.Build(GetHeight, baseHeight - amplitude, baseHeight + amplitude);
+    }
 
-        // Insert properties to be set in the inspector here
-        public float baseHeight = 0f;
-        public float amplitude = 1f;
-        public float frequency = 1f;
-
-        public override IHeightMap GetHeightMap()
-        {
-            return HeightMapFactory.Build(GetHeight, baseHeight - amplitude, baseHeight + amplitude);
-        }
-
-        float GetHeight(float x, float z)
-        {
-            x *= frequency;
-            z *= frequency;
-            return baseHeight + amplitude * 0.5f * (Mathf.Sin(x) + Mathf.Sin(z));
-        }
+    float GetHeight(float x, float z)
+    {
+        x *= frequency;
+        z *= frequency;
+        return baseHeight + amplitude * 0.5f * (Mathf.Sin(x) + Mathf.Sin(z));
     }
 }
+
 ```
 
 Now each height map of this type that we create through the Assets menu can be independently configured with its own base height, amplitude and frequency. 
 
 ### Define a new map generator module
 
-Defining a map generator module is very similar to defining a new height map module, but instead of implementing HeightMapModule you need to implement MapGenModule, and instead of overriding GetHeightMap, you need to override the Generate method, which returns a Map object.
+Defining a map generator module is similar to defining a new height map module, but instead of implementing HeightMapModule you need to implement MapGenModule, and instead of overriding GetHeightMap, you need to override the Generate method. Generate returns a Map object. 
 
 The Map class is a 2D array of Tiles, where Tile is an enum taking the values of either Wall or Floor. A number of helper methods have been provided to facilitate their creation.
 
@@ -161,8 +154,7 @@ Given the simple nature of Maps, we'll create one directly rather than delegatin
 Map map = new Map(50, 50);
 ```
 
-Perlin Noise takes two parameters (an x and a y) and returns a float between 0 and 1. For now, let's say that floats above 0.5 are walls, and below 0.5 are floors. For the x and y, we can use the integer coordinates of the map, but we do need to scale them: Perlin Noise is intended
-to be sampled at values that are much closer together. 
+Perlin Noise takes two parameters (an x and a y) and returns a float between 0 and 1. For now, let's say that floats above 0.5 are walls, and below 0.5 are floors. For the x and y, we can use the integer coordinates of the map, but we do need to scale them: Perlin Noise is intended to be sampled at values that are much closer together. 
 
 ```
 float scale = 0.1f;
@@ -179,33 +171,27 @@ for (int y = 0; y < map.Width; y++)
 Putting this together, we have:
 
 ```
-using UnityEngine;
-using CaveGeneration.MapGeneration;
-
-namespace CaveGeneration.Modules
+[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
+public class MapGenPerlinNoise : MapGenModule
 {
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-    public class MapGenPerlinNoise : MapGenModule
-    {
-        // This string determines the name of this type of map generator in the menu.
-        const string menuName = "Perlin Noise";
+    // This string determines the name of this type of map generator in the menu.
+    const string menuName = "Perlin Noise";
 
-        // Insert properties to be set in the inspector here
-        
-        public override Map Generate()
+    // Insert properties to be set in the inspector here
+
+    public override Map Generate()
+    {
+        Map map = new Map(50, 50);
+        float scale = 0.1f;
+        for (int y = 0; y < map.Width; y++)
         {
-            Map map = new Map(50, 50);
-            float scale = 0.1f;
-            for (int y = 0; y < map.Width; y++)
+            for (int x = 0; x < map.Length; x++)
             {
-                for (int x = 0; x < map.Length; x++)
-                {
-                    float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-                    map[x, y] = noiseValue < 0.5f ? Tile.Wall : Tile.Floor;
-                }
+                float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
+                map[x, y] = noiseValue < 0.5f ? Tile.Wall : Tile.Floor;
             }
-            return map;
         }
+        return map;
     }
 }
 ```
@@ -237,70 +223,58 @@ map.TransformBoundary((x, y) => Tile.Wall);
 We can use Transform to clean up our existing logic as well. 
 
 ```
-using UnityEngine;
-using CaveGeneration.MapGeneration;
-
-namespace CaveGeneration.Modules
+[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
+public class MapGenPerlinNoise : MapGenModule
 {
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-    public class MapGenPerlinNoise : MapGenModule
-    {
-        // This string determines the name of this type of map generator in the menu.
-        const string menuName = "Perlin Noise";
+    // This string determines the name of this type of map generator in the menu.
+    const string menuName = "Perlin Noise";
 
-        // Insert properties to be set in the inspector here
-        
-        public override Map Generate()
+    // Insert properties to be set in the inspector here
+
+    public override Map Generate()
+    {
+        Map map = new Map(50, 50);
+        float scale = 0.1f;
+        map.Transform((x, y) =>
         {
-            Map map = new Map(50, 50);
-            float scale = 0.1f;
-            map.Transform((x, y) =>
-            {
-                float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-                return noiseValue < 0.5f ? Tile.Wall : Tile.Floor;
-            });
-            map.TransformBoundary((x, y) => Tile.Wall);
-            return map;
-        }
+            float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
+            return noiseValue < 0.5f ? Tile.Wall : Tile.Floor;
+        });
+        map.TransformBoundary((x, y) => Tile.Wall);
+        return map;
     }
 }
 ```
 
-If you're not familiar with lambdas, LINQ or functional programming, this might seem completely alien, and you may wish to stick with the explicit looping logic. There's nothing you can do with these functional methods that cannot be done with loops and conditionals.
+If you're not familiar with lambdas, LINQ or functional programming, this might seem completely alien, and you may wish to stick with the explicit looping logic. 
 
 If we now generate a cave, we see that there is a thin boundary around the cave, ensuring players don't wander out into the void. 
 
 Next, we're using quite a few constants that would make for sensible parameters for our new map generator: length, width, scale, and the threshold 0.5f. Let's expose them to the inspector. 
 
 ```
-using UnityEngine;
-using CaveGeneration.MapGeneration;
-
-namespace CaveGeneration.Modules
+[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
+public class MapGenPerlinNoise : MapGenModule
 {
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-    public class MapGenPerlinNoise : MapGenModule
-    {
-        // This string determines the name of this type of map generator in the menu.
-        const string menuName = "Perlin Noise";
+    // This string determines the name of this type of map generator in the menu.
+    const string menuName = "Perlin Noise";
 
-        // Insert properties to be set in the inspector here
-        public int length = 50;
-        public int width = 50;
-        public float scale = 0.1f;
-        public float density = 0.5f;
-        
-        public override Map Generate()
+    // Insert properties to be set in the inspector here
+    public int length = 50;
+    public int width = 50;
+    public float scale = 0.1f;
+    public float density = 0.5f;
+
+    public override Map Generate()
+    {
+        Map map = new Map(length, width);
+        map.TransformInterior((x, y) =>
         {
-            Map map = new Map(length, width);
-            map.TransformInterior((x, y) =>
-            {
-                float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-                return noiseValue < density ? Tile.Wall : Tile.Floor;
-            });
-            map.TransformBoundary((x, y) => Tile.Wall);
-            return map;
-        }
+            float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
+            return noiseValue < density ? Tile.Wall : Tile.Floor;
+        });
+        map.TransformBoundary((x, y) => Tile.Wall);
+        return map;
     }
 }
 ```
@@ -309,42 +283,36 @@ Now we can set the size, density and scale of each instance of the Perlin Noise 
 
 An important issue that needs to be addressed is connectivity. Perlin Noise does not produce connected regions: it produces 'islands' instead. It's certainly possible to author your own logic to connect regions, but it's not trivial. Instead, you can use the MapBuilder static class to access a number of helper methods. This includes MapBuilder.ConnectFloors, which takes a Map and an int specifying the radius of any tunnels that need to be carved to ensure connectivity between all floors. It uses an algorithm that minimizes the amount of tunneling that needs to be done to ensure connectivity between all regions.
 
-In addition to this, we'll replace the TransformBoundary method with another helper, ApplyBorder. The reason is that transforming the boundary could block a tunnel created by ConnectFloors: by applying a boundary we're adding walls around the existing map, instead of replacing floors. We'll include the boundary width as a configurable property.
+In addition to this, we'll replace the TransformBoundary method with another helper, ApplyBorder. The reason is that transforming the boundary could block a tunnel created by ConnectFloors: by applying a boundary we're adding walls around the existing map, instead of replacing the existing boundary. We'll include the boundary width as a configurable property.
 
 The result:
 
 ```
-using UnityEngine;
-using CaveGeneration.MapGeneration;
-
-namespace CaveGeneration.Modules
+[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
+public class MapGenPerlinNoise : MapGenModule
 {
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-    public class MapGenPerlinNoise : MapGenModule
-    {
-        // This string determines the name of this type of map generator in the menu.
-        const string menuName = "Perlin Noise";
-        
-        const int tunnelWidth = 2;
+    // This string determines the name of this type of map generator in the menu.
+    const string menuName = "Perlin Noise";
 
-        // Insert properties to be set in the inspector here
-        public int length = 50;
-        public int width = 50;
-        public float scale = 0.1f;
-        public float density = 0.5f;
-        public int borderWidth = 1;
-        
-        public override Map Generate()
+    const int tunnelWidth = 2;
+
+    // Insert properties to be set in the inspector here
+    public int length = 50;
+    public int width = 50;
+    public float scale = 0.1f;
+    public float density = 0.5f;
+    public int borderWidth = 1;
+
+    public override Map Generate()
+    {
+        Map map = new Map(length, width);
+        map.Transform((x, y) =>
         {
-            Map map = new Map(length, width);
-            map.Transform((x, y) =>
-            {
-                float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-                return noiseValue < density ? Tile.Wall : Tile.Floor;
-            });
-            MapBuilder.ConnectFloors(map, tunnelWidth);
-            return MapBuilder.ApplyBorder(map, borderWidth);
-        }
+            float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
+            return noiseValue < density ? Tile.Wall : Tile.Floor;
+        });
+        MapBuilder.ConnectFloors(map, tunnelWidth);
+        return MapBuilder.ApplyBorder(map, borderWidth);
     }
 }
 ```
@@ -352,43 +320,37 @@ namespace CaveGeneration.Modules
 Finally, let's add some randomization. PerlinNoise is deterministic: a given pair (x, y) will always produce the exact same return value. To add randomness, we can generate a pair of offset values so we take (a + x, b + y) for a fixed pair (a, b). We can control this randomization using a seed value. 
 
 ```
-using UnityEngine;
-using CaveGeneration.MapGeneration;
-
-namespace CaveGeneration.Modules
+[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
+public class MapGenPerlinNoise : MapGenModule
 {
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-    public class MapGenPerlinNoise : MapGenModule
-    {
-        // This string determines the name of this type of map generator in the menu.
-        const string menuName = "Perlin Noise";
-        
-        const int tunnelWidth = 2;
-        const float offsetRange = 1000;
+    // This string determines the name of this type of map generator in the menu.
+    const string menuName = "Perlin Noise";
 
-        // Insert properties to be set in the inspector here
-        public int length = 50;
-        public int width = 50;
-        public float scale = 0.1f;
-        public float density = 0.5f;
-        public int borderWidth = 1;
-        public int seed = 0;
-        
-        public override Map Generate()
+    const int tunnelWidth = 2;
+    const float offsetRange = 1000;
+
+    // Insert properties to be set in the inspector here
+    public int length = 50;
+    public int width = 50;
+    public float scale = 0.1f;
+    public float density = 0.5f;
+    public int borderWidth = 1;
+    public int seed = 0;
+
+    public override Map Generate()
+    {
+        Random.InitState(seed);
+        float xOffset = Random.Range(-offsetRange, offsetRange);
+        float yOffset = Random.Range(-offsetRange, offsetRange);
+
+        Map map = new Map(length, width);
+        map.Transform((x, y) =>
         {
-            Random.InitState(seed);
-            float xOffset = Random.Range(-offsetRange, offsetRange);
-            float yOffset = Random.Range(-offsetRange, offsetRange);
-            
-            Map map = new Map(length, width);
-            map.Transform((x, y) =>
-            {
-                float noiseValue = Mathf.PerlinNoise(xOffset + scale * x, yOffset + scale * y);
-                return noiseValue < density ? Tile.Wall : Tile.Floor;
-            });
-            MapBuilder.ConnectFloors(map, tunnelWidth);
-            return MapBuilder.ApplyBorder(map, borderWidth);
-        }
+            float noiseValue = Mathf.PerlinNoise(xOffset + scale * x, yOffset + scale * y);
+            return noiseValue < density ? Tile.Wall : Tile.Floor;
+        });
+        MapBuilder.ConnectFloors(map, tunnelWidth);
+        return MapBuilder.ApplyBorder(map, borderWidth);
     }
 }
 ```

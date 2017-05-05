@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading;
 using UnityEngine;
 
-namespace CaveGeneration.Utility
+namespace CaveGeneration.Threading
 {
     /// <summary>
     /// This class provides some basic multi-threading capabilities, modelled after functionality that already

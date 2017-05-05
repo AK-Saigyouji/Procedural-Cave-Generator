@@ -1,4 +1,5 @@
 ﻿using CaveGeneration.MeshGeneration;
+using CaveGeneration.HeightMaps;
 using UnityEngine;
 
 namespace CaveGeneration.Modules

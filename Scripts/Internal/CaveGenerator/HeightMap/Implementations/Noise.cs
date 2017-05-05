@@ -2,7 +2,7 @@
 using UnityEngine;
 using UnityEngine.Assertions;
 
-namespace CaveGeneration
+namespace CaveGeneration.HeightMaps
 {
     /// <summary>
     /// Random number generator that produces continuously varying numbers between 0 and 1. Offers greater control

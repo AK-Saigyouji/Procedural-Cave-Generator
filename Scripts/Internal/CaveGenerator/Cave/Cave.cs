@@ -60,7 +60,7 @@ namespace CaveGeneration
         public CollisionTester BuildCollisionTester()
         {
             Map map = configuration.MapGenerator.Generate();
-            var tester = MapConverter.ToCollisionTester(map, configuration.Scale);
+            var tester = MapConverter.MapToCollisionTester(map, configuration.Scale);
             return tester;
         }
 

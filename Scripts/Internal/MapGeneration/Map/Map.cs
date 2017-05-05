@@ -32,8 +32,12 @@ namespace CaveGeneration.MapGeneration
         int length;
         int width;
         
+        /// <exception cref="ArgumentOutOfRangeException"></exception>
         public Map(int length, int width)
         {
+            if (length < 0) throw new ArgumentOutOfRangeException("length");
+            if (width < 0) throw new ArgumentOutOfRangeException("width");
+
             grid = new Tile[length, width];
             this.length = length;
             this.width = width;
@@ -54,7 +58,7 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Copies the tiles from the other map. Maps must have the same dimensions (length and width).
+        /// Copies the tiles from the given map. Maps must have the same dimensions (length and width).
         /// </summary>
         /// <exception cref="ArgumentException"></exception>
         /// <exception cref="ArgumentNullException"></exception>

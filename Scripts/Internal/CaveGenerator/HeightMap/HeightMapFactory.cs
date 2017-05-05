@@ -1,7 +1,7 @@
 ﻿using CaveGeneration.MeshGeneration;
 using System;
 
-namespace CaveGeneration
+namespace CaveGeneration.HeightMaps
 {
     /// <summary>
     /// Provides methods for the creation of height maps. All build methods return an object implementing

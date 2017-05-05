@@ -14,7 +14,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
 {
     sealed class EdgeExtractor
     {
-        readonly Coord[] adjacentTiles;
+        readonly Coord[] pooledAdjacentTiles;
         readonly Map map;
         readonly bool[,] visited;
 
@@ -23,7 +23,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
         public EdgeExtractor(Map map)
         {
             this.map = map;
-            adjacentTiles = new Coord[NUM_ADJACENT_TILES];
+            pooledAdjacentTiles = new Coord[NUM_ADJACENT_TILES];
             visited = new bool[map.Length, map.Width];
         }
 
@@ -86,7 +86,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
             while (stack.Count > 0)
             {
                 Coord tile = stack.Pop();
-                foreach (Coord adj in GetAdjacentCoords(tile, adjacentTiles))
+                foreach (Coord adj in GetAdjacentCoords(tile, pooledAdjacentTiles))
                 {
                     if (map.Contains(adj) && !visited[adj.x, adj.y] && FoundEdgeTile(tile, adj, map))
                     {

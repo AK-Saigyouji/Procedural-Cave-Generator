@@ -10,14 +10,15 @@
  class. */
 
 using UnityEngine;
+using CaveGeneration.MeshGeneration;
 
 namespace CaveGeneration
 {
     public sealed class CollisionTester
     {
-        MeshGeneration.FloorTester tester;
+        FloorTester tester;
 
-        internal CollisionTester(MeshGeneration.FloorTester tester)
+        internal CollisionTester(FloorTester tester)
         {
             this.tester = tester;
         }

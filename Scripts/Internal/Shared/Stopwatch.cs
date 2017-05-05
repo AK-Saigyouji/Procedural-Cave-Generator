@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-namespace CaveGeneration.Utility
+namespace CaveGeneration.Profiling
 {
     static class StopwatchExtensions
     {

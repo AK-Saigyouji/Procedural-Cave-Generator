@@ -44,6 +44,7 @@ namespace CaveGeneration.MeshGeneration
         /// </summary>
         public bool CanFitBox(Vector2 botLeft, Vector2 topRight)
         {
+
             ValidateBox(botLeft, topRight);
             
             if (!AreCornersFloors(botLeft, topRight))
