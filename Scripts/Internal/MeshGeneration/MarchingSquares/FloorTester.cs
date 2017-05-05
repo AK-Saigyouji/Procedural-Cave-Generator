@@ -40,26 +40,29 @@ namespace CaveGeneration.MeshGeneration
 
         /// <summary>
         /// Does the box with the given coordinates fit entirely within a floor region? i.e. will such a box
-        /// be free of collisions in the (x,z) plane. 
+        /// be free of collisions in the (x,z) plane? Accepts degenerate boxes, and order of the x and y values 
+        /// does not matter.
         /// </summary>
-        public bool CanFitBox(Vector2 botLeft, Vector2 topRight)
+        public bool CanFitBox(float x1, float x2, float z1, float z2)
         {
+            float left = Mathf.Min(x1, x2);
+            float right = Mathf.Max(x1, x2);
+            float bot = Mathf.Min(z1, z2);
+            float top = Mathf.Max(z1, z2);
 
-            ValidateBox(botLeft, topRight);
-            
-            if (!AreCornersFloors(botLeft, topRight))
+            if (!AreCornersFloors(bot, top, left, right))
             {
                 return false;
             }
 
             // WallCache allows us to lookup the number of walls intersecting a box in constant time,
-            // but it only works with integers, not floats. This rounding will gives us correct collision
-            // information for the sides of the box, but potentially not the corners which have to be handled
-            // separately. 
-            int bot   = Mathf.RoundToInt(botLeft.y  * scaleReciprocal);
-            int left  = Mathf.RoundToInt(botLeft.x  * scaleReciprocal);
-            int top   = Mathf.RoundToInt(topRight.y * scaleReciprocal);
-            int right = Mathf.RoundToInt(topRight.x * scaleReciprocal);
+            // but it only works with integers, not floats, and the cache does not factor in scale. 
+            // This rounding will gives us correct collision information for the sides of the box, but potentially 
+            // not the corners which have to be handled separately. 
+            int botGrid   = Mathf.RoundToInt(bot   * scaleReciprocal);
+            int leftGrid  = Mathf.RoundToInt(left  * scaleReciprocal);
+            int topGrid   = Mathf.RoundToInt(top   * scaleReciprocal);
+            int rightGrid = Mathf.RoundToInt(right * scaleReciprocal);
 
             // There are potential false collisions where a box corner sits just outside a corner triangle,
             // e.g. for the bot-left corner with this wall configuration:
@@ -69,8 +72,9 @@ namespace CaveGeneration.MeshGeneration
             // wallCache will count the bottom left corner because bot = 0, left = 0. We can simply 
             // subtract off the walls given by the new corners, since we already confirmed that
             // the actual corners are floors. 
-            int numFalseWalls = CountCornerWalls(bot, top, left, right);
-            int numWallsInBox = wallCache.CountWallsInBox(bot, top, left, right) - numFalseWalls;
+            int numFalseWalls = CountCornerWalls(botGrid, topGrid, leftGrid, rightGrid);
+            int numWallsInBox = wallCache.CountWallsInBox(botGrid, topGrid, leftGrid, rightGrid) - numFalseWalls;
+
             Assert.IsTrue(numWallsInBox >= 0, "Internal error: impossible number of walls counted.");
             return numWallsInBox == 0;
         }
@@ -125,21 +129,12 @@ namespace CaveGeneration.MeshGeneration
             }
         }
 
-        static void ValidateBox(Vector2 botLeft, Vector2 topRight)
+        bool AreCornersFloors(float bot, float top, float left, float right)
         {
-            if (botLeft.x > topRight.x || botLeft.y > topRight.y)
-            {
-                const string errorFormat = "Impossible box. Bottom Left: {0}, Top Right: {1}";
-                throw new System.ArgumentException(string.Format(errorFormat, botLeft, topRight));
-            }
-        }
-
-        bool AreCornersFloors(Vector2 botLeft, Vector2 topRight)
-        {
-            return IsFloor(botLeft.x, botLeft.y)
-                && IsFloor(botLeft.x, topRight.y)
-                && IsFloor(topRight.x, botLeft.y)
-                && IsFloor(topRight.x, topRight.y);
+            return IsFloor(left, bot)
+                && IsFloor(left, top)
+                && IsFloor(right, bot)
+                && IsFloor(right, top);
         }
     } 
 }

@@ -24,26 +24,15 @@ namespace CaveGeneration
         }
 
         /// <summary>
-        /// Will the box fit in the cave without intersecting any walls?
+        /// Will the box fit in the cave without intersecting any walls? Box is specified by its four coordinates.
         /// </summary>
-        /// <param name="botLeft">Bottom left corner of box.</param>
-        /// <param name="topRight">Top right corner of box.</param>
-        public bool CanFitBox(Vector2 botLeft, Vector2 topRight)
+        /// <param name="x1">Either the leftmost or rightmost x coordinate of the box.</param>
+        /// <param name="x2">The other x coordinate of the box.</param>
+        /// <param name="z1">Either the leftmost or rightmost z coordinate of the box.</param>
+        /// <param name="z2">The other z coordinate of the box.</param>
+        public bool CanFitBox(float x1, float x2, float z1, float z2)
         {
-            return tester.CanFitBox(botLeft, topRight);
-        }
-
-        // There is an implicit conversion from Vector3 to Vector2, but it works by converting 
-        // (x, y, z) to (x, y) instead of (x, z). Hence the need for the following overload. 
-
-        /// <summary>
-        /// Will the box fit in the cave without intersecting any walls? Ignores y-axis entirely.
-        /// </summary>
-        /// <param name="botLeft">Bottom left corner of box.</param>
-        /// <param name="topRight">Top right corner of box.</param>
-        public bool CanFitBox(Vector3 botLeft, Vector3 topRight)
-        {
-            return tester.CanFitBox(RemoveYComponent(botLeft), RemoveYComponent(topRight));
+            return tester.CanFitBox(x1, x2, z1, z2);
         }
 
         /// <summary>
@@ -70,10 +59,12 @@ namespace CaveGeneration
         {
             Vector3 extents = bounds.extents;
 
-            Vector2 botLeft = new Vector2(position.x - extents.x, position.z - extents.z);
-            Vector2 topRight = new Vector2(position.x + extents.x, position.z + extents.z);
+            float left = position.x - extents.x;
+            float right = position.x + extents.x;
+            float bot = position.z - extents.z;
+            float top = position.z + extents.z;
 
-            return CanFitBox(botLeft, topRight);
+            return CanFitBox(left, right, bot, top);
         }
 
         /// <summary>
@@ -95,11 +86,6 @@ namespace CaveGeneration
                 throw new System.ArgumentException("Must have MeshRenderer component.", "gameObject");
 
             return meshRenderer.bounds;
-        }
-
-        static Vector2 RemoveYComponent(Vector3 original)
-        {
-            return new Vector2(original.x, original.z);
         }
     }
 }
