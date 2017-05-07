@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Assertions;
 
-namespace CaveGeneration.MapGeneration.Connectivity
+namespace CaveGeneration.MapGeneration.GraphAlgorithms
 {
     /// <summary>
     /// A simple, readonly collection of tiles in the map.

@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine.Assertions;
 
-namespace CaveGeneration.MapGeneration.Connectivity
+namespace CaveGeneration.MapGeneration.GraphAlgorithms
 {
     sealed class EdgeExtractor
     {

@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using CaveGeneration.MapGeneration.Connectivity;
+using CaveGeneration.MapGeneration.GraphAlgorithms;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -24,20 +24,23 @@ namespace CaveGeneration.MapGeneration
         public static Map InitializeRandomMap(int length, int width, float mapDensity, int seed)
         {
             Map map = new Map(length, width);
-            var random = new System.Random(seed); // UnityEngine.Random's seed can only be set in main thread
+            var random = new System.Random(seed);
             map.Transform((x, y) => random.NextDouble() < mapDensity ? Tile.Wall : Tile.Floor);
             return map;
         }
 
         /// <summary>
-        /// Smooth out the grid by making each point more like its neighbours. i.e. floors surounded
-        /// by walls become walls, and vice versa. Caution: may affect connectivity.
+        /// Smooth out the grid by making each point more like its neighbours. i.e. floors surrounded
+        /// by walls become walls, and walls surrounded by floors become floors. Caution: may affect connectivity.
         /// </summary>
         /// <param name="iterations">The number of smoothing passes to perform. The default is sufficient to
         /// turn completely random noise into smooth caverns. Can set to a lower number if map is already 
         /// well-structured but a bit jagged. Higher than 10 will be clamped to 10.</param>
         public static void Smooth(Map inputMap, int iterations = SMOOTHING_ITERATIONS)
         {
+            if (inputMap == null)
+                throw new ArgumentNullException("inputMap");
+
             iterations = Mathf.Min(MAX_SMOOTHING_ITERATIONS, iterations);
             Map currentMap = inputMap.Clone();
             Map smoothedMap = inputMap.Clone();
@@ -57,6 +60,9 @@ namespace CaveGeneration.MapGeneration
         /// <param name="iterations">The number of smoothing passes to perform. Higher than 10 will be clamped to 10.</param>
         public static void SmoothOnlyWalls(Map inputMap, int iterations = 1)
         {
+            if (inputMap == null)
+                throw new ArgumentNullException("inputMap");
+
             iterations = Mathf.Min(MAX_SMOOTHING_ITERATIONS, iterations);
             Map currentMap = inputMap.Clone();
             Map smoothedMap = inputMap.Clone();
@@ -90,18 +96,38 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Ensure connectivity between all regions of floors in the map. It is recommended that you first prune
-        /// small floor regions in order to avoid creating tunnels to tiny regions.
+        /// Ensure connectivity between all regions of floors in the map. Run time is polynomial in the number of 
+        /// floor regions: if generating a large map with many small rooms and this method is taking too long, consider
+        /// removing rooms before a certain threshold. 
         /// </summary>
         public static void ConnectFloors(Map inputMap, int tunnelRadius)
         {
-            if (tunnelRadius < 0) throw new ArgumentException("Cannot tunnel a negative radius", "tunnelRadius");
-            if (tunnelRadius == 0) return;
+            if (tunnelRadius == 0)
+                return;
+
+            if (tunnelRadius < 0)
+                throw new ArgumentOutOfRangeException("tunnelRadius");
+
+            Action<Map, Coord, Coord> mapTunneler = 
+                (map, coordA, coordB) => MapTunnelers.CarveDirectTunnel(map, coordA, coordB, tunnelRadius);
+
+            ConnectFloors(inputMap, mapTunneler);
+        }
+
+        /// <summary>
+        /// Ensure connectivity between all regions of floors in the map, using a custom tunneling algorithm. 
+        /// </summary>
+        /// <param name="mapTunneler">A function that connects two coords on the map. Coords are guaranteed to be
+        /// on the map, and may or may not be boundary tiles.</param>
+        public static void ConnectFloors(Map inputMap, Action<Map, Coord, Coord> mapTunneler)
+        {
+            if (mapTunneler == null)
+                throw new ArgumentNullException("mapTunneler");
 
             Map map = inputMap.Clone();
             List<TileRegion> floors = BFS.GetConnectedRegions(map, Tile.Floor);
             ConnectionInfo[] finalConnections = MapConnector.GetConnections(map, floors);
-            Array.ForEach(finalConnections, connection => CreatePassage(map, connection, tunnelRadius));
+            Array.ForEach(finalConnections, con => mapTunneler(map, con.tileA, con.tileB));
             inputMap.Copy(map);
         }
 
@@ -112,8 +138,11 @@ namespace CaveGeneration.MapGeneration
         /// <param name="borderSize">How thick the border should be on each side.</param>
         public static Map ApplyBorder(Map inputMap, int borderSize)
         {
-            if (borderSize < 0) throw new ArgumentException("Cannot add a border of negative size.", "borderSize");
-            if (borderSize == 0) return inputMap.Clone();
+            if (borderSize < 0)
+                throw new ArgumentException("Cannot add a border of negative size.", "borderSize");
+
+            if (borderSize == 0)
+                return inputMap.Clone();
 
             Map borderedMap = new Map(inputMap.Length + borderSize * 2, inputMap.Width + borderSize * 2);
             borderedMap.Transform((x, y) =>
@@ -125,10 +154,28 @@ namespace CaveGeneration.MapGeneration
             return borderedMap;
         }
 
+        /// <summary>
+        /// Is every floor tile on the map reachable from every other floor tile on the map? Note that diagonals don't 
+        /// count, so that there must be a path between floor tiles consisting of horizontal and vertical steps.
+        /// </summary>
+        public static bool IsConnected(Map map)
+        {
+            if (map == null)
+                throw new ArgumentNullException("map");
+
+            return BFS.GetConnectedRegions(map, Tile.Floor).Count == 1;
+        }
+
         static void RemoveSmallRegions(Map inputMap, int threshold, Tile tileType)
         {
-            if (threshold < 0) throw new ArgumentException("Removal threshold cannot be negative.", "threshold");
-            if (threshold == 0) return;
+            if (inputMap == null)
+                throw new ArgumentNullException("inputMap");
+
+            if (threshold < 0)
+                throw new ArgumentException("Removal threshold cannot be negative.", "threshold");
+
+            if (threshold == 0)
+                return;
 
             BFS.RemoveSmallRegions(inputMap, tileType, threshold);
         }
@@ -142,7 +189,6 @@ namespace CaveGeneration.MapGeneration
             return map.GetSurroundingWallCount(x, y) > SMOOTHING_THRESHOLD ? Tile.Wall : Tile.Floor;
         }
 
-        // The method for the boundary case handles the interior case as well, but with inferior performance.
         static Tile GetSmoothedBoundaryTile(Map map, int centerX, int centerY)
         {
             int left  = Mathf.Max(centerX - 1, 0);
@@ -160,54 +206,6 @@ namespace CaveGeneration.MapGeneration
                 }
             }
             return 2 * numWalls >= numTiles ? Tile.Wall : Tile.Floor;
-        }
-
-        static void CreatePassage(Map map, ConnectionInfo connection, int tunnelingRadius)
-        {
-            foreach (Coord tile in GetPath(connection))
-            {
-                ClearNeighbours(map, tile, tunnelingRadius);
-            }
-        }
-
-        /// <summary>
-        /// Replace nearby tiles with floors.
-        /// </summary>
-        static void ClearNeighbours(Map map, Coord center, int radius)
-        {
-            // Ensure we don't step off the map and into an index exception
-            int xMin = Mathf.Max(0, center.x - radius);
-            int yMin = Mathf.Max(0, center.y - radius);
-            int xMax = Mathf.Min(map.Length - 1, center.x + radius);
-            int yMax = Mathf.Min(map.Width - 1, center.y + radius);
-            // Look at each x,y in a square surrounding the center, but only remove those that fall within
-            // the circle of given radius. 
-            int squaredRadius = radius * radius;
-            for (int y = yMin; y <= yMax; y++)
-            {
-                for (int x = xMin; x <= xMax; x++)
-                {
-                    if (IsInCircle(new Coord(x, y), center, squaredRadius))
-                    {
-                        map[x, y] = Tile.Floor;
-                    }
-                }
-            }
-        }
-
-        static void ClearNeighbours(Map map, int xCenter, int yCenter, int radius)
-        {
-            ClearNeighbours(map, new Coord(xCenter, yCenter), radius);
-        }
-
-        static bool IsInCircle(Coord testCoord, Coord center, int squaredRadius)
-        {
-            return center.SquaredDistance(testCoord) <= squaredRadius;
-        }
-
-        static List<Coord> GetPath(ConnectionInfo connection)
-        {
-            return connection.tileA.GetLineTo(connection.tileB);
         }
 
         static void Swap(ref Map a, ref Map b)

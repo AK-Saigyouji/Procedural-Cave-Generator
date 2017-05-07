@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using UnityEngine.Assertions;
 
-namespace CaveGeneration.MapGeneration.Connectivity
+namespace CaveGeneration.MapGeneration.GraphAlgorithms
 {
     static class BFS
     {

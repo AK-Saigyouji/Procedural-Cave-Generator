@@ -12,7 +12,7 @@
  * created, the memory management implications are not trivial. 
  */
 
-namespace CaveGeneration.MapGeneration.Connectivity
+namespace CaveGeneration.MapGeneration.GraphAlgorithms
 {
     /// <summary>
     /// Represents a possible connection in the map.

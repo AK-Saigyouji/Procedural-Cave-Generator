@@ -2,7 +2,7 @@
 
 using System;
 
-namespace CaveGeneration.MapGeneration.Connectivity
+namespace CaveGeneration.MapGeneration.GraphAlgorithms
 {
     sealed class UnionFind
     {

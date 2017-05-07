@@ -43,15 +43,15 @@
  * known to computer science which appears in a practical application. 
  * 
  * So in total, the run-time is O(numConnections * a(numConnections)), which by our computation for 2, is 
- * O(n * a(n)) given a suitable choice for the min floor size. 
- * 
- * In practice, despite this having the worst run-time, as of this writing the slowest part of the map generator is 
- * actually the linear breadth-first search used to prune walls and floors. */
+ * O(n * a(n)) given a suitable choice for the min floor size. Profiling the run-time for very large maps reveals
+ * that the run-time indeed scales about linearly, and in proportion with the other parts of the cave generator.
+ */
 
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.Assertions;
 
-namespace CaveGeneration.MapGeneration.Connectivity
+namespace CaveGeneration.MapGeneration.GraphAlgorithms
 {
     static class MapConnector
     { 
@@ -83,6 +83,7 @@ namespace CaveGeneration.MapGeneration.Connectivity
 
         static ConnectionInfo[] GetAllRoomConnections(TileRegion[] room)
         {
+            Assert.IsTrue(room.Length > 1);
             int numRooms = room.Length;
             int numConnections = numRooms * (numRooms - 1) / 2; // The number of pairs (a,b) for a < b < numRooms
             var allConnections = new ConnectionInfo[numConnections];
@@ -125,14 +126,14 @@ namespace CaveGeneration.MapGeneration.Connectivity
         {
             int currentIndex = 0;
             var sortedConnections = new ConnectionInfo[connections.Length];
-            for (int i = 0; i < buckets.Length; i++)
+            for (int bucketIndex = 0; bucketIndex < buckets.Length; bucketIndex++)
             {
-                List<int> currentBucket = buckets[i];
+                List<int> currentBucket = buckets[bucketIndex];
                 if (currentBucket != null)
                 {
-                    for (int k = 0; k < currentBucket.Count; k++, currentIndex++)
+                    for (int connIndex = 0; connIndex < currentBucket.Count; connIndex++, currentIndex++)
                     {
-                        sortedConnections[currentIndex] = connections[currentBucket[k]];
+                        sortedConnections[currentIndex] = connections[currentBucket[connIndex]];
                     }
                 }
             }

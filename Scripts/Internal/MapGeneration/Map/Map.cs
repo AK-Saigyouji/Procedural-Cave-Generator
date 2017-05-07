@@ -27,10 +27,10 @@ namespace CaveGeneration.MapGeneration
         public int Length { get { return length; } }
         public int Width { get { return width; } }
 
-        Tile[,] grid;
+        readonly Tile[,] grid;
 
-        int length;
-        int width;
+        readonly int length;
+        readonly int width;
         
         /// <exception cref="ArgumentOutOfRangeException"></exception>
         public Map(int length, int width)
@@ -130,7 +130,8 @@ namespace CaveGeneration.MapGeneration
         /// <exception cref="IndexOutOfRangeException"></exception>
         public int GetSurroundingWallCount(int x, int y)
         {
-            // Unpacking the loop like this makes a big performance difference.
+            // Unrolling the double loop like this makes a big performance difference with the current compiler,
+            // though with a good optimizer it shouldn't matter.
             return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]
                  + (int)grid[x - 1, y    ] + (int)grid[x, y    ] + (int)grid[x + 1, y    ]
                  + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1];

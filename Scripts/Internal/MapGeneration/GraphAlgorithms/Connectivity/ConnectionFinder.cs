@@ -19,7 +19,7 @@
  */
 
 using UnityEngine.Assertions;
-namespace CaveGeneration.MapGeneration.Connectivity
+namespace CaveGeneration.MapGeneration.GraphAlgorithms
 {
     static class ConnectionFinder
     {

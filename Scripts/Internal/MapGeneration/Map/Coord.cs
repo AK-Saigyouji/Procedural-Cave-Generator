@@ -1,6 +1,6 @@
 ﻿/* A 2d integer vector. Shorts were chosen as the backing integer type as a trade off between performance
  and flexibility. Coords often have to be used in large collections, where data compression can have a substantial
- affect on cache performance, so choosing the smallest appropriate integer type can affect performance significantly.
+ affect on performance, so choosing the smallest appropriate integer type can affect performance significantly.
  On the other hand, choosing a byte or sbyte would severely restrict the applicability of this type.
  A short is large enough to handle practical map sizes: Unity transforms issue a warning when working with 
  values much larger than the range of a short.
@@ -9,6 +9,7 @@
  with best practices when dealing with C# structs.*/
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -109,30 +110,10 @@ namespace CaveGeneration.MapGeneration
             return Mathf.Max(Mathf.Abs(x - otherTile.x), Mathf.Abs(y - otherTile.y));
         }
 
-        /// <summary>
-        /// Generate a list of coordinates representing a straight path beween the given pair of coordinates (inclusive). 
-        /// </summary>
-        /// <returns>List of Coords between this and the other coord (inclusive).</returns>
-        public List<Coord> GetLineTo(Coord other)
+        public Enumerable GetLineTo(Coord other)
         {
-            if (this == other)
-                return new List<Coord>(1) { this };
-
-            var startVector = new Vector2(x, y);
-            var line = new List<Coord>();
-
-            int xDelta = other.x - x;
-            int yDelta = other.y - y;
-            int numIterations = Mathf.Max(Mathf.Abs(xDelta), Mathf.Abs(yDelta));
-            Vector2 incrementor = new Vector2(xDelta, yDelta) / numIterations;
-
-            for (int i = 0; i <= numIterations; i++)
-            {
-                Vector2 nextVector = startVector + i * incrementor;
-                line.Add((Coord)nextVector);
-            }
-
-            return line;
+            // Uses a custom struct-based enumerable meant to be consumed with a foreach.
+            return new Enumerable(this, other);
         }
 
         public static bool operator ==(Coord tileA, Coord tileB)
@@ -181,6 +162,91 @@ namespace CaveGeneration.MapGeneration
         public override string ToString()
         {
             return string.Format("({0},{1})", x, y);
+        }
+
+        public struct Enumerable : IEnumerable<Coord>
+        {
+            readonly Coord start, end;
+
+            public Enumerable(Coord start, Coord end)
+            {
+                this.start = start;
+                this.end = end;
+            }
+
+            public Enumerator GetEnumerator()
+            {
+                return new Enumerator(start, end);
+            }
+
+            IEnumerator<Coord> IEnumerable<Coord>.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+
+            IEnumerator IEnumerable.GetEnumerator()
+            {
+                return GetEnumerator();
+            }
+        }
+
+        public struct Enumerator : IEnumerator<Coord>
+        {
+            readonly int maxIndex;
+            readonly float xIncrementor, yIncrementor;
+            readonly short xStart, yStart;
+
+            int index;
+
+            public Enumerator(Coord start, Coord end)
+            {
+                xStart = start.x;
+                yStart = start.y;
+                int xDelta = end.x - start.x;
+                int yDelta = end.y - start.y;
+                maxIndex = Mathf.Max(Mathf.Abs(xDelta), Mathf.Abs(yDelta));
+                Vector2 incrementor = new Vector2(xDelta, yDelta) / maxIndex;
+                xIncrementor = incrementor.x;
+                yIncrementor = incrementor.y;
+                index = -1;
+            }
+
+            public Coord Current
+            {
+                get
+                {
+                    if (index < 0)
+                        throw new InvalidOperationException();
+
+                    int xOffset = (int)(index * xIncrementor);
+                    int yOffset = (int)(index * yIncrementor);
+                    return new Coord(xStart + xOffset, yStart + yOffset);
+                }
+            }
+
+            object IEnumerator.Current
+            {
+                get
+                {
+                    return Current;
+                }
+            }
+
+            public void Dispose()
+            {
+
+            }
+
+            public bool MoveNext()
+            {
+                index++;
+                return index <= maxIndex;
+            }
+
+            public void Reset()
+            {
+                index = -1;
+            }
         }
     }
 }

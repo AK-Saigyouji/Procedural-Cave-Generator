@@ -6,7 +6,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace CaveGeneration.MapGeneration.Connectivity
+namespace CaveGeneration.MapGeneration.GraphAlgorithms
 {
     /// <summary>
     /// Computes minimum spanning trees.
