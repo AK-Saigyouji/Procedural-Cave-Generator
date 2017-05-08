@@ -116,6 +116,16 @@ namespace CaveGeneration.MapGeneration
             return new Enumerable(this, other);
         }
 
+        public static Coord operator +(Coord tileA, Coord tileB)
+        {
+            return new Coord(tileA.x + tileB.x, tileA.y + tileB.y);
+        }
+
+        public static Coord operator -(Coord tileA, Coord tileB)
+        {
+            return new Coord(tileA.x - tileB.x, tileA.y - tileB.y);
+        }
+
         public static bool operator ==(Coord tileA, Coord tileB)
         {
             return tileA.x == tileB.x && tileA.y == tileB.y;

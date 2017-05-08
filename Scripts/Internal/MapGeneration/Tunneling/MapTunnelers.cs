@@ -5,17 +5,24 @@ using UnityEngine;
 
 namespace CaveGeneration.MapGeneration
 {
+    public interface ITunneler
+    {
+        void CarveTunnel(Map map, Coord start, Coord end);
+    }
+
     /// <summary>
-    /// Contains various strategies for creating tunnels between two points in a map. 
+    /// Provides various strategies for creating tunnels between two points in a map. 
     /// </summary>
     public static class MapTunnelers
     {
-        public static void CarveDirectTunnel(Map map, Coord start, Coord end, int tunnelingRadius)
+        public static ITunneler GetRandomDirectedTunneler(Coord boundary, int tunnelingRadius, int seed)
         {
-            foreach (Coord tile in start.GetLineTo(end))
-            {
-                ClearNeighbours(map, tile, tunnelingRadius);
-            }
+            return new RandomDirectedWalker(boundary, seed, tunnelingRadius);
+        }
+
+        public static ITunneler GetDirectTunneler(Map map, int tunnelingRadius)
+        {
+            return new DirectTunneler(tunnelingRadius);
         }
 
         /// <summary>
@@ -46,6 +53,102 @@ namespace CaveGeneration.MapGeneration
         static bool IsInCircle(Coord testCoord, Coord center, int squaredRadius)
         {
             return center.SquaredDistance(testCoord) <= squaredRadius;
+        }
+
+        private sealed class DirectTunneler : ITunneler
+        {
+            readonly int radius;
+
+            public DirectTunneler(int radius)
+            {
+                this.radius = radius;
+            }
+
+            public void CarveTunnel(Map map, Coord start, Coord end)
+            {
+                foreach (Coord tile in start.GetLineTo(end))
+                {
+                    ClearNeighbours(map, tile, radius);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Produces random walks between pairs of points, such that points gravitate towards the goal. 
+        /// </summary>
+        private sealed class RandomDirectedWalker : ITunneler
+        {
+            readonly Coord[] directions = new [] 
+            {
+                new Coord(1, 0), new Coord(0, 1), new Coord(-1, 0), new Coord(0, -1),
+                new Coord(1, 1), new Coord(-1, 1), new Coord(1, -1), new Coord(-1, -1)
+            };
+            readonly System.Random random;
+            readonly int xBoundary;
+            readonly int yBoundary;
+            readonly int radius;
+
+            /// <summary>
+            /// Initialize a new walker with a seed to fix the randomness.
+            /// </summary>
+            public RandomDirectedWalker(Coord boundary, int seed, int radius)
+            {
+                this.radius = radius;
+                xBoundary = boundary.x;
+                yBoundary = boundary.y;
+                random = new System.Random(seed);
+            }
+
+            /// <summary>
+            /// Enumerates a random sequence of horizontal and vertical steps between start (inclusive) 
+            /// and end (inclusive).
+            /// </summary>
+            public void CarveTunnel(Map map, Coord start, Coord end)
+            {
+                Coord current = start;
+                ClearNeighbours(map, current, radius);
+                while (current != end)
+                {
+                    current = GetNextDirection(current, end);
+                    ClearNeighbours(map, current, radius);
+                }
+            }
+
+            Coord GetNextDirection(Coord current, Coord end)
+            {
+                foreach (Coord direction in GetRandomDirections())
+                {
+                    Coord next = current + direction;
+                    if (current.SupNormDistance(end) >= next.SupNormDistance(end) && IsInBounds(next))
+                    {
+                        return next;
+                    }
+                }
+                throw new InvalidOperationException();
+            }
+
+            bool IsInBounds(Coord coord)
+            {
+                int x = coord.x;
+                int y = coord.y;
+                return 0 <= x && x < xBoundary && 0 <= y && y < yBoundary;
+            }
+
+            Coord[] GetRandomDirections()
+            {
+                for (int i = 0; i < directions.Length; i++)
+                {
+                    Swap(i, random.Next(i, directions.Length));
+                }
+                return directions;
+            }
+
+            void Swap(int i, int j)
+            {
+                Coord temp = directions[i];
+                directions[i] = directions[j];
+                directions[j] = temp;
+            }
         }
     } 
 }

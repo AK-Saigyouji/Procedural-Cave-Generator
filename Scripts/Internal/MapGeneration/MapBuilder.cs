@@ -16,6 +16,7 @@ namespace CaveGeneration.MapGeneration
         const int SMOOTHING_ITERATIONS = 5;
         const int SMOOTHING_THRESHOLD = 4;
         const int MAX_SMOOTHING_ITERATIONS = 10;
+        const int TUNNELING_SWITCH_THRESHOLD = 5;
 
         /// <summary>
         /// The map is filled with wall tiles randomly based on the map density: e.g. if the map density is 0.45 
@@ -100,7 +101,7 @@ namespace CaveGeneration.MapGeneration
         /// floor regions: if generating a large map with many small rooms and this method is taking too long, consider
         /// removing rooms before a certain threshold. 
         /// </summary>
-        public static void ConnectFloors(Map inputMap, int tunnelRadius)
+        public static void ConnectFloors(Map inputMap, int tunnelRadius, int seed)
         {
             if (tunnelRadius == 0)
                 return;
@@ -108,10 +109,10 @@ namespace CaveGeneration.MapGeneration
             if (tunnelRadius < 0)
                 throw new ArgumentOutOfRangeException("tunnelRadius");
 
-            Action<Map, Coord, Coord> mapTunneler = 
-                (map, coordA, coordB) => MapTunnelers.CarveDirectTunnel(map, coordA, coordB, tunnelRadius);
+            Coord boundary = new Coord(inputMap.Length, inputMap.Width);
+            ITunneler tunneler = MapTunnelers.GetRandomDirectedTunneler(boundary, tunnelRadius, seed);
 
-            ConnectFloors(inputMap, mapTunneler);
+            ConnectFloors(inputMap, tunneler);
         }
 
         /// <summary>
@@ -119,7 +120,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         /// <param name="mapTunneler">A function that connects two coords on the map. Coords are guaranteed to be
         /// on the map, and may or may not be boundary tiles.</param>
-        public static void ConnectFloors(Map inputMap, Action<Map, Coord, Coord> mapTunneler)
+        public static void ConnectFloors(Map inputMap, ITunneler mapTunneler)
         {
             if (mapTunneler == null)
                 throw new ArgumentNullException("mapTunneler");
@@ -127,7 +128,7 @@ namespace CaveGeneration.MapGeneration
             Map map = inputMap.Clone();
             List<TileRegion> floors = BFS.GetConnectedRegions(map, Tile.Floor);
             ConnectionInfo[] finalConnections = MapConnector.GetConnections(map, floors);
-            Array.ForEach(finalConnections, con => mapTunneler(map, con.tileA, con.tileB));
+            Array.ForEach(finalConnections, con => mapTunneler.CarveTunnel(map, con.tileA, con.tileB));
             inputMap.Copy(map);
         }
 
