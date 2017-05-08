@@ -1,9 +1,9 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace CaveGeneration
 {
-    public abstract class CaveComponent
+    public sealed class CaveComponent
     {
         public string Name { get; private set; }
 
@@ -26,12 +26,15 @@ namespace CaveGeneration
         MeshFilter meshFilter;
         MeshRenderer meshRenderer;
 
-        internal CaveComponent(Mesh mesh, string name)
+        internal CaveComponent(Mesh mesh, string name, bool addCollider)
         {
             Name = name;
             mesh.name = name;
 
             GameObject = BuildGameObject(mesh);
+
+            if (addCollider)
+                AddCollider(mesh);
         }
 
         GameObject BuildGameObject(Mesh mesh)
@@ -44,10 +47,10 @@ namespace CaveGeneration
             return gameObject;
         }
 
-        protected void AddMeshCollider()
+        void AddCollider(Mesh mesh)
         {
             MeshCollider collider = GameObject.AddComponent<MeshCollider>();
-            collider.sharedMesh = Mesh;
+            collider.sharedMesh = mesh;
         }
     } 
 }

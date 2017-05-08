@@ -27,9 +27,9 @@ namespace CaveGeneration
             
             GameObject = new GameObject(AppendIndex(sectorName, index));
 
-            Ceiling = new Ceiling(caveMeshes.ExtractCeilingMesh(), AppendIndex(ceilingName, index));
-            Walls   = new Walls(caveMeshes.ExtractWallMesh(), AppendIndex(wallName, index));
-            Floor   = new Floor(caveMeshes.ExtractFloorMesh(), AppendIndex(floorName, index));
+            Ceiling = new CaveComponent(caveMeshes.ExtractCeilingMesh(), AppendIndex(ceilingName, index), false);
+            Walls   = new CaveComponent(caveMeshes.ExtractWallMesh(), AppendIndex(wallName, index), true);
+            Floor   = new CaveComponent(caveMeshes.ExtractFloorMesh(), AppendIndex(floorName, index), true);
 
             SetChild(Ceiling);
             SetChild(Walls);
