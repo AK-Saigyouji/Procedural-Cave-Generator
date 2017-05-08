@@ -5,8 +5,14 @@ using UnityEngine;
 
 namespace CaveGeneration.MapGeneration
 {
+    /// <summary>
+    /// Carves out tunnels between pairs of coordinates on a map.
+    /// </summary>
     public interface ITunneler
     {
+        /// <summary>
+        /// Carve out a tunnel between the pair of coordinates (inclusive) in the given map.
+        /// </summary>
         void CarveTunnel(Map map, Coord start, Coord end);
     }
 
@@ -88,9 +94,10 @@ namespace CaveGeneration.MapGeneration
             readonly int yBoundary;
             readonly int radius;
 
-            /// <summary>
-            /// Initialize a new walker with a seed to fix the randomness.
-            /// </summary>
+            /// <param name="boundary">Corresponds to the coordinate which is just outside (top right) of the 
+            /// maximum possible coordinates. Equal to (length, width) of the map.</param>
+            /// <param name="seed">Fixes the randomness.</param>
+            /// <param name="radius">Determines the width of carved tunnels.</param>
             public RandomDirectedWalker(Coord boundary, int seed, int radius)
             {
                 this.radius = radius;
@@ -99,10 +106,6 @@ namespace CaveGeneration.MapGeneration
                 random = new System.Random(seed);
             }
 
-            /// <summary>
-            /// Enumerates a random sequence of horizontal and vertical steps between start (inclusive) 
-            /// and end (inclusive).
-            /// </summary>
             public void CarveTunnel(Map map, Coord start, Coord end)
             {
                 Coord current = start;

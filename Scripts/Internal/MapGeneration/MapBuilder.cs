@@ -97,10 +97,24 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Ensure connectivity between all regions of floors in the map. Run time is polynomial in the number of 
-        /// floor regions: if generating a large map with many small rooms and this method is taking too long, consider
-        /// removing rooms before a certain threshold. 
+        /// Ensure connectivity between all regions of floors in the map by carving paths between them. 
+        /// Run time is polynomial in the number of floor regions: if generating a large map with many small rooms 
+        /// and this method is taking too long, consider removing rooms below a certain threshold in size.
         /// </summary>
+        /// <param name="tunnelRadius">How wide the carved paths should be. Must be nonnegative. If 0, method does nothing.</param>
+        public static void ConnectFloors(Map inputMap, int tunnelRadius)
+        {
+            int seed = new System.Random().Next(int.MinValue, int.MaxValue);
+            ConnectFloors(inputMap, tunnelRadius, seed);
+        }
+
+        /// <summary>
+        /// Ensure connectivity between all regions of floors in the map by carving paths between them. 
+        /// Run time is polynomial in the number of floor regions: if generating a large map with many small rooms 
+        /// and this method is taking too long, consider removing rooms below a certain threshold in size.
+        /// </summary>
+        /// <param name="tunnelRadius">How wide the carved paths should be. Must be nonnegative. If 0, method does nothing.</param>
+        /// <param name="seed">Fixes the randomness used in carving out the paths.</param>
         public static void ConnectFloors(Map inputMap, int tunnelRadius, int seed)
         {
             if (tunnelRadius == 0)
@@ -118,8 +132,7 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// Ensure connectivity between all regions of floors in the map, using a custom tunneling algorithm. 
         /// </summary>
-        /// <param name="mapTunneler">A function that connects two coords on the map. Coords are guaranteed to be
-        /// on the map, and may or may not be boundary tiles.</param>
+        /// <param name="mapTunneler">Determines the strategy used in carving out paths.</param>
         public static void ConnectFloors(Map inputMap, ITunneler mapTunneler)
         {
             if (mapTunneler == null)
