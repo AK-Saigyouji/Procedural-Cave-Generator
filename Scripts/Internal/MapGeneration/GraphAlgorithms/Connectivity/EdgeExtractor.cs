@@ -76,6 +76,7 @@ namespace CaveGeneration.MapGeneration.GraphAlgorithms
         public TileRegion Extract(TileRegion region)
         {
             Assert.AreNotEqual(region.Count, 0, "Room is empty!");
+            var boundary = new Boundary(map.Length, map.Width);
             var edgeTiles = new List<Coord>(region.Count);
             var stack = new Stack<Coord>();
             Coord firstTile = GetStartingEdgeTile(map, region);
@@ -88,7 +89,7 @@ namespace CaveGeneration.MapGeneration.GraphAlgorithms
                 Coord tile = stack.Pop();
                 foreach (Coord adj in GetAdjacentCoords(tile, pooledAdjacentTiles))
                 {
-                    if (map.Contains(adj) && !visited[adj.x, adj.y] && FoundEdgeTile(tile, adj, map))
+                    if (boundary.IsInBounds(adj) && !visited[adj.x, adj.y] && FoundEdgeTile(tile, adj, map))
                     {
                         visited[adj.x, adj.y] = true;
                         stack.Push(adj);
@@ -113,9 +114,10 @@ namespace CaveGeneration.MapGeneration.GraphAlgorithms
         /// <param name="target">The new tile.</param>
         static bool FoundEdgeTile(Coord source, Coord target, Map map)
         {
+            var interior = new Boundary(1, map.Length - 1, 1, map.Width - 1);
             int x = target.x, y = target.y;
             return map.IsFloor(x, y)
-                && (map.IsBoundaryTile(x, y) || map.IsAdjacentToWall(x, y))
+                && (!interior.IsInBounds(x, y) || map.IsAdjacentToWall(x, y))
                 && IsValidJump(source, target, map);
         }
 

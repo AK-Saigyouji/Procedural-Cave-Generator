@@ -4,9 +4,6 @@ using System;
 
 namespace CaveGeneration.Modules
 {
-    /// <summary>
-    /// Produces maps based on cellular automata. Outermost boundary always consists of wall tiles.
-    /// </summary>
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + "Cellular Automata (Default)")]
     public sealed class MapGenCellAutomata : MapGenModule, IRandomizable
     {

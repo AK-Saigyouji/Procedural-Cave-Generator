@@ -123,17 +123,17 @@ namespace CaveGeneration.MapGeneration
             if (tunnelRadius < 0)
                 throw new ArgumentOutOfRangeException("tunnelRadius");
 
-            Coord boundary = new Coord(inputMap.Length, inputMap.Width);
-            ITunneler tunneler = MapTunnelers.GetRandomDirectedTunneler(boundary, tunnelRadius, seed);
+            Boundary boundary = new Boundary(inputMap.Length, inputMap.Width);
+            ITunneler tunneler = MapTunnelers.GetRandomDirectedTunneler(boundary, seed);
 
-            ConnectFloors(inputMap, tunneler);
+            ConnectFloors(inputMap, tunnelRadius, tunneler);
         }
 
         /// <summary>
         /// Ensure connectivity between all regions of floors in the map, using a custom tunneling algorithm. 
         /// </summary>
         /// <param name="mapTunneler">Determines the strategy used in carving out paths.</param>
-        public static void ConnectFloors(Map inputMap, ITunneler mapTunneler)
+        public static void ConnectFloors(Map inputMap, int tunnelRadius, ITunneler mapTunneler)
         {
             if (mapTunneler == null)
                 throw new ArgumentNullException("mapTunneler");
@@ -141,7 +141,13 @@ namespace CaveGeneration.MapGeneration
             Map map = inputMap.Clone();
             List<TileRegion> floors = BFS.GetConnectedRegions(map, Tile.Floor);
             ConnectionInfo[] finalConnections = MapConnector.GetConnections(map, floors);
-            Array.ForEach(finalConnections, con => mapTunneler.CarveTunnel(map, con.tileA, con.tileB));
+            foreach (var connection in finalConnections)
+            {
+                Coord start = connection.tileA;
+                Coord end = connection.tileB;
+                IEnumerable<Coord> path = mapTunneler.GetPath(start, end);
+                CarveTunnel(map, path, tunnelRadius);
+            }
             inputMap.Copy(map);
         }
 
@@ -158,12 +164,13 @@ namespace CaveGeneration.MapGeneration
             if (borderSize == 0)
                 return inputMap.Clone();
 
+            var boundary = new Boundary(inputMap.Length, inputMap.Width);
             Map borderedMap = new Map(inputMap.Length + borderSize * 2, inputMap.Width + borderSize * 2);
             borderedMap.Transform((x, y) =>
             {
                 int yShifted = y - borderSize;
                 int xShifted = x - borderSize;
-                return inputMap.Contains(xShifted, yShifted) ? inputMap[xShifted, yShifted] : Tile.Wall;
+                return boundary.IsInBounds(xShifted, yShifted) ? inputMap[xShifted, yShifted] : Tile.Wall;
             });
             return borderedMap;
         }
@@ -220,6 +227,44 @@ namespace CaveGeneration.MapGeneration
                 }
             }
             return 2 * numWalls >= numTiles ? Tile.Wall : Tile.Floor;
+        }
+
+        static void CarveTunnel(Map map, IEnumerable<Coord> path, int radius)
+        {
+            foreach (Coord tile in path)
+            {
+                ClearNeighbours(map, tile, radius);
+            }
+        }
+
+        /// <summary>
+        /// Replace nearby tiles with floors.
+        /// </summary>
+        static void ClearNeighbours(Map map, Coord center, int radius)
+        {
+            // Ensure we don't step off the map and into an index exception
+            int xMin = Mathf.Max(0, center.x - radius);
+            int yMin = Mathf.Max(0, center.y - radius);
+            int xMax = Mathf.Min(map.Length - 1, center.x + radius);
+            int yMax = Mathf.Min(map.Width - 1, center.y + radius);
+            // Look at each x,y in a square surrounding the center, but only remove those that fall within
+            // the circle of given radius. 
+            int squaredRadius = radius * radius;
+            for (int y = yMin; y <= yMax; y++)
+            {
+                for (int x = xMin; x <= xMax; x++)
+                {
+                    if (IsInCircle(new Coord(x, y), center, squaredRadius))
+                    {
+                        map[x, y] = Tile.Floor;
+                    }
+                }
+            }
+        }
+
+        static bool IsInCircle(Coord testCoord, Coord center, int squaredRadius)
+        {
+            return center.SquaredDistance(testCoord) <= squaredRadius;
         }
 
         static void Swap(ref Map a, ref Map b)

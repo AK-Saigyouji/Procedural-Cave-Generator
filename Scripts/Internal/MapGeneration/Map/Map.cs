@@ -106,22 +106,6 @@ namespace CaveGeneration.MapGeneration
         }
 
         /// <summary>
-        /// Does the map contain these coordinates? Equivalently, will map[x,y] return a tile?
-        /// </summary>
-        public bool Contains(int x, int y)
-        {
-            return 0 <= x && x < length && 0 <= y && y < width;
-        }
-
-        /// <summary>
-        /// Does the map contain these coordinates? Equivalently, will map[coord] return a tile?
-        /// </summary>
-        public bool Contains(Coord coord)
-        {
-            return Contains(coord.x, coord.y);
-        }
-
-        /// <summary>
         /// The number of walls adjacent to the given point, including the point itself. 
         /// Both horizontal/vertical and diagonal tiles count.
         /// Note that the input coordinates must be contained in the interior of the map (not on the boundary);
@@ -135,43 +119,6 @@ namespace CaveGeneration.MapGeneration
             return (int)grid[x - 1, y + 1] + (int)grid[x, y + 1] + (int)grid[x + 1, y + 1]
                  + (int)grid[x - 1, y    ] + (int)grid[x, y    ] + (int)grid[x + 1, y    ]
                  + (int)grid[x - 1, y - 1] + (int)grid[x, y - 1] + (int)grid[x + 1, y - 1];
-        }
-
-        /// <summary>
-        /// Do the coordinates correspond to the boundary of the map? The boundary is defined as valid points in the map
-        /// such that at least one of left, right, up or down step off the map.
-        /// </summary>
-        public bool IsBoundaryTile(int x, int y)
-        {
-            return (x == 0 || x == length - 1) && (0 <= y && y <= width - 1) // vertical boundary
-                || (y == 0 || y == width - 1) && (0 <= x && x <= length - 1); // horizontal boundary
-        }
-
-        /// <summary>
-        /// Do the coordinates correspond to the boundary of the map? The boundary is defined as valid points in the map
-        /// such that at least one of left, right, up or down step off the map.
-        /// </summary>
-        public bool IsBoundaryTile(Coord coord)
-        {
-            return IsBoundaryTile(coord.x, coord.y);
-        }
-
-        /// <summary>
-        /// Are the coordinates in the interior of the map? The interior is defined as valid points in the map not lying
-        /// on the boundary. In particular, all eight neighbouring points of an interior point are valid map coordinates.
-        /// </summary>
-        public bool IsInteriorTile(int x, int y)
-        {
-            return (0 < x && x < length - 1) && (0 < y && y < width - 1);
-        }
-
-        /// <summary>
-        /// Are the coordinates in the interior of the map? The interior is defined as valid points in the map not lying
-        /// on the boundary. In particular, all eight neighbouring points of an interior point are valid map coordinates.
-        /// </summary>
-        public bool IsInteriorTile(Coord tile)
-        {
-            return IsInteriorTile(tile.x, tile.y);
         }
 
         /// <summary>
