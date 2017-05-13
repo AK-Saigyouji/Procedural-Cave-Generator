@@ -38,12 +38,12 @@ namespace CaveGeneration.MeshGeneration
 
         static Vector2[] ComputeFlatUVArray(Vector3[] vertices)
         {
-            const float UVSCALE = 50f;
+            const float UVSCALE = 0.02f;
             var uv = new Vector2[vertices.Length];
             for (int i = 0; i < vertices.Length; i++)
             {
-                uv[i].x = vertices[i].x / UVSCALE;
-                uv[i].y = vertices[i].z / UVSCALE;
+                uv[i].x = vertices[i].x * UVSCALE;
+                uv[i].y = vertices[i].z * UVSCALE;
             }
             return uv;
         }

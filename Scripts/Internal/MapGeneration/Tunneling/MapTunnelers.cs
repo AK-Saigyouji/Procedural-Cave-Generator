@@ -21,12 +21,23 @@ namespace CaveGeneration.MapGeneration
     /// </summary>
     public static class MapTunnelers
     {
-        /// <param name="boundary">Represents out of bounds coordinates. </param>
-        /// <param name="seed"></param>
-        /// <returns></returns>
-        public static ITunneler GetRandomDirectedTunneler(Boundary boundary, int seed)
+        /// <summary>
+        /// Represents how far the tunneler will deviate from the straight path. 
+        /// </summary>
+        public enum Variance { Low, High };
+
+        /// <param name="boundary">Represents a boundary for the path: it will not step outside the boundary.</param>
+        public static ITunneler GetRandomDirectedTunneler(Boundary boundary, int seed, Variance variance)
         {
-            return new RandomDirectedWalker(boundary, seed);
+            switch (variance)
+            {
+                case Variance.Low:
+                    return new RandomDirectedWalker(boundary, seed);
+                case Variance.High:
+                    return new RandomWalk(boundary, seed);
+                default:
+                    throw new ArgumentException("Unrecognized variability.");
+            }
         }
 
         public static ITunneler GetDirectTunneler(Map map)
@@ -78,31 +89,62 @@ namespace CaveGeneration.MapGeneration
 
             Coord GetNextDirection(Coord current, Coord end)
             {
-                foreach (Coord direction in GetRandomDirections())
+                Coord next;
+                do
                 {
-                    Coord next = current + direction;
-                    if (current.SupNormDistance(end) >= next.SupNormDistance(end) && boundary.IsInBounds(next))
+                    next = current + directions[random.Next(0, directions.Length)];
+                } while (!boundary.IsInBounds(next) || Distance(next, end) > Distance(current, end));
+
+                return next;
+            }
+
+            float Distance(Coord a, Coord b)
+            {
+                // sup norm distance is used to allow greater flexibility in the random walk. Distance is determined by
+                // only the larger coordinate, freeing the smaller coordinate to increase or decrease. 
+                return a.SupNormDistance(b);
+            }
+        }
+
+        private sealed class RandomWalk : ITunneler
+        {
+            readonly System.Random random;
+            readonly Boundary boundary;
+            readonly RandomDirectedWalker tunneler;
+
+            const int JUMP_SIZE = 20;
+
+            public RandomWalk(Boundary boundary, int seed)
+            {
+                random = new System.Random(seed);
+                this.boundary = boundary;
+                tunneler = new RandomDirectedWalker(boundary, seed);
+            }
+
+            public IEnumerable<Coord> GetPath(Coord start, Coord end)
+            {
+                Coord current = start;
+                var path = Enumerable.Empty<Coord>();
+                while (current.Distance(end) > JUMP_SIZE)
+                {
+                    Coord next;
+                    do
                     {
-                        return next;
-                    }
+                        next = GetRandomPointOnBox(current, JUMP_SIZE);
+                    } while (!boundary.IsInBounds(next) || next.Distance(end) >= current.Distance(end));
+                    path = path.Concat(tunneler.GetPath(current, next));
+                    current = next;
                 }
-                throw new InvalidOperationException();
+                path = path.Concat(tunneler.GetPath(current, end));
+                return path;
             }
 
-            Coord[] GetRandomDirections()
+            Coord GetRandomPointOnBox(Coord center, int width)
             {
-                for (int i = 0; i < directions.Length; i++)
-                {
-                    Swap(i, random.Next(i, directions.Length));
-                }
-                return directions;
-            }
-
-            void Swap(int i, int j)
-            {
-                Coord temp = directions[i];
-                directions[i] = directions[j];
-                directions[j] = temp;
+                return new Coord(
+                    random.Next(center.x - width, center.x + width),
+                    random.Next(center.y - width, center.y + width)
+                    );
             }
         }
     } 

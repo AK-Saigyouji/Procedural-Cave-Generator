@@ -102,10 +102,10 @@ namespace CaveGeneration.MapGeneration
         /// and this method is taking too long, consider removing rooms below a certain threshold in size.
         /// </summary>
         /// <param name="tunnelRadius">How wide the carved paths should be. Must be nonnegative. If 0, method does nothing.</param>
-        public static void ConnectFloors(Map inputMap, int tunnelRadius)
+        public static void ConnectFloors(Map inputMap, int tunnelRadius = 1)
         {
             int seed = new System.Random().Next(int.MinValue, int.MaxValue);
-            ConnectFloors(inputMap, tunnelRadius, seed);
+            ConnectFloors(inputMap, seed, tunnelRadius);
         }
 
         /// <summary>
@@ -115,7 +115,7 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         /// <param name="tunnelRadius">How wide the carved paths should be. Must be nonnegative. If 0, method does nothing.</param>
         /// <param name="seed">Fixes the randomness used in carving out the paths.</param>
-        public static void ConnectFloors(Map inputMap, int tunnelRadius, int seed)
+        public static void ConnectFloors(Map inputMap, int seed, int tunnelRadius = 1)
         {
             if (tunnelRadius == 0)
                 return;
@@ -124,16 +124,16 @@ namespace CaveGeneration.MapGeneration
                 throw new ArgumentOutOfRangeException("tunnelRadius");
 
             Boundary boundary = new Boundary(inputMap.Length, inputMap.Width);
-            ITunneler tunneler = MapTunnelers.GetRandomDirectedTunneler(boundary, seed);
+            ITunneler tunneler = MapTunnelers.GetRandomDirectedTunneler(boundary, seed, MapTunnelers.Variance.Low);
 
-            ConnectFloors(inputMap, tunnelRadius, tunneler);
+            ConnectFloors(inputMap, tunneler, tunnelRadius);
         }
 
         /// <summary>
         /// Ensure connectivity between all regions of floors in the map, using a custom tunneling algorithm. 
         /// </summary>
         /// <param name="mapTunneler">Determines the strategy used in carving out paths.</param>
-        public static void ConnectFloors(Map inputMap, int tunnelRadius, ITunneler mapTunneler)
+        public static void ConnectFloors(Map inputMap, ITunneler mapTunneler, int tunnelRadius = 1)
         {
             if (mapTunneler == null)
                 throw new ArgumentNullException("mapTunneler");

@@ -54,7 +54,7 @@ namespace CaveGeneration.MapGeneration.GraphAlgorithms
             });
         }
 
-        // By using an appropriate initialized visited array, this BFS does not need a reference to the map at all:
+        // By using an appropriately initialized visited array, this BFS does not need a reference to the map at all:
         // All the tiles of the wrong type have already been marked as visited, so by discovering all unvisited 
         // regions, we're getting exactly the regions of the desired type.
         static List<Coord> GetConnectedRegion(int xStart, int yStart, bool[,] visited)

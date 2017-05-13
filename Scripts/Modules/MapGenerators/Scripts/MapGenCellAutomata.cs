@@ -28,8 +28,7 @@ namespace CaveGeneration.Modules
             map.TransformBoundary((x, y) => Tile.Wall);
             MapBuilder.Smooth(map);
             MapBuilder.RemoveSmallFloorRegions(map, properties.MinFloorSize);
-            MapBuilder.ConnectFloors(map, TUNNEL_RADIUS, properties.Seed);
-            MapBuilder.SmoothOnlyWalls(map);
+            MapBuilder.ConnectFloors(map, properties.Seed, TUNNEL_RADIUS);
             MapBuilder.RemoveSmallWallRegions(map, properties.MinWallSize);
             return MapBuilder.ApplyBorder(map, properties.BorderSize);
         }
