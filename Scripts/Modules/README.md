@@ -4,139 +4,51 @@ This folder contains modules: customizable Scriptable Objects that define core p
 
 ## Usage
 
-Either use a sample module provided, or create one using the menu. Samples can be found in the relevant folders in this directory. To create one using the menu, select Assets -> Create -> Cave Generation and select the relevant module. Modules offer a number of customizable properties unique to their type. 
+### Introduction
 
-You may wish to create several versions of the same type of module, and name them to reflect their distinct customization. As a simple example, you could have multiple map generators of the same type named Dense, Standard, and Sparse, configured with relatively high, balanced and low wall densities respectively. They can then be loaded dynamically at run-time to generate caves on demand, rather than generating all the caves before-hand. Saving a cave as a prefab requires saving their meshes, and meshes are very large objects (i.e. take a lot of memory). 
+Either use a sample module provided, or create one using the menu. Samples can be found in the relevant folders in this directory. To create one using the menu, select Assets -> Create -> Cave Generation and select the relevant module. Modules offer a number of customizable properties unique to their type. Alternatively, you can duplicate an existing module of the correct type directly. 
 
+Each module can be plugged into the CaveGeneratorUI inspector in the appropriately marked spot, or passed as an argument to the CaveGenerator.Generate method if working through code. 
 
-## Defining your own modules
+### Workflow
 
-In addition to using and customizing the provided modules, you can write your own based on custom logic and plug them into the cave generator. The bulk of this readme covers this process by going over examples of new module types. While the new types built here are not terribly useful or interesting, they will serve to cover the various tools available for building more interesting types.
+There are three ways to work with the modules.
 
-### Define a new height map module
+#### 1: Entirely through the editor
 
-In this example, we'll write a new height map module to illustrate how it's done. We'll need to create a new C# script and do three things: extend the HeightMapModule class, implement the GetHeightMap() method, and add a CreateAssetMenu attribute.
+Plug modules into CaveGeneratorUI, generate a desired cave, convert it to a prefab, then work with that prefab directly in the editor. Once converted to a prefab, the modules used become irrelevant. Note that it's very important to use the button on the inspector for CaveGeneratorUI to convert to prefabs: if you simply drag the cave from the hierarchy into the assets, the prefab will not be serialized correctly. 
 
-As a simple example to illustrate the process, we'll create a simple sinusoidal height map (i.e. based on the Sin function). While not terribly exciting or useful, it will serve the illustrate the various tools available to build modules of this sort.
+#### 2: Design in the editor, then rebuild at runtime
 
-Here's a template for implementing a new height map module:
+A downside to the first approach is that you have to save large meshes as assets. If you're generating large caves, or just a large number of them, this can consume a lot of memory, which can dramatically increase the build size of the game. 
 
-```
-using System;
-using UnityEngine;
-using CaveGeneration.MeshGeneration;
-using CaveGeneration.HeightMaps;
+This approach gives you the best of both worlds: save a cave as a prefab, design content for that prefab, then save all the content but destroy the prefab. Then, at run-time, call the Generate method on CaveGeneratorUI with the same modules loaded into it that were used to generate the cave in the first place. This will produce the exact same cave, as long as you uncheck "Randomize Seeds" on CaveGeneratorUI. Alternatively, you can pass the modules as arguments to the CaveGenerator class. 
 
-namespace CaveGeneration.Modules
-{
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
-    public class HeightMapNewType : HeightMapModule
-    {
-        // This string determines the name of this type of height map in the menu.
-        const string menuName = "NewType";
+#### 3: Design and build algorithmically at run-time.
 
-        // Insert properties to be set in the inspector here
+This is by far the most difficult approach, but allows for unlimited content as your game will generate a new, original cave every time. Configure modules to build the kind of caves you want, then pass them into the CaveGenerator class, which will return a Cave object. Through this object, you can access essential information about the cave.
 
-        public override IHeightMap GetHeightMap()
-        {
-            throw new NotImplementedException();
-        }
-    }
-}
-```
+Note that the default map generator can be very difficult to use in this third approach, as there are very few guaranteed constraints on the output: as such, you will likely need to define your own map generator, using a more structured approach so that you have more control on the resulting cave. 
 
-To build the heightmap, we need a height function that will take two floats and return a float: i.e. a function that determines a height value at every (x, z) coordinate pair. We can use the following for our sin-based height map:
+## Define your own modules
 
-```
-float GetHeight(float x, float z)
-{
-    return 0.5f * (Mathf.Sin(x) + Mathf.Sin(z));
-}
-```
+In addition to using and customizing the provided modules, you can write your own based on custom logic and plug them into the cave generator. The rest of this readme covers this process, and the tools provided to make it easier. 
 
-We could construct an IHeightMap directly by implementing a class that implements the interface, but it's easier to use the HeightMapFactory class which will take care of that for us. Its Build method has the following overload:
+### (1) Map modules
 
-```
-public IHeightMap Build(Func<float, float, float> heightFunction, float minHeight, float maxHeight);
-```
+Defining a custom map module gives you considerable control over the structure of the cave, allowing you to plug seamlessly into the engine for mesh generation. First we'll go over the bare minimum to implement them, then build up the default map module to illustrate a variety of ideas and tools. Here's a basic template for a custom map module:
 
-Min and max height should be set to the lower and upper bounds of our function: the result of the height function will be clamped between those values.
-
-Naming our class more appropriately (note: script file must match class name) and using this helper class, we have the following (note: I've dropped the using and namespace statements as they won't change, but they must still be included):
-
-```
-[CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
-public class HeightMapSinusoidal : HeightMapModule
-{
-    // This string determines the name of this type of height map in the menu.
-    const string menuName = "Sinusoidal";
-
-    // Insert properties to be set in the inspector here
-
-    public override IHeightMap GetHeightMap()
-    {
-        return HeightMapFactory.Build(GetHeight, -1, 1);
-    }
-
-    float GetHeight(float x, float z)
-    {
-        return 0.5f * (Mathf.Sin(x) + Mathf.Sin(z));
-    }
-}
-```
-
-We can now return to the editor and select Assets -> Create -> Cave Generation -> Height Maps -> Sinusoidal and this will create a new height map for us, which can be plugged into the Cave Generator.
-
-This is pretty limited, however, as we can't configure any of this height map's properties through the inspector. To illustrate how to do that, let's add three features to our height map: base height, which will shift the height map up or down. Amplitude, which will stretch our height map in the y-direction. And frequency, which will compress our height map in the xz plane. The way we do this is no different from exposing properties on a MonoBehaviour. Here is a simple implementation:
-
-```
-[CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
-public class HeightMapSinusoidal : HeightMapModule
-{
-    // This string determines the name of this type of height map in the menu.
-    const string menuName = "Sinusoidal";
-
-    // Insert properties to be set in the inspector here
-    public float baseHeight = 0f;
-    public float amplitude = 1f;
-    public float frequency = 1f;
-
-    public override IHeightMap GetHeightMap()
-    {
-        return HeightMapFactory.Build(GetHeight, baseHeight - amplitude, baseHeight + amplitude);
-    }
-
-    float GetHeight(float x, float z)
-    {
-        x *= frequency;
-        z *= frequency;
-        return baseHeight + amplitude * 0.5f * (Mathf.Sin(x) + Mathf.Sin(z));
-    }
-}
-
-```
-
-Now each height map of this type that we create through the Assets menu can be independently configured with its own base height, amplitude and frequency. 
-
-### Define a new map generator module
-
-Defining a map generator module is similar to defining a new height map module, but instead of implementing HeightMapModule you need to implement MapGenModule, and instead of overriding GetHeightMap, you need to override the Generate method. Generate returns a Map object. 
-
-The Map class is a 2D array of Tiles, where Tile is an enum taking the values of either Wall or Floor. A number of helper methods have been provided to facilitate their creation.
-
-As a sample, we'll go over the creation of a new type of map generator. Instead of being based on cellular automata like the default one, we'll create a map generator based on perlin noise. Here's our starting point:
-
-```
+```cs
 using UnityEngine;
 using CaveGeneration.MapGeneration;
 
 namespace CaveGeneration.Modules
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-    public class MapGenPerlinNoise : MapGenModule
+    public class MyCustomMapGen : MapGenModule
     {
         // This string determines the name of this type of map generator in the menu.
-        const string menuName = "Perlin Noise";
+        const string menuName = "My Custom Generator";
 
         // Insert properties to be set in the inspector here
         
@@ -148,283 +60,334 @@ namespace CaveGeneration.Modules
 }
 ```
 
-Given the simple nature of Maps, we'll create one directly rather than delegating to a factory method. We can work with the Map much like we would with an ordinary 2D array, starting by initializing its length and width (we'll set them to 50 for now):
+Note three things: first, we're extending MapGenModule, which is what allows this module to be plugged into the generator. Second, we're overriding the Generate method, which returns a Map object. This is the Map that will be used to produce the cave. Third, the class has a CreateAssetMenu attribute. This will allow us to create instances of this new module in the editor by using the Asset->Create menu.
 
-```
-Map map = new Map(50, 50);
-```
+You're free to choose your own class name instead of MyCustomMapGen (make sure the class name matches the name of that class file), and also to choose a new menuName. 
 
-Perlin Noise takes two parameters (an x and a y) and returns a float between 0 and 1. For now, let's say that floats above 0.5 are walls, and below 0.5 are floors. For the x and y, we can use the integer coordinates of the map, but we do need to scale them: Perlin Noise is intended to be sampled at values that are much closer together. 
+Now, let's explore what we can do with this.
 
-```
-float scale = 0.1f;
-for (int y = 0; y < map.Width; y++)
+#### (1.1) A trivial example
+
+The most direct way to create a custom map module is to define a map manually. The Map type behaves a lot like a 2D array, with each element being a Tile. Tile is an enum that can take the values of Wall or Floor. 
+
+As an example, let's see what happens if we make a map with a simple diagonal path from the bottom left to the top right:
+
+```cs
+public override Map Generate()
 {
-    for (int x = 0; x < map.Length; x++)
+    int length = 10;
+    int width = 10;
+    Map map = new Map(length, width);
+
+    // first let's set all tiles to walls
+    for (int y = 0; y < length; y++)
     {
-        float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-        map[x, y] = noiseValue < 0.5f ? Tile.Wall : Tile.Floor;
-    }
-}
-```
-
-Putting this together, we have:
-
-```
-[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-public class MapGenPerlinNoise : MapGenModule
-{
-    // This string determines the name of this type of map generator in the menu.
-    const string menuName = "Perlin Noise";
-
-    // Insert properties to be set in the inspector here
-
-    public override Map Generate()
-    {
-        Map map = new Map(50, 50);
-        float scale = 0.1f;
-        for (int y = 0; y < map.Width; y++)
+        for (int x = 0; x < width; x++)
         {
-            for (int x = 0; x < map.Length; x++)
-            {
-                float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-                map[x, y] = noiseValue < 0.5f ? Tile.Wall : Tile.Floor;
-            }
+            map[x, y] = Tile.Wall;
         }
-        return map;
     }
-}
-```
 
-At this point we can go to Assets -> Create -> Cave Generation -> Map Generators -> Perlin Noise to create a Perlin Noise map generator, and plug it into the cave generator. Enough has been covered thus far to build your own map generators. The rest of the section will be spent on improving this example and covering additional functionality you may wish to use.
-
-First, we probably want to put some kind of boundary around our map so that when a player reaches an edge, they don't stare off into the void (or the defualt Unity skybox, in this case). We could do something like this:
-
-```
-for (int x = 0; x < map.Length; x++)
-{
-    map[x, 0] = Tile.Wall;
-    map[x, map.Width - 1] = Tile.Wall;
-}
-```
-
-And analogously for y from 0 to map.Width. But a few methods have been implemented in the map class to make such logic easier to implement. In this case, we can use the following:
-
-```
-public void TransformBoundary(Func<float, float, Tile> transformation);
-```
-
-There are also Transform (for all tiles) and TransformInterior (for just non-boundary tiles). Thus it suffices to write this:
-
-```
-map.TransformBoundary((x, y) => Tile.Wall);
-```
-
-We can use Transform to clean up our existing logic as well. 
-
-```
-[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-public class MapGenPerlinNoise : MapGenModule
-{
-    // This string determines the name of this type of map generator in the menu.
-    const string menuName = "Perlin Noise";
-
-    // Insert properties to be set in the inspector here
-
-    public override Map Generate()
+    // next let's carve a diagonal path from bot left to top right
+    for (int i = 1; i < length; i++)
     {
-        Map map = new Map(50, 50);
-        float scale = 0.1f;
-        map.Transform((x, y) =>
-        {
-            float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-            return noiseValue < 0.5f ? Tile.Wall : Tile.Floor;
-        });
-        map.TransformBoundary((x, y) => Tile.Wall);
-        return map;
+        map[i, i] = Tile.Floor;
+        map[i, i - 1] = Tile.Floor;
     }
+    return map;
 }
 ```
 
-If you're not familiar with lambdas, LINQ or functional programming, this might seem completely alien, and you may wish to stick with the explicit looping logic. 
+If you're unfamiliar with scriptable objects, note that they're used differently from MonoBehaviours. The script we wrote is a template, which can produce instances, which act as permanent assets. To create an instance, we can return to the editor and go to Assets -> Create -> Cave Generation -> Map Generators -> My Custom Generator. We can name the instance anything we like. Note that the instance should have the Unity logo instead of the C# icon as its image. 
 
-If we now generate a cave, we see that there is a thin boundary around the cave, ensuring players don't wander out into the void. 
+Now that we have an instance of a map generator module, we can plug it into a CaveGeneratorUI in the appropriate slot to be consumed. If we then generate using the sample modules provided for floor and ceiling height maps, we get something like this (textures are from Natural Tiling Textures, see footnote on image in the main readme):
 
-Next, we're using quite a few constants that would make for sensible parameters for our new map generator: length, width, scale, and the threshold 0.5f. Let's expose them to the inspector. 
+![Diagonal Cave](http://imgur.com/eeANGGC.jpeg)
 
+This covers the basics of creating a new module. Next we'll walk through an example that builds up the default map generator, to illustrate additional useful tools, and also to better understand the default generator and its customizable properties. We'll cover methods on the Map class, as well as the MapBuilder class which provides some more advanced functionality. 
+
+#### (1.2) Building the default generator
+
+The default generator, in a nutshell, does the following: set tiles randomly, use a smoothing function to cluster walls/floors together, then connect all the floors.
+
+##### (1.2.1) A completely random generator
+So to start, let's create a random map generator. We can use the following MapBuilder method:
+
+```cs
+public static Map InitializeRandomMap(int length, int width, float mapDensity, int seed);
 ```
-[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-public class MapGenPerlinNoise : MapGenModule
+
+As we go along, we'll also expose the properties we use in the inspector so they can be customized. Here are the updated parts:
+
+```cs
+// Insert properties to be set in the inspector here
+public int length = 50;
+public int width = 50;
+public float mapDensity = 0.5f;
+public int seed = 0;
+
+public override Map Generate()
 {
-    // This string determines the name of this type of map generator in the menu.
-    const string menuName = "Perlin Noise";
-
-    // Insert properties to be set in the inspector here
-    public int length = 50;
-    public int width = 50;
-    public float scale = 0.1f;
-    public float density = 0.5f;
-
-    public override Map Generate()
-    {
-        Map map = new Map(length, width);
-        map.TransformInterior((x, y) =>
-        {
-            float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-            return noiseValue < density ? Tile.Wall : Tile.Floor;
-        });
-        map.TransformBoundary((x, y) => Tile.Wall);
-        return map;
-    }
+    Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
+    return map;
 }
 ```
 
-Now we can set the size, density and scale of each instance of the Perlin Noise map generator in the inspector. 
+This produces the following cave:
 
-An important issue that needs to be addressed is connectivity. Perlin Noise does not produce connected regions: it produces 'islands' instead. It's certainly possible to author your own logic to connect regions, but it's not trivial. Instead, you can use the MapBuilder static class to access a number of helper methods. This includes MapBuilder.ConnectFloors, which takes a Map and an int specifying the radius of any tunnels that need to be carved to ensure connectivity between all floors. It uses an algorithm that minimizes the amount of tunneling that needs to be done to ensure connectivity between all regions.
+![Random mess of a cave](http://imgur.com/iIMW0hO.jpg)
 
-In addition to this, we'll replace the TransformBoundary method with another helper, ApplyBorder. The reason is that transforming the boundary could block a tunnel created by ConnectFloors: by applying a boundary we're adding walls around the existing map, instead of replacing the existing boundary. We'll include the boundary width as a configurable property.
+##### (1.2.2) Get structure out of noise
+
+It's certainly random, but not very structured. We can apply a smoothing function to make the regions more regular. Let's use the following method in the MapBuilder class:
+
+```cs
+public static void Smooth(Map inputMap, int iterations = 5);
+```
+
+This method is based on cellular automata, a well known technique in procedural generation for producing cavernous terrain. It has the benefit of looking more a lot more natural than a lot of other techniques, with the downside that the final result is difficult to control.
+
+```cs
+public override Map Generate()
+{
+    Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
+    MapBuilder.Smooth(map);
+    return map;
+}
+```
 
 The result:
 
+![Smooth, cavernous cave](http://imgur.com/vMxjadk.jpg)
+
+##### (1.2.3) Connect the floors and seal the boundary
+
+Already we have a cavernous structure, albeit with several issues. One is that not all regions are connected. Another is that open spaces lead into the void - our caves should be enclosed to prevent stepping off the map. 
+
+Efficient connectivity algorithms are not trivial to implement. An efficient implementation is provided in another MapBuilder method:
+
+```cs
+public static void ConnectFloors(Map inputMap, int tunnelRadius = 1);
 ```
-[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-public class MapGenPerlinNoise : MapGenModule
+
+This method will carve out paths in a minimalistic fashion to ensure that every tile is reachable from every other tile. tunnelRadius determines how wide these tunnels will be. This method has a few overloads, but we'll ignore those for now. 
+
+To fix the other issue, we can apply a border to our map with the following method:
+
+```cs
+public static Map ApplyBorder(Map inputMap, int borderSize);
+```
+
+We'll add an inspector variable for the border size.
+
+```cs
+public int borderSize = 1;
+
+public override Map Generate()
 {
-    // This string determines the name of this type of map generator in the menu.
-    const string menuName = "Perlin Noise";
-
-    const int tunnelWidth = 2;
-
-    // Insert properties to be set in the inspector here
-    public int length = 50;
-    public int width = 50;
-    public float scale = 0.1f;
-    public float density = 0.5f;
-    public int borderWidth = 1;
-
-    public override Map Generate()
-    {
-        Map map = new Map(length, width);
-        map.Transform((x, y) =>
-        {
-            float noiseValue = Mathf.PerlinNoise(scale * x, scale * y);
-            return noiseValue < density ? Tile.Wall : Tile.Floor;
-        });
-        MapBuilder.ConnectFloors(map, tunnelWidth);
-        return MapBuilder.ApplyBorder(map, borderWidth);
-    }
+    Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
+    MapBuilder.Smooth(map);
+    MapBuilder.ConnectFloors(map);
+    map = MapBuilder.ApplyBorder(map, borderSize);
+    return map;
 }
 ```
 
-Finally, let's add some randomization. PerlinNoise is deterministic: a given pair (x, y) will always produce the exact same return value. To add randomness, we can generate a pair of offset values so we take (a + x, b + y) for a fixed pair (a, b). We can control this randomization using a seed value. 
+The result:
 
-```
-[CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-public class MapGenPerlinNoise : MapGenModule
+![Cavernous cave with thin, rectangular boundary](http://imgur.com/mfdhLcs.jpg)
+
+##### (1.2.4) Build a better boundary
+
+Much better - we can't walk off into the void, and we can get to any open area from any other open area. There is a visual issue, however - the regions alongside the boundary look rather boxy. This is because we're adding a thin rectangular strip alongside the border, resulting in a long, smooth border. This will look especially jarring in the enclosed variation of the generator. 
+
+Fortunately there's a simple fix: right at the start, we can initialize the boundary tiles to be all wall tiles. That way, when we perform smoothing, we'll get a more natural cavern-like appearance.
+
+We could write a few loops to manually set map[x, y] = Tile.Wall at the appropriate places. But Map has a few extension methods that make such transformations simpler and more compact: they are Transform, TransformBoundary, and TransformInterior, and they take a Func<int, int, Tile>: i.e. any function that takes two integers and outputs a Tile. They can also take lambdas, which is what we'll use:
+
+```cs
+public override Map Generate()
 {
-    // This string determines the name of this type of map generator in the menu.
-    const string menuName = "Perlin Noise";
-
-    const int tunnelWidth = 2;
-    const float offsetRange = 1000;
-
-    // Insert properties to be set in the inspector here
-    public int length = 50;
-    public int width = 50;
-    public float scale = 0.1f;
-    public float density = 0.5f;
-    public int borderWidth = 1;
-    public int seed = 0;
-
-    public override Map Generate()
-    {
-        Random.InitState(seed);
-        float xOffset = Random.Range(-offsetRange, offsetRange);
-        float yOffset = Random.Range(-offsetRange, offsetRange);
-
-        Map map = new Map(length, width);
-        map.Transform((x, y) =>
-        {
-            float noiseValue = Mathf.PerlinNoise(xOffset + scale * x, yOffset + scale * y);
-            return noiseValue < density ? Tile.Wall : Tile.Floor;
-        });
-        MapBuilder.ConnectFloors(map, tunnelWidth);
-        return MapBuilder.ApplyBorder(map, borderWidth);
-    }
+    Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
+    map.TransformBoundary((x, y) => Tile.Wall);
+    MapBuilder.Smooth(map);
+    MapBuilder.ConnectFloors(map);
+    map = MapBuilder.ApplyBorder(map, borderSize);
+    return map;
 }
 ```
 
-Now we get a random cave depending on the choice of seed value. See the section on IRandomizable on how to allow the Cave Generator to hook into a module's randomization. 
+Use of such methods can eliminate a lot of unnecessary looping boilerplate, and to avoid a lot of silly off-by-one errors. To see more examples, you can check the MapBuilders script, which uses them extensively. 
 
-### Using IRandomizable
+![Cavernous cave with better boundary](http://imgur.com/xoYUFeq.jpg)
 
-The inspector for CaveGeneratorUI reveals a flag for "Randomize Seeds", and the CaveGenerator itself likewise has a similar boolean argument. This allows the generator itself to automatically choose a random seed if you don't want to set the seeds on each randomizable component yourself. 
+As we can see, the inside of the boundaries now looks much more cavern-like, as desired. 
 
-In order for the generator to do so, however, it's necessary to implement a very simple interface:
+##### (1.2.5) Prune small regions
 
+If we increase the size or scroll through some examples, we see that sometimes we get isolated wall regions of very small size. These look out of place, so we may wish to remove them. We will also do the same with small floor regions, which force the connectivity algorithm to dig tunnels to tiny rooms. As a side note, there's also a huge performance reason to prune very small floor regions, which becomes important when producing giant maps. 
+
+Once again, we turn to MapBuilder:
+
+```cs
+public static void RemoveSmallFloorRegions(Map inputMap, int threshold);
+public static void RemoveSmallWallRegions(Map inputMap, int threshold);
 ```
-interface IRandomizable
+
+threshold is how many tiles in the Map object a region must occupy to survive the pruning. We'll remove floor regions before running the connect method, and then remove wall regions near the end after executing all the steps that may produce small wall regions.
+
+```cs
+public int minWallSize = 50;
+public int minFloorSize = 50;
+
+public override Map Generate()
 {
-    int Seed { set; }
+    Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
+    map.TransformBoundary((x, y) => Tile.Wall);
+    MapBuilder.RemoveSmallFloorRegions(map, minFloorSize);
+    MapBuilder.Smooth(map);
+    MapBuilder.ConnectFloors(map);
+    MapBuilder.RemoveSmallWallRegions(map, minWallSize);
+    map = MapBuilder.ApplyBorder(map, borderSize);
+    return map;
 }
 ```
 
-To implement this interface for the map generator created in the previous section, only two additions need to be made: first, the class must extend IRandomizable. Second, it must implement a setter for Seed. 
+##### (1.2.6) Permitting automatic randomization with IRandomizable
 
-```
-public sealed class MapGenPerlinNoise : MapGenModule, IRandomizable
-{
-    //...
-    
-    int Seed { set { seed = value; } }
-}
+One final important change is to allow the cave generator to hook into this module's seed to automatically randomize it. This is done by having the module implement the IRandomizable interface. This interface has a single setter for a Seed, and that's it. Have the class extend IRandomizable:
+
+```cs
+public class MyCustomMapGen : MapGenModule, IRandomizable
 ```
 
-Here's the complete example for reference:
+and include a setter for the seed within the class:
 
+```cs
+public int Seed { set { seed = value; } }
 ```
+
+##### (1.2.7) Final result:
+
+The final, complete script for reference:
+
+```cs
 using UnityEngine;
 using CaveGeneration.MapGeneration;
 
 namespace CaveGeneration.Modules
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-    public class MapGenPerlinNoise : MapGenModule, IRandomizable
+    public class MyCustomMapGen : MapGenModule, IRandomizable
     {
         // This string determines the name of this type of map generator in the menu.
-        const string menuName = "Perlin Noise";
-        
-        const int tunnelWidth = 2;
-        const float offsetRange = 1000;
+        const string menuName = "My Custom Generator";
 
         // Insert properties to be set in the inspector here
         public int length = 50;
         public int width = 50;
-        public float scale = 0.1f;
-        public float density = 0.5f;
-        public int borderWidth = 1;
+        public float mapDensity = 0.5f;
         public int seed = 0;
-        
+        public int borderSize = 1;
+        public int minWallSize = 50;
+        public int minFloorSize = 50;
+
         public int Seed { set { seed = value; } }
-        
+
         public override Map Generate()
         {
-            Random.InitState(seed);
-            float xOffset = Random.Range(-offsetRange, offsetRange);
-            float yOffset = Random.Range(-offsetRange, offsetRange);
-            
-            Map map = new Map(length, width);
-            map.Transform((x, y) =>
-            {
-                float noiseValue = Mathf.PerlinNoise(xOffset + scale * x, yOffset + scale * y);
-                return noiseValue < density ? Tile.Wall : Tile.Floor;
-            });
-            MapBuilder.ConnectFloors(map, tunnelWidth);
-            return MapBuilder.ApplyBorder(map, borderWidth);
+            Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
+            map.TransformBoundary((x, y) => Tile.Wall);
+            MapBuilder.RemoveSmallFloorRegions(map, minFloorSize);
+            MapBuilder.Smooth(map);
+            MapBuilder.ConnectFloors(map);
+            MapBuilder.RemoveSmallWallRegions(map, minWallSize);
+            map = MapBuilder.ApplyBorder(map, borderSize);
+            return map;
         }
     }
 }
 ```
 
-Now the Cave Generator can automatically randomize the seed for this module without you being forced to manually change it each time.
+#### (1.3) Build your own map generator
+
+##### (1.3.1) Limitations of the default generator
+
+Depending on what type of game you're trying to make, the default generator may not suit your purposes. As an example, if you're trying to build a rogue-like or ARPG (action role playing game) and want to use procedural generation to produce a new cave each play-through, then you're going to have to come up with algorithms to add all content at run-time. But the output of the default generator gives you very little structure to work with. Maybe it will produce a single large room, or maybe a dozen small ones with tunnels connecting them. Maybe the rooms will be thin and tunnel-like, maybe they'll be round and wide. Maybe there will be many paths to any exit you place, maybe there will be just one. All these possibilities make controlling or even constraining the user experience very difficult. 
+
+This is why cellular automata is not typically used for games whose content is generated at run-time - it's too difficult to control. In the future, I intend to flesh this section out, which will likely include one or more new modules more conducive to run-time randomization, and some suggestions for adding content at run-time.
+
+### (2) Height map modules
+
+Defining a height map module is similar to defining a map generator module. We'll give a quick example of a height map based on Perlin Noise to illustrate the key ideas and tools. 
+
+#### (2.1) A simple example: Perlin Noise height map
+
+##### (2.1.1) Template for height map modules
+
+Here's the template:
+
+```cs
+using CaveGeneration.MeshGeneration;
+using CaveGeneration.HeightMaps;
+using UnityEngine;
+
+namespace CaveGeneration.Modules
+{
+    [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
+    public sealed class MyCustomHeightMap : HeightMapModule
+    {
+        // This string determines the name of this type of height map in the menu.
+        const string menuName = "My Custom Height Map";
+
+        // Insert properties to be set in the inspector here
+
+        public override IHeightMap GetHeightMap()
+        {
+            throw new System.NotImplementedException();
+        }
+    } 
+}
+```
+
+##### (2.1.2) Producing IHeightMaps with HeightMapFactory
+
+Unlike map generator modules which requires a Map object, height map modules require an IHeightMap object. While it's possible to define a class to implement this interface directly, it's easier to make use of the HeightMapFactory class. This has a method Build, overloaded to take several different sets of parameters depending on what kind of height map you want. Here are three examples:
+
+```cs
+public static IHeightMap Build(float height); // constant 
+public static IHeightMap Build(float minHeight, float MaxHeight, float scale, int seed); // perlin noise
+public static IHeightMap Build(Func<float, float, float> heightFunction, float minHeight, float maxHeight); // custom
+```
+
+The third method listed here is extremely flexible, as it allows you to pass in any function that takes two floats (an x and a z) and outputs a float (the correspond y value, i.e. height). Let's build a simple perlin noise height map generator with the second listed method. Perlin noise is a type of random number generator that differs from UnityEngine.Random in two important ways: it varies continuously, making it useful for gradual changes, and it takes two parameters, not one, making it ideal for randomly picking a height based on the (x,z) coordinates. scale determines how compressed / spread out the height map will be, and minHeight/maxHeight define the boundary values. 
+
+##### (2.1.3) Complete example
+
+Here's the complete example:
+
+```cs
+using CaveGeneration.MeshGeneration;
+using CaveGeneration.HeightMaps;
+using UnityEngine;
+
+namespace CaveGeneration.Modules
+{
+    [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
+    public sealed class MyCustomHeightMap : HeightMapModule, IRandomizable
+    {
+        const string menuName = "My Custom Height Map";
+        public float scale = 10;
+        public float minHeight = 3;
+        public float maxHeight = 5;
+        public int seed = 0;
+
+        public int Seed { set { seed = value; } }
+        
+        public override IHeightMap GetHeightMap()
+        {
+            return HeightMapFactory.Build(minHeight, maxHeight, scale, seed);
+        }
+    } 
+}
+```
