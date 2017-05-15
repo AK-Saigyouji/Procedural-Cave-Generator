@@ -10,26 +10,6 @@ Either use a sample module provided, or create one using the menu. Samples can b
 
 Each module can be plugged into the CaveGeneratorUI inspector in the appropriately marked spot, or passed as an argument to the CaveGenerator.Generate method if working through code. 
 
-### Workflow
-
-There are three ways to work with the modules.
-
-#### 1: Entirely through the editor
-
-Plug modules into CaveGeneratorUI, generate a desired cave, convert it to a prefab, then work with that prefab directly in the editor. Once converted to a prefab, the modules used become irrelevant. Note that it's very important to use the button on the inspector for CaveGeneratorUI to convert to prefabs: if you simply drag the cave from the hierarchy into the assets, the prefab will not be serialized correctly. 
-
-#### 2: Design in the editor, then rebuild at runtime
-
-A downside to the first approach is that you have to save large meshes as assets. If you're generating large caves, or just a large number of them, this can consume a lot of memory, which can dramatically increase the build size of the game. 
-
-This approach gives you the best of both worlds: save a cave as a prefab, design content for that prefab, then save all the content but destroy the prefab. Then, at run-time, call the Generate method on CaveGeneratorUI with the same modules loaded into it that were used to generate the cave in the first place. This will produce the exact same cave, as long as you uncheck "Randomize Seeds" on CaveGeneratorUI. Alternatively, you can pass the modules as arguments to the CaveGenerator class. 
-
-#### 3: Design and build algorithmically at run-time.
-
-This is by far the most difficult approach, but allows for unlimited content as your game will generate a new, original cave every time. Configure modules to build the kind of caves you want, then pass them into the CaveGenerator class, which will return a Cave object. Through this object, you can access essential information about the cave.
-
-Note that the default map generator can be very difficult to use in this third approach, as there are very few guaranteed constraints on the output: as such, you will likely need to define your own map generator, using a more structured approach so that you have more control on the resulting cave. 
-
 ## Define your own modules
 
 In addition to using and customizing the provided modules, you can write your own based on custom logic and plug them into the cave generator. The rest of this readme covers this process, and the tools provided to make it easier. 
