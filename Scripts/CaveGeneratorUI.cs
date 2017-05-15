@@ -5,6 +5,7 @@ namespace CaveGeneration
 {    
     public sealed class CaveGeneratorUI : MonoBehaviour
     {
+        // Note: changing the name of the cave configuration object will break the custom inspector for this script.
         [SerializeField] CaveConfiguration caveConfig = new CaveConfiguration();
 
         [Tooltip("Select to automatically randomize the seeds of components that use seed values.")]

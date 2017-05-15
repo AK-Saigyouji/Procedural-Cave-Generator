@@ -1,4 +1,19 @@
-﻿using UnityEngine;
+﻿/* This is the custom inspector for CaveGeneratorUI, and thus constitutes the main user interface for the cave
+ generation system. This custom editor was written mainly to add features, rather than customize the appearance
+ of the interface. In particular, the following changes have been made:
+ 
+  1. A button has been added to generate a new cave.
+  2. A button has been added to convert an existing cave to a prefab. 
+  3. Editors for the modules have been added to the inspector.
+  
+   The purpose of 1 is to permit the generation of caves without having to write code. The purpose of 2 is to
+  allow caves to be serialized correctly. Simply dragging the cave from the hierarchy into assets would successfully 
+  create a prefab, but the meshes will disappear when Unity is reloaded. The purpose of 3 is to smooth the iterative
+  process of generating caves: a user may configure the modules, switch to the cave generator, generate a few caves,
+  switch back to a module to tweak a property, switch back, generate a few more caves, see the changes, etc. 
+  By drawing editors for the modules directly onto the inspector, this can be done all in a single inspector.*/
+
+using UnityEngine;
 using UnityEditor;
 using CaveGeneration;
 using System.Collections.Generic;
@@ -17,24 +32,79 @@ public class CaveGeneratorEditor : Editor
     const string CAVE_NAME = "Cave";
     const string PREFAB_NAME = "Cave.prefab";
 
+    // These names must reflect the names of the corresponding variables in CaveGeneratorUI and CaveConfiguration
+    const string CONFIG_NAME = "caveConfig"; 
+    const string MAP_GEN_NAME = "mapGenerator";
+    const string FLOOR_HEIGHTMAP_NAME = "floorHeightMap";
+    const string CEILING_HEIGHTMAP_NAME = "ceilingHeightMap";
+
+    // These variables are used to display the module properties in this inspector (by default they don't).
+    Editor mapGenEditor;
+    Editor floorHeightMapEditor;
+    Editor ceilingHeightMapEditor;
+    const bool DEFAULT_FOLDOUT = false;
+    bool drawMapGenEditor = DEFAULT_FOLDOUT;
+    bool drawFloorHeightMapEditor = DEFAULT_FOLDOUT;
+    bool drawCeilingHeightMapEditor = DEFAULT_FOLDOUT;
+
+    // Inspector labels
+    const string MAP_GEN_MODULE_LABEL = "Map Generator Module";
+    const string FLOOR_HEIGHTMAP_LABEL = "Floor Heightmap Module";
+    const string CEILING_HEIGHTMAP_LABEL = "Ceiling Heightmap Module";
+    const string GENERATE_CAVE_BUTTON_LABEL = "Generate Cave";
+    const string CONVERT_PREFAB_BUTTON_LABEL = "Convert to Prefab";
+
     public override void OnInspectorGUI()
     {
+        serializedObject.Update();
         DrawDefaultInspector();
+        DrawLine();
+        DrawModuleEditor(MAP_GEN_MODULE_LABEL, MAP_GEN_NAME, ref drawMapGenEditor, ref mapGenEditor);
+        DrawLine();
+        DrawModuleEditor(FLOOR_HEIGHTMAP_LABEL, FLOOR_HEIGHTMAP_NAME, ref drawFloorHeightMapEditor, ref floorHeightMapEditor);
+        DrawLine();
+        DrawModuleEditor(CEILING_HEIGHTMAP_LABEL, CEILING_HEIGHTMAP_NAME, ref drawCeilingHeightMapEditor, ref ceilingHeightMapEditor);
+        DrawLine();
+
+        DrawButtons();
+
+        serializedObject.ApplyModifiedProperties();
+    }
+
+    void DrawButtons()
+    {
         CaveGeneratorUI caveGenerator = (CaveGeneratorUI)target;
         if (Application.isPlaying)
         {
-            if (GUILayout.Button("Generate New Map"))
+            if (GUILayout.Button(GENERATE_CAVE_BUTTON_LABEL))
             {
                 DestroyCave();
                 caveGenerator.Generate();
             }
 
-            if (GUILayout.Button("Create Prefab"))
+            if (GUILayout.Button(CONVERT_PREFAB_BUTTON_LABEL))
             {
                 TryCreatePrefab();
                 DestroyCave();
             }
         }
+    }
+
+    void DrawModuleEditor(string label, string moduleName, ref bool drawEditor, ref Editor editor)
+    {
+        if (drawEditor = EditorGUILayout.Foldout(drawEditor, label))
+        {
+            SerializedProperty module = serializedObject.FindProperty(CONFIG_NAME).FindPropertyRelative(moduleName);
+            CreateCachedEditor(module.objectReferenceValue, null, ref editor);
+            EditorGUI.indentLevel++;
+            editor.OnInspectorGUI();
+            EditorGUI.indentLevel--;
+        }
+    }
+
+    void DrawLine()
+    {
+        EditorGUILayout.LabelField(string.Empty, GUI.skin.horizontalSlider);
     }
 
     void DestroyCave()

@@ -8,7 +8,9 @@ namespace CaveGeneration.Modules
     [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + "Rocky")]
     public sealed class HeightMapRocky : HeightMapModule, IRandomizable
     {
-        [SerializeField] LayeredNoiseParameters properties = new LayeredNoiseParameters();
+        [SerializeField]
+        [HideInInspector]
+        LayeredNoiseParameters properties = new LayeredNoiseParameters();
 
         public LayeredNoiseParameters Properties
         {

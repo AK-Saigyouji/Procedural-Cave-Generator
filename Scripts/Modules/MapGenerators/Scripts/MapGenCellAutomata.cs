@@ -7,7 +7,10 @@ namespace CaveGeneration.Modules
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + "Cellular Automata (Default)")]
     public sealed class MapGenCellAutomata : MapGenModule, IRandomizable
     {
-        [SerializeField] MapParameters properties = new MapParameters();
+        [SerializeField]
+        [HideInInspector]
+        MapParameters properties = new MapParameters();
+
         public MapParameters Properties
         {
             get { return properties; }
@@ -30,7 +33,8 @@ namespace CaveGeneration.Modules
             MapBuilder.RemoveSmallFloorRegions(map, properties.MinFloorSize);
             MapBuilder.ConnectFloors(map, properties.Seed, TUNNEL_RADIUS);
             MapBuilder.RemoveSmallWallRegions(map, properties.MinWallSize);
-            return MapBuilder.ApplyBorder(map, properties.BorderSize);
+            map = MapBuilder.ApplyBorder(map, properties.BorderSize);
+            return map;
         }
 
         int IRandomizable.Seed { set { properties.Seed = value; } }
