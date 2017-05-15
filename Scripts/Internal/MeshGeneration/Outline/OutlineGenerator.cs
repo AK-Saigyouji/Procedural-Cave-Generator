@@ -20,6 +20,7 @@ from the starting point to recover the remaining points.
 The biggest room for optimization has to do with the choice of data structures. Two dictionaries are used for the 
 lookup tables and a hashset is used to keep track of visited points. C# implementations of these structures are very
 heavyweight, and might be sped up dramatically by careful use of arrays with manually managed integral indices.
+
 Positions in this algorithm are represented by a struct that admits of a natural, unique index. 
 */
 
@@ -30,39 +31,16 @@ namespace CaveGeneration.MeshGeneration
 {
     static class OutlineGenerator
     {
-        // This gives us the squarepoints corresponding to the outlines in each square.
-        // e.g. configuration 1 gives us just the bottom-right triangle, which has one outline edge
-        // running from point 3 (mid-right) to 5 (down-mid). The order is always such that
-        // the triangle is to the right of the edge when travelling from the first point to the second.
-        static readonly byte[][] outlineTable = new byte[][]
-        {
-            new byte[] { },           //  0: empty
-            new byte[] {7, 5 },       //  1: bottom-left triangle
-            new byte[] {5, 3 },       //  2: bottom-right triangle
-            new byte[] {7, 3 },       //  3: bottom half
-            new byte[] {3, 1 },       //  4: top-right triangle
-            new byte[] {7, 1, 3, 5 }, //  5: all but top-left and bottom-right triangles
-            new byte[] {5, 1 },       //  6: right half
-            new byte[] {7, 1 },       //  7: all but top-left triangle
-            new byte[] {1, 7 },       //  8: top-left triangle
-            new byte[] {1, 5 },       //  9: left half
-            new byte[] {5, 7, 1, 3 }, // 10: all but bottom-left and top-right
-            new byte[] {1, 3 },       // 11: all but top-right
-            new byte[] {3, 7 },       // 12: top half
-            new byte[] {3, 5 },       // 13: all but bottom-right
-            new byte[] {5, 7 },       // 14: all but bottom-left
-            new byte[] {}             // 15: full square
-        };
-
         public static List<Vector3[]> Generate(WallGrid grid)
         {
+            byte[][] outlineTable = BuildOutlineTable();
             byte[,] configurations = MarchingSquares.ComputeConfigurations(grid);
-            int numOutlineEdges = CountOutlineEdges(configurations);
-            TwoWayLookup outlineLookup = CreateLookupTable(numOutlineEdges, configurations);
+            int numOutlineEdges = CountOutlineEdges(configurations, outlineTable);
+            TwoWayLookup outlineLookup = CreateLookupTable(configurations, outlineTable, numOutlineEdges);
 
             var outlines = new List<Vector3[]>();
             var visited = new HashSet<LocalPosition>();
-            foreach (var pair in outlineLookup.EnumerateBackwards())
+            foreach (var pair in outlineLookup)
             {
                 if (!visited.Contains(pair.Key))
                 {
@@ -92,13 +70,40 @@ namespace CaveGeneration.MeshGeneration
             return outlines;
         }
 
+        static byte[][] BuildOutlineTable()
+        {
+            // This table gives us the squarepoints corresponding to the outlines in each square.
+            // e.g. configuration 2 gives us just the bottom-right triangle, which has one outline edge
+            // running from point 3 (mid-right) to 5 (down-mid). The order is always such that
+            // the triangle is to the right of the edge when travelling from the first point to the second.
+            return new byte[][]
+            {
+                new byte[] { },           //  0: empty
+                new byte[] {7, 5 },       //  1: bottom-left triangle
+                new byte[] {5, 3 },       //  2: bottom-right triangle
+                new byte[] {7, 3 },       //  3: bottom half
+                new byte[] {3, 1 },       //  4: top-right triangle
+                new byte[] {7, 1, 3, 5 }, //  5: all but top-left and bottom-right triangles
+                new byte[] {5, 1 },       //  6: right half
+                new byte[] {7, 1 },       //  7: all but top-left triangle
+                new byte[] {1, 7 },       //  8: top-left triangle
+                new byte[] {1, 5 },       //  9: left half
+                new byte[] {5, 7, 1, 3 }, // 10: all but bottom-left and top-right
+                new byte[] {1, 3 },       // 11: all but top-right
+                new byte[] {3, 7 },       // 12: top half
+                new byte[] {3, 5 },       // 13: all but bottom-right
+                new byte[] {5, 7 },       // 14: all but bottom-left
+                new byte[] {}             // 15: full square
+            };
+        }
+
         static void AddToOutline(List<LocalPosition> outline, LocalPosition item, HashSet<LocalPosition> visited)
         {
             visited.Add(item);
             outline.Add(item);
         }
 
-        static int CountOutlineEdges(byte[,] configurations)
+        static int CountOutlineEdges(byte[,] configurations, byte[][] outlineTable)
         {
             int length = configurations.GetLength(0);
             int width = configurations.GetLength(1);
@@ -114,7 +119,7 @@ namespace CaveGeneration.MeshGeneration
             return numOutlinePoints / 2;
         }
 
-        static TwoWayLookup CreateLookupTable(int capacity, byte[,] configurations)
+        static TwoWayLookup CreateLookupTable(byte[,] configurations, byte[][] outlineTable, int capacity)
         {
             var lookupTable = new TwoWayLookup(capacity);
             int length = configurations.GetLength(0);
@@ -146,7 +151,7 @@ namespace CaveGeneration.MeshGeneration
             return vertices;
         }
 
-        sealed class TwoWayLookup
+        private sealed class TwoWayLookup
         {
             readonly Dictionary<LocalPosition, LocalPosition> forwardLookup;
             readonly Dictionary<LocalPosition, LocalPosition> backwardLookup;
@@ -173,20 +178,12 @@ namespace CaveGeneration.MeshGeneration
                 return backwardLookup.TryGetValue(key, out value);
             }
 
-            public IEnumerable<KeyValuePair<LocalPosition, LocalPosition>> EnumerateForwards()
+            /// <summary>
+            /// The enumerator will return pairs backwards, i.e. in (end, start) form. 
+            /// </summary>
+            public Dictionary<LocalPosition, LocalPosition>.Enumerator GetEnumerator()
             {
-                foreach (var pair in forwardLookup)
-                {
-                    yield return pair;
-                }
-            }
-
-            public IEnumerable<KeyValuePair<LocalPosition, LocalPosition>> EnumerateBackwards()
-            {
-                foreach (var pair in backwardLookup)
-                {
-                    yield return pair;
-                }
+                return backwardLookup.GetEnumerator();
             }
         }
 
