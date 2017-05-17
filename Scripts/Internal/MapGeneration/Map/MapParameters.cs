@@ -4,8 +4,8 @@ using UnityEngine;
 namespace CaveGeneration.MapGeneration
 {
     /// <summary>
-    /// Convenience class for passing parameters for the map generator across interfaces. Properties can be set through
-    /// code or inspector.
+    /// Convenience class that groups up the properties for a cellular automata map generator and all the defaults and
+    /// validation logic.
     /// </summary>
     [Serializable]
     public sealed class MapParameters
@@ -115,26 +115,26 @@ namespace CaveGeneration.MapGeneration
 
         #region VALUES
         const int MINIMUM_LENGTH = 5;
-        const int DEFAULT_LENGTH = 75;
+        const int DEFAULT_LENGTH = 45;
         const int MAXIMUM_LENGTH = short.MaxValue;
 
         const int MINIMUM_WIDTH = 5;
-        const int DEFAULT_WIDTH = 75;
+        const int DEFAULT_WIDTH = 45;
         const int MAXIMUM_WIDTH = short.MaxValue;
 
         const int MINIMUM_BORDER_SIZE = 0;
         const int DEFAULT_BORDER_SIZE = 1;
-        const int MAXIMUM_BORDER_SIZE = 1000;
+        const int MAXIMUM_BORDER_SIZE = ushort.MaxValue;
 
         const float MINIMUM_MAP_DENSITY = 0f;
         const float DEFAULT_MAP_DENSITY = 0.5f;
         const float MAXIMUM_MAP_DENSITY = 1f;
 
         const int MINIMUM_FLOOR_THRESHOLD = 0;
-        const int DEFAULT_FLOOR_THRESHOLD = 50;
+        const int DEFAULT_FLOOR_THRESHOLD = 25;
 
         const int MINIMUM_WALL_THRESHOLD = 0;
-        const int DEFAULT_WALL_THRESHOLD = 50;
+        const int DEFAULT_WALL_THRESHOLD = 25;
         #endregion
 
         public MapParameters()
@@ -171,41 +171,41 @@ namespace CaveGeneration.MapGeneration
 
         void SetLength(int value)
         {
-            SetParameter(ref length, value, MINIMUM_LENGTH, MAXIMUM_LENGTH);
+            ValidateArgument(value, MINIMUM_LENGTH, MAXIMUM_LENGTH, "Length");
+            length = value;
         }
 
         void SetWidth(int value)
         {
-            SetParameter(ref width, value, MINIMUM_WIDTH, MAXIMUM_WIDTH);
+            ValidateArgument(value, MINIMUM_WIDTH, MAXIMUM_WIDTH, "Width");
+            width = value;
         }
 
         void SetBorderSize(int value)
         {
-            SetParameter(ref borderSize, value, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
+            ValidateArgument(value, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE, "Border");
+            borderSize = value;
         }
 
         void SetMapDensity(float value)
         {
-            SetParameter(ref initialMapDensity, value, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
+            ValidateArgument(value, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY, "Map density");
+            initialMapDensity = value;
         }
 
-        void SetParameter<T>(ref T parameter, T value, T minimum, T maximum) where T: IComparable<T>
+        void ValidateArgument<T>(T value, T minimum, T maximum, string name) where T : IComparable<T>
         {
             bool tooSmall = value.CompareTo(minimum) == -1;
             bool tooBig = value.CompareTo(maximum) == 1;
             if (tooSmall)
             {
-                const string smallErrorFormat = "Parameter {0} must be at least {1}.";
-                throw new ArgumentOutOfRangeException(string.Format(smallErrorFormat, parameter, minimum));
+                const string smallErrorFormat = "{0} must be at least {1}.";
+                throw new ArgumentOutOfRangeException(string.Format(smallErrorFormat, name, minimum));
             }
             else if (tooBig)
             {
-                const string largeErrorFormat = "Parameter {0} must be at most {1}.";
-                throw new ArgumentOutOfRangeException(string.Format(largeErrorFormat, parameter, maximum));
-            }
-            else
-            {
-                parameter = value;
+                const string largeErrorFormat = "{0} must be at most {1}.";
+                throw new ArgumentOutOfRangeException(string.Format(largeErrorFormat, name, maximum));
             }
         }
     } 
