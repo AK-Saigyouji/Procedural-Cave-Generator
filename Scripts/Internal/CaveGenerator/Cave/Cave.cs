@@ -52,18 +52,6 @@ namespace CaveGeneration
             return configuration.Clone();
         }
 
-        /// <summary>
-        /// Builds a utility object that allows for testing if objects collide with this cave's walls. Mainly
-        /// intended for content placement - the cave comes equipped with appropriate colliders to handle
-        /// normal collisions.
-        /// </summary>
-        public CollisionTester BuildCollisionTester()
-        {
-            Map map = configuration.MapGenerator.Generate();
-            var tester = MapConverter.MapToCollisionTester(map, configuration.Scale);
-            return tester;
-        }
-
         public IEnumerable<CaveComponent> GetFloors()
         {
             return sectors.Select(sector => sector.Floor);
