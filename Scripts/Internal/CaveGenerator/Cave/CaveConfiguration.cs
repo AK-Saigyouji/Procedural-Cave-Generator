@@ -126,18 +126,9 @@ namespace CaveGeneration
         public void RandomizeSeeds()
         {
             int randomSeed = Guid.NewGuid().GetHashCode();
-            TrySetSeed(mapGenerator, randomSeed);
-            TrySetSeed(floorHeightMap, randomSeed);
-            TrySetSeed(ceilingHeightMap, randomSeed);
-        }
-
-        void TrySetSeed(ScriptableObject module, int seed)
-        {
-            IRandomizable randomizable = module as IRandomizable;
-            if (randomizable != null)
-            {
-                randomizable.Seed = seed;
-            }
+            mapGenerator.Seed = randomSeed;
+            floorHeightMap.Seed = randomSeed;
+            ceilingHeightMap.Seed = randomSeed;
         }
 
         internal void OnValidate()

@@ -22,6 +22,8 @@ namespace CaveGeneration.HeightMaps
         /// </summary>
         public static IHeightMap Build(float minHeight, float maxHeight, float scale, int seed)
         {
+            ThrowIfHeightsAreInvalid(minHeight, maxHeight);
+
             if (minHeight == maxHeight)
                 return new ConstantHeightMap(minHeight);
 
@@ -35,6 +37,8 @@ namespace CaveGeneration.HeightMaps
         public static IHeightMap Build(float minHeight, float maxHeight, float scale, int seed,
             int numLayers, float amplitudeFactor, float frequencyGrowth)
         {
+            ThrowIfHeightsAreInvalid(minHeight, maxHeight);
+
             if (minHeight == maxHeight || numLayers == 0)
                 return new ConstantHeightMap(minHeight);
 
@@ -47,7 +51,21 @@ namespace CaveGeneration.HeightMaps
         /// </summary>
         public static IHeightMap Build(Func<float, float, float> heightFunction, float minHeight, float maxHeight)
         {
+            if (heightFunction == null)
+                throw new ArgumentNullException("heightFunction");
+
+            ThrowIfHeightsAreInvalid(minHeight, maxHeight);
+
             return new CustomHeightMap(minHeight, maxHeight, heightFunction);
+        }
+
+        /// <summary>
+        /// Throws ArgumentException if min exceeds max, validating the min and max height.
+        /// </summary>
+        static void ThrowIfHeightsAreInvalid(float min, float max)
+        {
+            if (min > max)
+                throw new ArgumentException("Minimum height cannot exceed maximum height.");
         }
     } 
 }

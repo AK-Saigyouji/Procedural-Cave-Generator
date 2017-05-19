@@ -129,7 +129,7 @@ namespace CaveGeneration.MeshGeneration
                 throw new ArgumentNullException("ceilingHeightMap");
 
             if (floorHeightMap.MaxHeight > ceilingHeightMap.MinHeight)
-                throw new ArgumentException("Height values for the floor cannot be greater than for the ceiling.");
+                throw new ArgumentException("The given heightmaps will produce a floor entirely above the ceiling.");
         }
 
         static void ValidateGrid(WallGrid grid)

@@ -233,18 +233,12 @@ public override Map Generate()
 }
 ```
 
-##### (1.2.6) Permitting automatic randomization with IRandomizable
+##### (1.2.6) Permitting automatic randomization
 
-One final important change is to allow the cave generator to hook into this module's seed to automatically randomize it. This is done by having the module implement the IRandomizable interface. This interface has a single setter for a Seed, and that's it. Have the class extend IRandomizable:
-
-```cs
-public class MyCustomMapGen : MapGenModule, IRandomizable
-```
-
-and include a setter for the seed within the class:
+One final important change is to allow the cave generator to hook into this module's seed to automatically randomize it. This is done by overriding the base class Seed setter.
 
 ```cs
-public int Seed { set { seed = value; } }
+public override int Seed { set { seed = value; } }
 ```
 
 ##### (1.2.7) Final result:
@@ -258,7 +252,7 @@ using CaveGeneration.MapGeneration;
 namespace CaveGeneration.Modules
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
-    public class MyCustomMapGen : MapGenModule, IRandomizable
+    public class MyCustomMapGen : MapGenModule
     {
         // This string determines the name of this type of map generator in the menu.
         const string menuName = "My Custom Generator";
@@ -272,7 +266,7 @@ namespace CaveGeneration.Modules
         public int minWallSize = 50;
         public int minFloorSize = 50;
 
-        public int Seed { set { seed = value; } }
+        public override int Seed { set { seed = value; } }
 
         public override Map Generate()
         {
@@ -340,7 +334,7 @@ public static IHeightMap Build(float minHeight, float MaxHeight, float scale, in
 public static IHeightMap Build(Func<float, float, float> heightFunction, float minHeight, float maxHeight); // custom
 ```
 
-The third method listed here is extremely flexible, as it allows you to pass in any function that takes two floats (an x and a z) and outputs a float (the correspond y value, i.e. height). Let's build a simple perlin noise height map generator with the second listed method. Perlin noise is a type of random number generator that differs from UnityEngine.Random in two important ways: it varies continuously, making it useful for gradual changes, and it takes two parameters, not one, making it ideal for randomly picking a height based on the (x,z) coordinates. scale determines how compressed / spread out the height map will be, and minHeight/maxHeight define the boundary values. 
+The third method listed here is extremely flexible, as it allows you to pass in any function that takes two floats (an x and a z) and outputs a float (the correspond y value, i.e. height). Let's build a simple perlin noise height map generator with the second listed method. Perlin noise is a special type of random number generator which produces continuous random values based on two input floats. scale determines how compressed / spread out the height map will be, and minHeight/maxHeight define the boundary values. 
 
 ##### (2.1.3) Complete example
 
@@ -354,7 +348,7 @@ using UnityEngine;
 namespace CaveGeneration.Modules
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
-    public sealed class MyCustomHeightMap : HeightMapModule, IRandomizable
+    public sealed class MyCustomHeightMap : HeightMapModule
     {
         const string menuName = "My Custom Height Map";
         public float scale = 10;
@@ -362,7 +356,7 @@ namespace CaveGeneration.Modules
         public float maxHeight = 5;
         public int seed = 0;
 
-        public int Seed { set { seed = value; } }
+        public override int Seed { set { seed = value; } }
         
         public override IHeightMap GetHeightMap()
         {

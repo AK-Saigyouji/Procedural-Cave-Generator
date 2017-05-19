@@ -92,14 +92,9 @@ public class CaveGeneratorEditor : Editor
 
     void DrawModuleEditor(string label, string moduleName, ref bool drawEditor, ref Editor editor)
     {
-        if (drawEditor = EditorGUILayout.Foldout(drawEditor, label))
-        {
-            SerializedProperty module = serializedObject.FindProperty(CONFIG_NAME).FindPropertyRelative(moduleName);
-            CreateCachedEditor(module.objectReferenceValue, null, ref editor);
-            EditorGUI.indentLevel++;
-            editor.OnInspectorGUI();
-            EditorGUI.indentLevel--;
-        }
+        SerializedProperty module = serializedObject.FindProperty(CONFIG_NAME).FindPropertyRelative(moduleName);
+        Object targetObject = module.objectReferenceValue;
+        EditorHelpers.DrawFoldoutEditor(label, targetObject, ref drawEditor, ref editor);
     }
 
     void DrawLine()

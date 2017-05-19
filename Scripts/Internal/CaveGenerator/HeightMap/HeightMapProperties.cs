@@ -6,29 +6,29 @@ namespace CaveGeneration.HeightMaps
     [Serializable]
     public sealed class LayeredNoiseParameters
     {
-        [Tooltip(HEIGHT_MAP_MIN_HEIGHT)]
+        [Tooltip(MIN_HEIGHT_TOOLTIP)]
         [SerializeField]
         float minHeight;
         public float MinHeight { get { return minHeight; } }
 
-        [Tooltip(HEIGHT_MAP_MAX_HEIGHT)]
+        [Tooltip(MAX_HEIGHT_TOOLTIP)]
         [SerializeField]
         float maxHeight;
         public float MaxHeight { get { return maxHeight; } }
 
-        [Tooltip(HEIGHT_MAP_SMOOTHNESS)]
+        [Tooltip(SMOOTHNESS_TOOLTIP)]
         [Range(MIN_SMOOTHNESS, MAX_SMOOTHNESS)]
         [SerializeField]
         float smoothness;
         public float Smoothness { get { return smoothness; } }
 
-        [Tooltip(HEIGHT_MAP_NUM_LAYERS)]
+        [Tooltip(NUM_LAYERS_TOOLTIP)]
         [Range(MIN_NUM_LAYERS, MAX_NUM_LAYERS)]
         [SerializeField]
         int numLayers;
         public int NumLayers { get { return numLayers; } }
 
-        [Tooltip(HEIGHT_MAP_CONTRIBUTION_MULT)]
+        [Tooltip(CONTRIBUTION_MULT_TOOLTIP)]
         [Range(MIN_CONTRIBUTION_MULT, MAX_CONTRIBUTION_MULT)]
         [SerializeField]
         float contributionMult;
@@ -40,28 +40,20 @@ namespace CaveGeneration.HeightMaps
         float compressionMult;
         public float CompressionMult { get { return compressionMult; } }
 
-        [SerializeField]
-        int seed;
-        public int Seed
-        {
-            get { return seed; }
-            set { seed = value; }
-        }
-
-        const string HEIGHT_MAP_MIN_HEIGHT =
+        const string MIN_HEIGHT_TOOLTIP =
             @"Minimum y-value for the height map.";
 
-        const string HEIGHT_MAP_MAX_HEIGHT =
+        const string MAX_HEIGHT_TOOLTIP =
             @"Maximum y-value for the height map.";
 
-        const string HEIGHT_MAP_SMOOTHNESS =
+        const string SMOOTHNESS_TOOLTIP =
             @"How smooth the height map is initially - think rolling hills vs jagged mountains.";
 
-        const string HEIGHT_MAP_NUM_LAYERS =
+        const string NUM_LAYERS_TOOLTIP =
             @"The number of height maps to stack onto eachother, each rockier and with smaller contribution to add
 finer variations. Set the next two properties to control the contribution of each layer.";
 
-        const string HEIGHT_MAP_CONTRIBUTION_MULT =
+        const string CONTRIBUTION_MULT_TOOLTIP =
             @"What proportion of each subsequent layer to use. e.g. 0.5 means each layer provides half the contribution
  of the previous layer.";
 
@@ -95,7 +87,6 @@ finer variations. Set the next two properties to control the contribution of eac
             contributionMult = DEFAULT_CONTRIBUTION_MULT;
             compressionMult  = DEFAULT_COMPRESSION_MULT;
             numLayers        = DEFAULT_NUM_LAYERS;
-            seed = Guid.NewGuid().GetHashCode();
         }
 
         /// <summary>
@@ -142,7 +133,7 @@ finer variations. Set the next two properties to control the contribution of eac
         /// <summary>
         /// Construct a heightmap from these properties.
         /// </summary>
-        public MeshGeneration.IHeightMap ToHeightMap()
+        public MeshGeneration.IHeightMap ToHeightMap(int seed)
         {
             return HeightMapFactory.Build(
                 minHeight: minHeight, 
