@@ -15,6 +15,7 @@ using UnityEngine;
 
 namespace CaveGeneration.MapGeneration
 {
+    [Serializable]
     /// <summary>
     /// Similar to Vector2 but for integers, Coord is designed with coordinate grids (2d arrays) in mind. 
     /// Handles coordinates between -32768 and 32767. Unlike Vector2, Coord is immutable.
@@ -73,12 +74,12 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// (0,0).
         /// </summary>
-        public static readonly Coord zero = new Coord(0, 0);
+        public Coord Zero { get { return new Coord(0, 0); } }
 
         /// <summary>
         /// (1,1).
         /// </summary>
-        public static readonly Coord one  = new Coord(1, 1);
+        public Coord One { get { return new Coord(1, 1); } }
 
         /// <summary>
         /// Get the Euclidean distance between this coordinate and the given one.
@@ -179,6 +180,9 @@ namespace CaveGeneration.MapGeneration
             return string.Format("({0},{1})", x, y);
         }
 
+        /// <summary>
+        /// Enumerates a line of coordinates between two points.
+        /// </summary>
         public struct Enumerable : IEnumerable<Coord>
         {
             readonly Coord start, end;

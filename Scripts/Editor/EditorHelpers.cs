@@ -82,7 +82,8 @@ public static class EditorHelpers
     /// <param name="foldout">Current state of the foldout (true is open, false is closed).</param>
     public static void DrawFoldoutEditor(string label, Object targetObject, ref bool foldout, ref Editor editor)
     {
-        if (foldout = EditorGUILayout.Foldout(foldout, label))
+        foldout = EditorGUILayout.Foldout(foldout, label);
+        if (foldout && targetObject != null)
         {
             Editor.CreateCachedEditor(targetObject, null, ref editor);
             EditorGUI.indentLevel++;

@@ -9,5 +9,11 @@ namespace CaveGeneration.Modules
         protected const string rootMenuPath = "Cave Generation/Height Maps/";
 
         public abstract IHeightMap GetHeightMap();
+
+        public IHeightMap GetHeightMap(int seed)
+        {
+            Seed = seed;
+            return GetHeightMap();
+        }
     } 
 }

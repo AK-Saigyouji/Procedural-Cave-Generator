@@ -1,13 +1,7 @@
-﻿/* This class represents a 2D grid of Tiles, and has functionality focused on facilitating the generation
-of such a grid. 
- 
- A major design decision was the use of array type for the underlying grid. The three obvious choices
-are a 2D array, a jagged array, and a flat array. Initially 2D arrays were chosen for maximal readability. 
-The other two options were tested, but found to offer no significant performance improvement. Thus 2D arrays remain,
-despite normally offering significantly worse performance.
- */
+﻿/* This class represents a 2D grid of Tiles, and offers low level functionality for this purpose.*/
 
 using System;
+using UnityEngine;
 
 namespace CaveGeneration.MapGeneration
 {
@@ -73,6 +67,32 @@ namespace CaveGeneration.MapGeneration
             Copy(other.grid);
         }
 
+        /// <summary>
+        /// Copy the values from the other map into this one, with the given offset. i.e. for each (x, y) in 
+        /// other's bounds, we take this[x + offset.x, y + offset.y] = other[x, y].
+        /// </summary>
+        public void CopyRegion(Map other, Coord offset)
+        {
+            if (other == null)
+                throw new ArgumentNullException();
+
+            if (length < other.Length + offset.x || width < other.Width + offset.y)
+                throw new ArgumentOutOfRangeException("Other does not fit into this map with this offset.");
+
+            if (offset.x < 0 || offset.y < 0)
+                throw new ArgumentOutOfRangeException("Cannot have negative offset.");
+
+            int xOffset = offset.x;
+            int yOffset = offset.y;
+            for (int y = 0; y < other.Width; y++)
+            {
+                for (int x = 0; x < other.Length; x++)
+                {
+                    grid[x + xOffset, y + yOffset] = other[x, y];
+                }
+            }
+        }
+
         void Copy(Tile[,] other)
         {
             for (int y = 0; y < width; y++)
@@ -82,6 +102,46 @@ namespace CaveGeneration.MapGeneration
                     grid[x, y] = other[x, y];
                 }
             }
+        }
+
+        /// <summary>
+        /// Fill the entire map with the given type of Tile. 
+        /// </summary>
+        public void Fill(Tile tileType)
+        {
+            for (int y = 0; y < width; y++)
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    grid[x, y] = tileType;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set the 9 points around the given center (inclusive) to floors. Works on edge tiles.
+        /// </summary>
+        public void CarveSquare(int xCenter, int yCenter)
+        {
+            int xMin = Mathf.Max(0, xCenter - 1);
+            int yMin = Mathf.Max(0, yCenter - 1);
+            int xMax = Mathf.Min(length - 1, xCenter + 1);
+            int yMax = Mathf.Min(width - 1, yCenter + 1);
+            for (int y = yMin; y <= yMax; y++)
+            {
+                for (int x = xMin; x <= xMax; x++)
+                {
+                    grid[x, y] = Tile.Floor;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Set the 9 points around the given center (inclusive) to floors. Works on edge tiles.
+        /// </summary>
+        public void CarveSquare(Coord center)
+        {
+            CarveSquare(center.x, center.y);
         }
 
         /// <summary>

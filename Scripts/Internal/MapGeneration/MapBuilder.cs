@@ -102,20 +102,8 @@ namespace CaveGeneration.MapGeneration
         /// and this method is taking too long, consider removing rooms below a certain threshold in size.
         /// </summary>
         /// <param name="tunnelRadius">How wide the carved paths should be. Must be nonnegative. If 0, method does nothing.</param>
-        public static void ConnectFloors(Map inputMap, int tunnelRadius = 1)
-        {
-            int seed = new System.Random().Next(int.MinValue, int.MaxValue);
-            ConnectFloors(inputMap, seed, tunnelRadius);
-        }
-
-        /// <summary>
-        /// Ensure connectivity between all regions of floors in the map by carving paths between them. 
-        /// Run time is polynomial in the number of floor regions: if generating a large map with many small rooms 
-        /// and this method is taking too long, consider removing rooms below a certain threshold in size.
-        /// </summary>
-        /// <param name="tunnelRadius">How wide the carved paths should be. Must be nonnegative. If 0, method does nothing.</param>
         /// <param name="seed">Fixes the randomness used in carving out the paths.</param>
-        public static void ConnectFloors(Map inputMap, int seed, int tunnelRadius = 1)
+        public static void ConnectFloors(Map inputMap, int seed = 0, int tunnelRadius = 1)
         {
             if (tunnelRadius == 0)
                 return;
@@ -242,11 +230,11 @@ namespace CaveGeneration.MapGeneration
         /// </summary>
         static void ClearNeighbours(Map map, Coord center, int radius)
         {
-            // Ensure we don't step off the map and into an index exception
-            int xMin = Mathf.Max(0, center.x - radius);
-            int yMin = Mathf.Max(0, center.y - radius);
-            int xMax = Mathf.Min(map.Length - 1, center.x + radius);
-            int yMax = Mathf.Min(map.Width - 1, center.y + radius);
+            Boundary boundary = new Boundary(1, map.Length - 2, 1, map.Width - 2);
+            int xMin = center.x - radius;
+            int yMin = center.y - radius;
+            int xMax = center.x + radius;
+            int yMax = center.y + radius;
             // Look at each x,y in a square surrounding the center, but only remove those that fall within
             // the circle of given radius. 
             int squaredRadius = radius * radius;
@@ -254,7 +242,7 @@ namespace CaveGeneration.MapGeneration
             {
                 for (int x = xMin; x <= xMax; x++)
                 {
-                    if (IsInCircle(new Coord(x, y), center, squaredRadius))
+                    if (boundary.IsInBounds(x, y) && IsInCircle(new Coord(x, y), center, squaredRadius))
                     {
                         map[x, y] = Tile.Floor;
                     }

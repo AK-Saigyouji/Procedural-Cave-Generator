@@ -36,7 +36,7 @@ You can also create caves entirely through code by adding the CaveGeneration nam
 
 To customize and build caves entirely through code, you can use the CaveGenerator (not CaveGeneratorUI) static class. It has a method Generate which takes a CaveConfiguration object. This object's properties match those seen in the inspector for CaveGeneratorUI and can be configured through its exposed properties. 
 
-## 3 Workflow
+## 3. Workflow
 
 There are three ways to work with the generator.
 
@@ -50,11 +50,15 @@ A downside to the first approach is that you have to save large meshes as assets
 
 This approach gives you the best of both worlds: save a cave as a prefab, design content for that prefab, then save all the content but destroy the prefab. Then, at run-time, call the Generate method on CaveGeneratorUI with the same modules loaded into it that were used to generate the cave in the first place. This will produce the exact same cave, as long as you uncheck "Randomize Seeds" on CaveGeneratorUI. Alternatively, you can pass the modules as arguments to the CaveGenerator class directly.
 
+If taking this approach, be sure to save the modules you used when generating the prefab. You'll want to duplicate the modules you used and store those duplicates somewhere safe. If you mutate the module (e.g. by generating a random cave with it, causing the seed to be rerolled) you won't be able to rebuild the cave unless you've saved all of its properties somewhere. 
+
 #### 3.3 Design and build algorithmically at run-time.
 
 This is by far the most difficult approach, but allows for unlimited content as your game will generate a new, original cave every time. Configure modules to build the kind of caves you want, build a CaveConfiguration object, then pass them it to the CaveGenerator class, which will return a Cave object. You can then use this object to design algorithms to place content based on the resulting structure of the cav.e 
 
-Note that the default map generator can be difficult to use in this third approach, as there are few guaranteed constraints on the output: as such, you will likely need to define your own map generator, using a more structured approach so that you have more control over the resulting cave's structure to make content easier to place.
+Note that the default map generator can be difficult to use in this third approach, as there are few guaranteed constraints on the output: as such, you will likely need to define your own map generator, using a more structured approach so that you have more control over the resulting cave's structure to make content easier to place. 
+
+A very useful tool for generating run-time caves is the compound module, which allows you to stitch together multiple smaller caves, giving you complete control over the global structure while being highly randomized locally. See the readme in Modules for more information about compound modules.
 
 ## 4. Acknowledgements
 

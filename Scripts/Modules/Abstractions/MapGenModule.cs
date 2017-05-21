@@ -12,5 +12,11 @@ namespace CaveGeneration.Modules
         protected const string rootMenupath = "Cave Generation/Map Generators/";
 
         public abstract Map Generate();
+
+        public Map Generate(int seed)
+        {
+            Seed = seed;
+            return Generate();
+        }
     } 
 }
