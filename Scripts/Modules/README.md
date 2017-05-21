@@ -3,10 +3,10 @@
 This folder contains modules: customizable Scriptable Objects that define core parts of the cave generator. Currently there are two types of modules: map generators and height maps. 
 
 ## Table of Contents
-[0. Introduction](#introduction)
-[1. Building map modules](#map-modules)
-[2. Building heightmap modules](#heightmap-modules)
-[3. Advanced customization with compound modules](#compound-modules)
+0. [Introduction](#introduction)
+1. [Building map modules](#map-modules)
+2. [Building heightmap modules](#heightmap-modules)
+3. [Advanced customization with compound modules](#compound-modules)
 
 ### <a name="introduction"></a>0. Introduction
 
