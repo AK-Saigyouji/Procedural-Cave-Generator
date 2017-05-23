@@ -48,8 +48,8 @@ namespace CaveGeneration.MeshGeneration
         const Square AllButBotRight = Square.Bot | Square.TopRight | Square.BotLeft  | Square.TopLeft | Square.Right;
         const Square AllButBotLeft  = Square.Bot | Square.TopRight | Square.BotRight | Square.TopLeft | Square.Left;
 
-        const Square AllButTopLeftOrBotRight = TopRightTriangle | BottomLeftTriangle;
-        const Square AllButTopRightOrBotLeft = TopLeftTriangle  | BottomRightTriangle;
+        const Square TopRightAndBotLeft = TopRightTriangle | BottomLeftTriangle;
+        const Square TopLeftAndBotRight = TopLeftTriangle  | BottomRightTriangle;
 
         const Square FullSquare = Square.TopLeft | Square.TopRight | Square.BotRight | Square.BotLeft;
 
@@ -102,7 +102,7 @@ namespace CaveGeneration.MeshGeneration
                 case 14:
                     return x + y >= 0.5f;
                 default:
-                    throw new ArgumentException("Configuration must be between 0 and 15 inclusive.", "configuration");
+                    throw new ArgumentOutOfRangeException("Configuration must be between 0 and 15 inclusive.", "configuration");
             }
         }
 
@@ -126,12 +126,12 @@ namespace CaveGeneration.MeshGeneration
                 BottomRightTriangle,      //  2
                 BottomHalf,               //  3
                 TopRightTriangle,         //  4
-                AllButTopLeftOrBotRight,  //  5
+                TopRightAndBotLeft,       //  5
                 RightHalf,                //  6
                 AllButTopLeft,            //  7
                 TopLeftTriangle,          //  8 
                 LeftHalf,                 //  9
-                AllButTopRightOrBotLeft,  // 10
+                TopLeftAndBotRight,       // 10
                 AllButTopRight,           // 11
                 TopHalf,                  // 12
                 AllButBotRight,           // 13

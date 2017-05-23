@@ -133,8 +133,10 @@ namespace CaveGeneration.MapGeneration
             {
                 Coord start = connection.tileA;
                 Coord end = connection.tileB;
-                IEnumerable<Coord> path = mapTunneler.GetPath(start, end);
-                CarveTunnel(map, path, tunnelRadius);
+                foreach (Coord tile in mapTunneler.GetPath(start, end))
+                {
+                    ClearNeighbours(map, tile, tunnelRadius);
+                }
             }
             inputMap.Copy(map);
         }
@@ -215,14 +217,6 @@ namespace CaveGeneration.MapGeneration
                 }
             }
             return 2 * numWalls >= numTiles ? Tile.Wall : Tile.Floor;
-        }
-
-        static void CarveTunnel(Map map, IEnumerable<Coord> path, int radius)
-        {
-            foreach (Coord tile in path)
-            {
-                ClearNeighbours(map, tile, radius);
-            }
         }
 
         /// <summary>

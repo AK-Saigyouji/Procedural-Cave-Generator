@@ -1,4 +1,6 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CaveGeneration.MeshGeneration
 {
@@ -12,7 +14,8 @@ namespace CaveGeneration.MeshGeneration
 
         public static MeshData BuildWalls(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            return WallBuilder.Build(grid, floorHeightMap, ceilingHeightMap);
+            var outlines = OutlineGenerator.Generate(grid);
+            return WallBuilder.Build(outlines, floorHeightMap, ceilingHeightMap);
         }
 
         public static MeshData BuildCeiling(WallGrid grid, IHeightMap heightMap)

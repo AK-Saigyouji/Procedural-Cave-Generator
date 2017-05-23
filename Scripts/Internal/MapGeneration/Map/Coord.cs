@@ -74,12 +74,12 @@ namespace CaveGeneration.MapGeneration
         /// <summary>
         /// (0,0).
         /// </summary>
-        public Coord Zero { get { return new Coord(0, 0); } }
+        public static Coord Zero { get { return new Coord(0, 0); } }
 
         /// <summary>
         /// (1,1).
         /// </summary>
-        public Coord One { get { return new Coord(1, 1); } }
+        public static Coord One { get { return new Coord(1, 1); } }
 
         /// <summary>
         /// Get the Euclidean distance between this coordinate and the given one.

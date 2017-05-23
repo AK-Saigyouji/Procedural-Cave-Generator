@@ -15,10 +15,8 @@ namespace CaveGeneration.MeshGeneration
     {
         const float UVSCALE = 10f;
 
-        public static MeshData Build(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        public static MeshData Build(List<Vector3[]> outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            List<Vector3[]> outlines = OutlineGenerator.Generate(grid);
-
             MeshData mesh = new MeshData();
             mesh.vertices  = GetVertices(outlines, floorHeightMap, ceilingHeightMap);
             mesh.uv        = GetUVs(outlines, mesh.vertices);

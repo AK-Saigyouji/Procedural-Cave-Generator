@@ -41,7 +41,7 @@ namespace CaveGeneration.MeshGeneration
         /// <summary>
         /// Create a deep copy of this MeshData.
         /// </summary>
-        public MeshData Clone()
+        public MeshData DeepCopy()
         {
             var mesh = new MeshData();
             mesh.vertices = (Vector3[])vertices.Clone();

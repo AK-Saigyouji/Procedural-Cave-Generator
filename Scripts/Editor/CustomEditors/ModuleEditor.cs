@@ -19,31 +19,41 @@ public sealed class ModuleEditor : Editor
     Editor[] moduleEditors;
     bool[] foldouts;
 
-    void OnEnable()
-    {
-        int numModules = EditorHelpers.GetProperties(serializedObject).Count();
-        moduleEditors = new Editor[numModules];
-        foldouts = new bool[numModules];
-    }
-
     public override void OnInspectorGUI()
     {
         DrawDefaultInspector();
         serializedObject.Update();
+        UpdateModuleEditors();
         int currentEditor = -1;
-        foreach (SerializedProperty property in EditorHelpers.GetProperties(serializedObject))
+        foreach (SerializedProperty property in EditorHelpers.GetProperties(serializedObject).Where(IsModule))
         {
-            if (property.propertyType == SerializedPropertyType.ObjectReference)
+            if (property.objectReferenceValue != serializedObject.targetObject)
             {
+                currentEditor++;
+                string name = property.displayName;
                 UnityEngine.Object obj = property.objectReferenceValue;
-                if (obj is Module)
-                {
-                    currentEditor++;
-                    EditorHelpers.DrawFoldoutEditor(
-                        property.displayName, obj, ref foldouts[currentEditor], ref moduleEditors[currentEditor]);
-                }
+                EditorHelpers.DrawFoldoutEditor(name, obj, ref foldouts[currentEditor], ref moduleEditors[currentEditor]);
+            }
+            else
+            {
+                Debug.LogWarning("Module inserted into itself.");
             }
         }
         serializedObject.ApplyModifiedProperties();
+    }
+
+    void UpdateModuleEditors()
+    {
+        int numModules = EditorHelpers.GetProperties(serializedObject).Where(IsModule).Count();
+        if (moduleEditors == null || numModules > moduleEditors.Length)
+        {
+            moduleEditors = new Editor[numModules];
+            foldouts = new bool[numModules];
+        }
+    }
+
+    bool IsModule(SerializedProperty property)
+    {
+        return (property.propertyType == SerializedPropertyType.ObjectReference) && (property.objectReferenceValue is Module);
     }
 }
