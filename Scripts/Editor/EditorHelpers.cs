@@ -1,7 +1,7 @@
 ﻿/* Editor scripting in Unity is a bit of a mess, with a lot of magic numbers, undocumented features, and
  a less than intuitive API based on .NET reflection. This is a collection of commonly used functionality and 
  constants for editor scripting. Much of the functionality wraps existing functions, providing a more
- intuitive API, albeit one that is still very error prone.
+ intuitive API, albeit one that still has to be used very carefully to avoid errors.
  
   The iteration logic over properties requires some explanation. In the context of editors, a SerializedObject
  represents a serialized stream for an object being inspected. A SerializedProperty, naturally, is a serialized stream
@@ -26,7 +26,7 @@ using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// A library of helper functions for editor scripts.
+/// A helper library for custom editor and property drawer scripts.
 /// </summary>
 public static class EditorHelpers
 {
@@ -46,7 +46,21 @@ public static class EditorHelpers
     public const int PROPERTY_HEIGHT_TOTAL = PROPERTY_HEIGHT_BASE + PROPERTY_HEIGHT_PADDING;
 
     /// <summary>
-    /// Return all the top level properties for this serialized object.
+    /// The threshold for the inspector to wrap horizontal content to a second line.
+    /// </summary>
+    public const int MIN_WIDTH = 333;
+
+    /// <summary>
+    /// Draw a simple line in the inspector, for visual purposes.
+    /// </summary>
+    public static void DrawLine()
+    {
+        EditorGUILayout.LabelField(string.Empty, GUI.skin.horizontalSlider);
+    }
+
+    /// <summary>
+    /// Return all the top level properties for this serialized object. Do not alter the iterator returned
+    /// by this method, and note that its state will be invalidated by the next yield.
     /// </summary>
     public static IEnumerable<SerializedProperty> GetProperties(this SerializedObject serializedObject)
     {
@@ -64,6 +78,7 @@ public static class EditorHelpers
     /// </summary>
     public static IEnumerable<SerializedProperty> GetChildren(this SerializedProperty property)
     {
+        Assert.IsNotNull(property);
         var currentProperty = property.Copy();
         var finalProperty = property.GetEndProperty();
         bool hasNext = currentProperty.NextVisible(true);
@@ -82,6 +97,7 @@ public static class EditorHelpers
     /// <param name="foldout">Current state of the foldout (true is open, false is closed).</param>
     public static void DrawFoldoutEditor(string label, Object targetObject, ref bool foldout, ref Editor editor)
     {
+        Assert.IsNotNull(label);
         foldout = EditorGUILayout.Foldout(foldout, label);
         if (foldout && targetObject != null)
         {
@@ -95,9 +111,9 @@ public static class EditorHelpers
     /// <summary>
     /// Returns the height necessary to house the GUI provided by DrawSimpleGUI.
     /// </summary>
-    /// <returns></returns>
     public static int GetHeightForSimpleGUI(SerializedProperty property)
     {
+        Assert.IsNotNull(property);
         int numChildren = GetChildren(property).Count();
         return numChildren * PROPERTY_HEIGHT_TOTAL - PROPERTY_HEIGHT_PADDING;
     }
@@ -108,6 +124,8 @@ public static class EditorHelpers
     /// </summary>
     public static void DrawSimpleGUI(Rect position, SerializedProperty property, GUIContent label)
     {
+        Assert.IsNotNull(property);
+        Assert.IsNotNull(label);
         EditorGUI.BeginProperty(position, label, property);
         position.height = PROPERTY_HEIGHT_BASE;
         foreach (var child in GetChildren(property))
@@ -116,24 +134,5 @@ public static class EditorHelpers
             position.y += PROPERTY_HEIGHT_TOTAL;
         }
         EditorGUI.EndProperty();
-    }
-
-    public static string AppendToPath(string path, string toAppend)
-    {
-        Assert.IsNotNull(path);
-        Assert.IsNotNull(toAppend);
-        return string.Format("{0}/{1}", path, toAppend);
-    }
-
-    /// <summary>
-    /// Similar to AssetDatabase.CreateFolder but returns the path to the created folder instead of the guid.
-    /// </summary>
-    public static string CreateFolder(string path, string name)
-    {
-        Assert.IsNotNull(path);
-        Assert.IsNotNull(name);
-        string guid = AssetDatabase.CreateFolder(path, name);
-        string folderPath = AssetDatabase.GUIDToAssetPath(guid);
-        return folderPath;
     }
 }

@@ -114,7 +114,7 @@ namespace CaveGeneration.MapGeneration.GraphAlgorithms
         /// <param name="target">The new tile.</param>
         static bool FoundEdgeTile(Coord source, Coord target, Map map)
         {
-            var interior = new Boundary(1, map.Length - 1, 1, map.Width - 1);
+            var interior = new Boundary(1, map.Length - 2, 1, map.Width - 2);
             int x = target.x, y = target.y;
             return map.IsFloor(x, y)
                 && (!interior.IsInBounds(x, y) || map.IsAdjacentToWall(x, y))

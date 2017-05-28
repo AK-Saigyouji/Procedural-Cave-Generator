@@ -197,14 +197,29 @@ namespace CaveGeneration.MapGeneration
         public bool[,] ToBoolArray(Tile tileType)
         {
             bool[,] bools = new bool[length, width];
+            ToBoolArray(tileType, bools);
+            return bools;
+        }
+
+        /// <summary>
+        /// Instead of returning a new array, reads values into the given boolean grid. Length and width of boolean
+        /// grid must match the map.
+        /// </summary>
+        public void ToBoolArray(Tile tileType, bool[,] boolGrid)
+        {
+            if (boolGrid == null)
+                throw new ArgumentNullException("boolGrid");
+
+            if (length != boolGrid.GetLength(0) || width != boolGrid.GetLength(1))
+                throw new ArgumentException("Boolean grid's size does not match map.");
+
             for (int y = 0; y < width; y++)
             {
                 for (int x = 0; x < length; x++)
                 {
-                    bools[x, y] = grid[x, y] == tileType;
+                    boolGrid[x, y] = grid[x, y] == tileType;
                 }
             }
-            return bools;
         }
 
         /// <exception cref="IndexOutOfRangeException"></exception>
@@ -229,6 +244,20 @@ namespace CaveGeneration.MapGeneration
         public bool IsWall(Coord tile)
         {
             return grid[tile.x, tile.y] == Tile.Wall;
+        }
+
+        /// <summary>
+        /// Returns true if the coordinates correspond to anything other than a valid floor tile. Differs from
+        /// IsWall by returning true for out of range coordinates.
+        /// </summary>
+        public bool IsWallOrVoid(int x, int y)
+        {
+            return 0 > x || x > length - 1 || 0 > y || y > width - 1 || grid[x, y] == Tile.Wall;
+        }
+
+        public bool IsWallOrVoid(Coord coord)
+        {
+            return IsWallOrVoid(coord.x, coord.y);
         }
 
         #region FunctionalExtensions

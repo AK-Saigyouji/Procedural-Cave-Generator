@@ -48,6 +48,14 @@ namespace CaveGeneration.MapGeneration
             set { SetMapDensity(value); }
         }
 
+        [Tooltip(PASSAGE_RADIUS_TOOLTIP)]
+        [SerializeField] int minPassageRadius;
+        public int MinPassageRadius
+        {
+            get { return minPassageRadius; }
+            set { SetPassageRadius(value); }
+        }
+
         [Tooltip(BORDER_SIZE_TOOLTIP)]
         [SerializeField] int borderSize;
         /// <summary>
@@ -84,23 +92,28 @@ namespace CaveGeneration.MapGeneration
 
         #region TOOLTIPS
         const string LENGTH_TOOLTIP =
-            @"Number of units across in the x-axis occupied by the map.";
+            "Number of units across in the x-axis occupied by the map.";
 
         const string WIDTH_TOOLTIP =
-            @"Number of units across in the z-axis occupied by the map.";
+            "Number of units across in the z-axis occupied by the map.";
+
+        const string PASSAGE_RADIUS_TOOLTIP =
+            "Ensures the map can be traversed by an object bounded by a ball of this radius by expanding floors"
+        + " as necessary. Use cautiously, and avoid using a higher value than is necessary, as it can destroy the map's structure." 
+        + " Run time scales with the radius.";
 
         const string DENSITY_TOOLTIP = 
-            @"Initial proportion of walls in the map, from 0 to 1. Note that the final proportion will likely be
- very different due to the various processing steps. Experiment to achieve desired proportion.";
+            "Initial proportion of walls in the map, from 0 to 1. Note that the final proportion will likely be"
+        + " very different due to the various processing steps. Experiment to achieve desired proportion.";
 
         const string BORDER_SIZE_TOOLTIP =
-            @"The width of extra boundary around the map.";
+            "The width of extra boundary around the map. Each unit of border adds 2 units to final length and width.";
 
         const string MIN_WALL_SIZE_TOOLTIP =
-            @"Contiguous sections of wall with a tile count below this number will be removed (turned to floor tiles).";
+            "Contiguous sections of wall with a tile count below this number will be removed (turned to floor tiles).";
 
         const string MIN_FLOOR_SIZE_TOOLTIP = 
-            @"Contiguous sections of floor with a tile count below this number will be removed (turned to wall tiles).";
+            "Contiguous sections of floor with a tile count below this number will be removed (turned to wall tiles).";
         #endregion
 
         #region VALUES
@@ -115,6 +128,10 @@ namespace CaveGeneration.MapGeneration
         const int MINIMUM_BORDER_SIZE = 0;
         const int DEFAULT_BORDER_SIZE = 1;
         const int MAXIMUM_BORDER_SIZE = ushort.MaxValue;
+
+        const int MINIMUM_PASSAGE_RADIUS = 0;
+        const int DEFAULT_PASSAGE_RADIUS = 0;
+        const int MAXIMUM_PASSAGE_RADIUS = int.MaxValue;
 
         const float MINIMUM_MAP_DENSITY = 0f;
         const float DEFAULT_MAP_DENSITY = 0.5f;
@@ -146,7 +163,10 @@ namespace CaveGeneration.MapGeneration
             length            = Mathf.Clamp(length, MINIMUM_LENGTH, MAXIMUM_LENGTH);
             width             = Mathf.Clamp(width, MINIMUM_WIDTH, MAXIMUM_WIDTH);
             initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
+            minPassageRadius  = Mathf.Clamp(minPassageRadius, MINIMUM_PASSAGE_RADIUS, MAXIMUM_PASSAGE_RADIUS);
             borderSize        = Mathf.Clamp(borderSize, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
+            minWallSize       = Mathf.Max(minWallSize, MINIMUM_WALL_THRESHOLD);
+            minFloorSize      = Mathf.Max(minFloorSize, MINIMUM_FLOOR_THRESHOLD);
         }
 
         void Reset()
@@ -154,6 +174,7 @@ namespace CaveGeneration.MapGeneration
             length            = DEFAULT_LENGTH;
             width             = DEFAULT_WIDTH;
             initialMapDensity = DEFAULT_MAP_DENSITY;
+            minPassageRadius  = DEFAULT_PASSAGE_RADIUS;
             borderSize        = DEFAULT_BORDER_SIZE;
             minWallSize       = DEFAULT_WALL_THRESHOLD;
             minFloorSize      = DEFAULT_FLOOR_THRESHOLD;
@@ -169,6 +190,12 @@ namespace CaveGeneration.MapGeneration
         {
             ValidateArgument(value, MINIMUM_WIDTH, MAXIMUM_WIDTH, "Width");
             width = value;
+        }
+
+        void SetPassageRadius(int value)
+        {
+            ValidateArgument(value, MINIMUM_PASSAGE_RADIUS, MAXIMUM_PASSAGE_RADIUS, "MinPassageRadius");
+            minPassageRadius = value;
         }
 
         void SetBorderSize(int value)

@@ -17,6 +17,6 @@ namespace CaveGeneration.Modules
         /// <summary>
         /// Fixes any randomness possessed by this module. Does nothing if this module does not possess randomness.
         /// </summary>
-        public virtual int Seed { set { } }
+        public virtual int Seed { get { return 0; } set { } }
     }
 }

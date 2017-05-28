@@ -13,12 +13,14 @@ namespace CaveGeneration.Modules
     public sealed class MapGenEntranceCarver : MapGenModule
     {
         [Tooltip("This is the module for which entrances are being carved.")]
-        [SerializeField] MapGenModule mapGenerator;
+        [SerializeField]
+        MapGenModule mapGenerator;
 
         [SerializeField] int seed;
 
         [Tooltip("The entrances/exists themselves. Select a side of the boundary, then the X or Y value along that side.")]
-        [SerializeField] BoundaryPoint[] entrances;
+        [SerializeField]
+        BoundaryPoint[] entrances;
 
         /// <summary>
         /// This is the module for which entrances are being carved.
@@ -33,7 +35,7 @@ namespace CaveGeneration.Modules
             }
         }
 
-        public override int Seed { set { seed = value; } }
+        public override int Seed { get { return seed; } set { seed = value; } }
 
         public IEnumerable<BoundaryPoint> GetBoundaryPoints()
         {

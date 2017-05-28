@@ -33,7 +33,8 @@ namespace CaveGeneration.Modules
         {
             var wallGrid = new WallGrid(new byte[size, size], Vector3.zero, scale);
             IHeightMap heightMap = heightMapModule.GetHeightMap();
-            return MeshGenerator.GenerateFloorMesh(wallGrid, heightMap);
+            MeshData preMesh = MeshGenerator.BuildFloor(wallGrid, heightMap);
+            return preMesh.CreateMesh();
         }
 
         void Awake()

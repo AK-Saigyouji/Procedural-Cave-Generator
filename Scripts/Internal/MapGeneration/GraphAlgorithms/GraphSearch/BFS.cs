@@ -57,10 +57,16 @@ namespace CaveGeneration.MapGeneration.GraphAlgorithms
         // By using an appropriately initialized visited array, this BFS does not need a reference to the map at all:
         // All the tiles of the wrong type have already been marked as visited, so by discovering all unvisited 
         // regions, we're getting exactly the regions of the desired type.
-        static List<Coord> GetConnectedRegion(int xStart, int yStart, bool[,] visited)
+
+        /// <summary>
+        /// Get the connected region of unvisited tiles starting at this point.
+        /// </summary>
+        public static List<Coord> GetConnectedRegion(int xStart, int yStart, bool[,] visited)
         {
+            Assert.IsNotNull(visited);
             int xMax = visited.GetLength(0);
             int yMax = visited.GetLength(1);
+            Assert.IsTrue(0 <= xStart && xStart < xMax && 0 <= yStart && yStart < yMax);
             var tiles = new List<Coord>();
 
             var queue = new Queue<Coord>();

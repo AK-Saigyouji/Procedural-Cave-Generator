@@ -1,19 +1,16 @@
-﻿/* This class stores the output of the mesh generator system, and is designed to hide a bit of complexity 
- having to do with the fact that Meshes cannot be created or manipulated outside of the main thread. Originally,
- using the cave generator required three steps: creating a mesh generator, calling a generate method which did the
- work of determining the cave geometry, and then extracting the meshes which built actual Mesh objects. 
- The first two steps could be done on multiple threads, but the third had to be done on the main thread.
+﻿/* This class was designed to package together the meshes needed to produce a three tiered cave. It uses
+ lazy initialization to allow the creation of actual meshes to be deferred as long as possible.
  
-  Ideally, the mesh generator should be a static, stateless class, and generation should be doable with a single
- static method. This class was designed to facilitate this, through lazy initialization. Instead of returning
- the meshes, the cave generator returns this object, which builds the meshes when they're requested.*/
+  None of the components are mandatory, allowing partial caves to be built. This is useful when generating
+ the other components using a different technique.*/
 
 using UnityEngine;
+using System;
 
 namespace CaveGeneration.MeshGeneration
 {
     /// <summary>
-    /// Output of the mesh generator, containing the meshes needed to produce a cave.
+    /// An object containing one or more meshes for a three tier cave.
     /// </summary>
     public sealed class CaveMeshes
     {
@@ -25,19 +22,48 @@ namespace CaveGeneration.MeshGeneration
         MeshData wallData;
         MeshData ceilingData;
 
-        internal CaveMeshes(MeshData floor, MeshData walls, MeshData ceiling)
+        internal CaveMeshes(MeshData floor = null, MeshData walls = null, MeshData ceiling = null)
         {
+            if (floor == null && walls == null && ceiling == null)
+                throw new ArgumentException("Must pass at least one non-null mesh.");
+
             floorData = floor;
             wallData = walls;
             ceilingData = ceiling;
         }
 
+        internal CaveMeshes(Mesh floor = null, Mesh walls = null, Mesh ceiling = null)
+        {
+            if (floor == null && walls == null && ceiling == null)
+                throw new ArgumentException("Must pass at least one non-null mesh.");
+
+            floorMesh = floor;
+            wallMesh = walls;
+            ceilingMesh = ceiling;
+        }
+
+        public bool HasWallMesh { get { return wallData != null || wallMesh != null; } }
+        public bool HasFloorMesh { get { return floorData != null || floorMesh != null; } }
+        public bool HasCeilingMesh { get { return ceilingData != null || ceilingMesh != null; } }
+
+        // For the following extraction methods, we check if the mesh is defined. If it is, we return it.
+        // If it's not, we check for the data needed to build the mesh. If present, we build the mesh,
+        // store it, and cache it for future calls. 
+        // If both are missing, an exception is thrown.
+
         public Mesh ExtractFloorMesh()
         {
             if (floorMesh == null)
             {
-                floorMesh = floorData.CreateMesh();
-                floorData = null;
+                if (floorData == null)
+                {
+                    throw new InvalidOperationException("Does not contain a floor mesh.");
+                }
+                else
+                {
+                    floorMesh = floorData.CreateMesh();
+                    floorData = null;
+                }
             }
             return floorMesh;
         }
@@ -46,8 +72,15 @@ namespace CaveGeneration.MeshGeneration
         {
             if (wallMesh == null)
             {
-                wallMesh = wallData.CreateMesh();
-                wallData = null;
+                if (wallData == null)
+                {
+                    throw new InvalidOperationException("Does not contain a wall mesh.");
+                }
+                else
+                {
+                    wallMesh = wallData.CreateMesh();
+                    wallData = null;
+                }
             }
             return wallMesh;
         }
@@ -56,8 +89,15 @@ namespace CaveGeneration.MeshGeneration
         {
             if (ceilingMesh == null)
             {
-                ceilingMesh = ceilingData.CreateMesh();
-                ceilingData = null;
+                if (ceilingData == null)
+                {
+                    throw new InvalidOperationException("Does not contain a wall mesh.");
+                }
+                else
+                {
+                    ceilingMesh = ceilingData.CreateMesh();
+                    ceilingData = null;
+                }
             }
             return ceilingMesh;
         }

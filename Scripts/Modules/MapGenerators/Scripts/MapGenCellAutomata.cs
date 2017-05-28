@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using CaveGeneration.MapGeneration;
+using CaveGeneration.MapGeneration.GraphAlgorithms;
 using System;
+using System.Collections.Generic;
 
 namespace CaveGeneration.Modules
 {
@@ -20,9 +22,7 @@ namespace CaveGeneration.Modules
             }
         }
 
-        public override int Seed { set { seed = value; } }
-
-        const int TUNNEL_RADIUS = 1;
+        public override int Seed { get { return seed; } set { seed = value; } }
 
         public override Map Generate()
         {
@@ -30,7 +30,8 @@ namespace CaveGeneration.Modules
             map.TransformBoundary((x, y) => Tile.Wall);
             MapBuilder.Smooth(map);
             MapBuilder.RemoveSmallFloorRegions(map, properties.MinFloorSize);
-            MapBuilder.ConnectFloors(map, seed, TUNNEL_RADIUS);
+            MapBuilder.ConnectFloors(map, seed, Mathf.Max(1, properties.MinPassageRadius));
+            MapBuilder.WidenTunnels(map, properties.MinPassageRadius);
             MapBuilder.RemoveSmallWallRegions(map, properties.MinWallSize);
             map = MapBuilder.ApplyBorder(map, properties.BorderSize);
             return map;

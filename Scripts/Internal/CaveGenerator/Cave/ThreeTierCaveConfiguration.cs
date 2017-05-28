@@ -1,6 +1,7 @@
 ﻿using CaveGeneration.MeshGeneration;
 using CaveGeneration.Modules;
 using System;
+using System.Text;
 using UnityEngine;
 
 namespace CaveGeneration
@@ -9,7 +10,7 @@ namespace CaveGeneration
     /// <summary>
     /// Complete set of information necessary to build a cave. 
     /// </summary>
-    public sealed class CaveConfiguration
+    public sealed class ThreeTierCaveConfiguration
     {
         #region properties
 
@@ -83,7 +84,7 @@ namespace CaveGeneration
             }
         }
 
-        public CaveType CaveType
+        public ThreeTierCaveType CaveType
         {
             get { return caveType; }
             set { caveType = value; }
@@ -98,12 +99,12 @@ namespace CaveGeneration
         [SerializeField] Material wallMaterial;
         [SerializeField] Material ceilingMaterial;
         [SerializeField] int scale;
-        [SerializeField] CaveType caveType;
+        [SerializeField] ThreeTierCaveType caveType;
 
         const int MIN_SCALE = 1;
         const int DEFAULT_SCALE = 1;
 
-        public CaveConfiguration()
+        public ThreeTierCaveConfiguration()
         {
             scale = DEFAULT_SCALE;
         }
@@ -111,34 +112,44 @@ namespace CaveGeneration
         /// <summary>
         /// Copies the configuration. Materials receive a shallow copy, everything else receives a deep copy.
         /// </summary>
-        public CaveConfiguration Clone()
+        public ThreeTierCaveConfiguration Clone()
         {
-            var newConfig = (CaveConfiguration)MemberwiseClone();
+            var newConfig = (ThreeTierCaveConfiguration)MemberwiseClone();
             newConfig.mapGenerator = ScriptableObject.Instantiate(mapGenerator);
             newConfig.floorHeightMap = ScriptableObject.Instantiate(floorHeightMap);
             newConfig.ceilingHeightMap = ScriptableObject.Instantiate(ceilingHeightMap);
             return newConfig;
         }
 
-        /// <summary>
-        /// This will randomize the seed of components that use a seed value.
-        /// </summary>
-        public void RandomizeSeeds()
+        public void SetSeed(int seed)
         {
-            int randomSeed = Guid.NewGuid().GetHashCode();
-            mapGenerator.Seed = randomSeed;
-            floorHeightMap.Seed = randomSeed;
-            ceilingHeightMap.Seed = randomSeed;
+            mapGenerator.Seed = seed;
+            floorHeightMap.Seed = seed;
+            ceilingHeightMap.Seed = seed;
+        }
+
+        /// <summary>
+        /// All the properties are in valid state, i.e. ready to be used to generate a cave.
+        /// </summary>
+        public string Validate()
+        {
+            var sb = new StringBuilder();
+
+            if (mapGenerator == null)
+                sb.AppendLine("No map generator assigned.");
+
+            if (floorHeightMap == null)
+                sb.AppendLine("No height map assigned for the floor.");
+
+            if (ceilingHeightMap == null)
+                sb.AppendLine("No height map assigned for the ceiling.");
+
+            return sb.ToString();
         }
 
         internal void OnValidate()
         {
             scale = Mathf.Max(MIN_SCALE, scale);
-        }
-
-        internal void Reset()
-        {
-            scale = MIN_SCALE;
         }
     } 
 }

@@ -6,7 +6,7 @@ using CaveGeneration.MeshGeneration;
 namespace CaveGeneration
 {
     /// <summary>
-    /// Represents a chunk of the cave. Contains references to a floor, ceiling and walls.
+    /// Represents a chunk of the cave. Contains references to the ceiling, wall and floor components.
     /// </summary>
     public sealed class Sector
     {
@@ -16,24 +16,32 @@ namespace CaveGeneration
         public CaveComponent Walls { get; private set; }
         public CaveComponent Floor { get; private set; }
 
-        const string sectorName = "Sector";
-        const string wallName = "Walls";
-        const string ceilingName = "Ceiling";
-        const string floorName = "Floor";
+        const string SECTOR_NAME = "Sector";
+        const string WALL_NAME = "Walls";
+        const string CEILING_NAME = "Ceiling";
+        const string FLOOR_NAME = "Floor";
 
         internal Sector(CaveMeshes caveMeshes, Coord coordinates)
         {
             string index = coordinates.ToString();
             
-            GameObject = new GameObject(AppendIndex(sectorName, index));
+            GameObject = new GameObject(AppendIndex(SECTOR_NAME, index));
 
-            Ceiling = new CaveComponent(caveMeshes.ExtractCeilingMesh(), AppendIndex(ceilingName, index), false);
-            Walls   = new CaveComponent(caveMeshes.ExtractWallMesh(), AppendIndex(wallName, index), true);
-            Floor   = new CaveComponent(caveMeshes.ExtractFloorMesh(), AppendIndex(floorName, index), true);
-
-            SetChild(Ceiling);
-            SetChild(Walls);
-            SetChild(Floor);
+            if (caveMeshes.HasCeilingMesh)
+            {
+                Ceiling = new CaveComponent(caveMeshes.ExtractCeilingMesh(), AppendIndex(CEILING_NAME, index), addCollider: false);
+                SetChild(Ceiling);
+            }
+            if (caveMeshes.HasFloorMesh)
+            {
+                Floor = new CaveComponent(caveMeshes.ExtractFloorMesh(), AppendIndex(FLOOR_NAME, index), true);
+                SetChild(Floor);
+            }
+            if (caveMeshes.HasWallMesh)
+            {
+                Walls = new CaveComponent(caveMeshes.ExtractWallMesh(), AppendIndex(WALL_NAME, index), true);
+                SetChild(Walls);
+            }
         }
 
         public static bool IsFloor(Transform transform)
@@ -41,7 +49,7 @@ namespace CaveGeneration
             if (transform == null)
                 return false;
 
-            return transform.name.Contains(floorName);
+            return transform.name.Contains(FLOOR_NAME);
         }
 
         public static bool IsWall(Transform transform)
@@ -49,7 +57,7 @@ namespace CaveGeneration
             if (transform == null)
                 return false;
 
-            return transform.name.Contains(wallName);
+            return transform.name.Contains(WALL_NAME);
         }
 
         public static bool IsCeiling(Transform transform)
@@ -57,12 +65,12 @@ namespace CaveGeneration
             if (transform == null)
                 return false;
 
-            return transform.name.Contains(ceilingName);
+            return transform.name.Contains(CEILING_NAME);
         }
 
         void SetChild(CaveComponent component)
         {
-            component.GameObject.transform.parent = GameObject.transform;
+            component.GameObject.SetParent(GameObject.transform);
         }
 
         string AppendIndex(string name, string index)

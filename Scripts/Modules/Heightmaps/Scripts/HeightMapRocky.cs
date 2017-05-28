@@ -21,7 +21,7 @@ namespace CaveGeneration.Modules
             }
         }
 
-        public override int Seed { set { seed = value; } }
+        public override int Seed { get { return seed; } set { seed = value; } }
 
         public override IHeightMap GetHeightMap()
         {

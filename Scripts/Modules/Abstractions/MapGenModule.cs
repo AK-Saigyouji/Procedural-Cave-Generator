@@ -8,7 +8,7 @@ namespace CaveGeneration.Modules
     /// </summary>
     public abstract class MapGenModule : Module
     {
-        protected const string fileName = "Map Generator";
+        protected const string fileName = "MapGenerator";
         protected const string rootMenupath = "Cave Generation/Map Generators/";
 
         public abstract Map Generate();

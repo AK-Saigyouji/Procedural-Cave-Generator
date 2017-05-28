@@ -15,7 +15,7 @@ namespace CaveGeneration.MeshGeneration
     /// Holds core data necessary to build a mesh. Can use outside of the main thread, unlike the Mesh class in the Unity API.
     /// Note that for performance reasons accessing data does not produce copies, so be careful about altering state.
     /// </summary>
-    sealed class MeshData
+    public sealed class MeshData
     {
         public Vector3[] vertices { get; set; }
         public Vector2[] uv { get; set; }
