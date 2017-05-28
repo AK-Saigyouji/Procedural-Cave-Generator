@@ -6,6 +6,8 @@ This is a highly customizable, scalable system for generating randomized 3D cave
 
 ![3D cave with height map](http://i.imgur.com/sBi6T2U.jpg)
 
+![Rock outline cave](http://i.imgur.com/U93AITz.jpg)
+
 ![Enclosed cave](http://i.imgur.com/GS2n1Nu.jpg)
 
 Note: The textures themselves are from an excellent free asset pack called [Natural Tiling Textures](https://www.assetstore.unity3d.com/en/#!/content/35173) by Terramorph Workshop. 
@@ -18,23 +20,27 @@ The Modules folder contains the customizable components of the generator, in the
 
 HeightMapVisualizer is an editor-only monobehaviour that draws a height map and automatically updates it in response to changes in the height map's properties. This facilitates the exploration of the relationship between a height map's properties and the end result, without having to bounce between the cave generator and the height map module.
 
+In all cases, the generated caves consist entirely of core Unity objects, ensuring compatibility with other tools. 
+
 ## 2. Quickstart
 
 ### 2.1 In editor
 
-Create a new empty game object, and attach the CaveGeneratorUI script. Set the properties in the inspector. You can find sample modules for the Map Generator, Floor Height Map and Ceiling Height Map slots in the Modules folder.
+Create a new empty game object, and attach the CaveGeneratorUI script. Set the properties in the inspector. You can find sample modules in the Modules folder, or alternatively you can click the selection circle beside the module slots, and find them under 'Assets'. You will need to supply your own materials, and if using the Rock Outline generator, also the rock prefabs. High quality materials and rock assets can be found for free on the Unity store.
 
-Run the scene, and you will see two buttons appear in the inspector: Generate New Cave and Create Prefab. Generating a new map will create a new cave, overwriting any previously generated cave. Creating a prefab will convert the current cave into a prefab and save it into your directory in a folder called "GeneratedCave" along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. Once a cave has been converted to a prefab, it retains no dependency on the CaveGenerator, nor on any script from this project: it's composed entirely of core Unity objects.
+Run the scene, and you will see two buttons appear in the inspector: Generate New Cave and Create Prefab. Generating New Cave will create a new cave, overwriting any previously generated cave. Creating a prefab will convert the current cave into a prefab and save it into your directory in a folder called "GeneratedCave" along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. 
 
-The modules required by the generator are Scriptable Objects and can themselves be configured. You can also create additional ones by going through the menu: Assets -> Create -> Cave Generation and selecting the appropriate options, or by duplicating an existing module. This allows you to define specific configurations of the various modules and save them as independent assets. 
+The modules required by the generator are Scriptable Objects and can themselves be configured. You can also create additional ones by going through the menu: Assets -> Create -> Cave Generation and selecting the appropriate options, or by duplicating an existing module. This allows you to define specific configurations of the various modules and save them as independent assets without writing serialization code.
+
+There are two types of generators currently available: Three Tiered and Rock Outline. Three tiered builds three meshes for the floor, ceiling and walls and is available as isometric (first image above) or enclosed (third image above). Rock outline builds just a floor, and then instantiates rock prefabs along the outlines of the floor (second image above). Multiple rock prefabs can be assigned in the inspector, and the generator will randomly pick from them. A weight can be assigned to each prefab to make certain prefabs instantiated more frequently than others. Note that in order for the prefab to be oriented correctly, make sure it's rotated so that the long side runs along the z-axis.
 
 ### 2.2 In code
 
 Note: the API for the cave generator has gone through a complete redesign several times already, and this may happen again in the future. As such, backward compatibility should not be expected in a given version.
 
-You can also create caves entirely through code by adding the CaveGeneration namespace. The simple way is to configure a CaveGeneratorUI in the editor, then call its Generate method through code. 
+You can also create caves entirely through code by adding the CaveGeneration namespace. The simple way is to configure a CaveGeneratorUI in the editor, then call the appropriate Generate method.
 
-To customize and build caves entirely through code, you can use the CaveGenerator (not CaveGeneratorUI) static class. It has a method Generate which takes a CaveConfiguration object. This object's properties match those seen in the inspector for CaveGeneratorUI and can be configured through its exposed properties. 
+To customize and build caves entirely through code, you can use the CaveGenerator (not CaveGeneratorUI) class. It is a static class, not a MonoBehaviour. It has Generate methods that take corresponding Configuration objects, used to package together modules and materials. 
 
 ## 3. Workflow
 
@@ -58,7 +64,7 @@ This is by far the most difficult approach, but allows for unlimited content as 
 
 Note that the default map generator can be difficult to use in this third approach, as there are few guaranteed constraints on the output: as such, you will likely need to define your own map generator, using a more structured approach so that you have more control over the resulting cave's structure to make content easier to place. 
 
-A very useful tool for generating run-time caves is the compound module, which allows you to stitch together multiple smaller caves, giving you complete control over the global structure while being highly randomized locally. See the readme in Modules for more information about compound modules.
+A very useful tool for generating run-time caves is the compound module, which allows you to stitch together multiple smaller caves, giving you complete control over the global structure while being highly randomized locally. See the readme in Modules for more information about constructing compound modules.
 
 ## 4. Acknowledgements
 

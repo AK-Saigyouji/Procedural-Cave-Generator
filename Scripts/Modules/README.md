@@ -6,7 +6,8 @@ This folder contains modules: customizable Scriptable Objects that define core p
 0. [Introduction](#introduction)
 1. [Building map modules](#map-modules)
 2. [Building heightmap modules](#heightmap-modules)
-3. [Advanced customization with compound modules](#compound-modules)
+3. [Outline modules](#outline-modules)
+4. [Advanced customization with compound modules](#compound-modules)
 
 ### <a name="introduction"></a>0. Introduction
 
@@ -88,7 +89,7 @@ Now that we have an instance of a map generator module, we can plug it into a Ca
 
 ![Diagonal Cave](http://imgur.com/eeANGGC.jpeg)
 
-This covers the basics of creating a new module. Next we'll walk through an example that builds up the default map generator, to illustrate additional useful tools, and also to better understand the default generator and its customizable properties. We'll cover methods on the Map class, as well as the MapBuilder class which provides some more advanced functionality. 
+This covers the basics of creating a new module. Next we'll walk through an example that builds up the default map generator, to illustrate additional useful tools, and also to better understand the default generator and its customizable properties. We'll cover methods on the Map class, as well as the MapBuilder class which provides some more advanced functionality. Note that this example may become out of date if features are added to the default generator, but you can always inspect the source code for this generator directly to see the most up to date version.
 
 #### 1.2 Building the default generator
 
@@ -129,7 +130,7 @@ It's certainly random, but not very structured. We can apply a smoothing functio
 public static void Smooth(Map inputMap, int iterations = 5);
 ```
 
-This method is based on cellular automata, a well known technique in procedural generation for producing cavernous terrain. It has the benefit of looking more a lot more natural than a lot of other techniques, with the downside that the final result is difficult to control.
+This method is based on cellular automata, a well known technique in procedural generation for producing cavernous terrain. It has the benefit of looking more natural than many other techniques, with the downside that the final result is difficult to control.
 
 ```cs
 public override Map Generate()
@@ -239,10 +240,10 @@ public override Map Generate()
 
 ##### 1.2.6 Permitting automatic randomization
 
-One final important change is to allow the cave generator to hook into this module's seed to automatically randomize it. This is done by overriding the base class Seed setter.
+One final important change is to allow the cave generator to hook into this module's seed to automatically randomize it. This is done by overriding the base class Seed property.
 
 ```cs
-public override int Seed { set { seed = value; } }
+public override int Seed { get { return seed; } set { seed = value; } }
 ```
 
 ##### 1.2.7 Final result:
@@ -270,7 +271,7 @@ namespace CaveGeneration.Modules
         public int minWallSize = 50;
         public int minFloorSize = 50;
 
-        public override int Seed { set { seed = value; } }
+        public override int Seed { get { return seed; } set { seed = value; } }
 
         public override Map Generate()
         {
@@ -291,9 +292,9 @@ namespace CaveGeneration.Modules
 
 ##### 1.3.1 Limitations of the default generator
 
-Depending on what type of game you're trying to make, the default generator may not suit your purposes. As an example, if you're trying to build a rogue-like or ARPG (action role playing game) and want to use procedural generation to produce a new cave each play-through, then you're going to have to come up with algorithms to add all content at run-time. But the output of the default generator gives you very little structure to work with. Maybe it will produce a single large room, or maybe a dozen small ones with tunnels connecting them. Maybe the rooms will be thin and tunnel-like, maybe they'll be round and wide. Maybe there will be many paths to any exit you place, maybe there will be just one. All these possibilities make controlling or even constraining the user experience very difficult. 
+Depending on what type of game you're trying to make, the default generator may not suit your purposes. As an example, if you're trying to build a rogue-like or ARPG (action role playing game) and want to use procedural generation to produce a new cave automatically on each play-through, then you're going to have to come up with algorithms to add all content at run-time. But the output of the default generator gives you very little structure to work with. Maybe it will produce a single large room, or maybe a dozen small ones with tunnels connecting them. Maybe the rooms will be thin and tunnel-like, maybe they'll be round and wide. Maybe there will be many paths to any exit you place, maybe there will be just one. All these possibilities make controlling or even constraining the user experience very difficult. 
 
-This is why cellular automata is not typically used for games whose content is generated at run-time - it's too difficult to control. See section (3) for advice on overcoming this limitation.
+This is why cellular automata is not typically used for games whose content is generated at run-time - it's too difficult to control. See the section on compound modules for further information.
 
 ### <a name="heightmap-modules"></a>2. Height map modules
 
@@ -361,7 +362,7 @@ namespace CaveGeneration.Modules
         public float maxHeight = 5;
         public int seed = 0;
 
-        public override int Seed { set { seed = value; } }
+        public override int Seed { get { return seed; } set { seed = value; } }
         
         public override IHeightMap GetHeightMap()
         {
@@ -371,7 +372,13 @@ namespace CaveGeneration.Modules
 }
 ```
 
-### <a name="compound-modules"></a>3. Compound Modules
+### <a name="outline-modules"></a>3. Rock outline modules
+
+Rock outline caves are a newer type of cave that lays down a floor, and then instantiates rocks all along the outlines of the floor. The outline module (OutlineModule) takes an outline in the form of a sequence of Vector3s, and instantiates rocks along it: the default (OutlineEdgeAligned) allows an array of prefabs to be assigned. It instantiates rocks randomly on the midpoint of each edge in the outline, rotating them so that the long side runs along the edge. For this to work correctly, the prefabs need to be rotated so that their long side runs down the z-axis, if applicable (i.e. if it has a longer side).
+
+I will revisit this section in the future to flesh it out.
+
+### <a name="compound-modules"></a>4. Compound Modules
 
 Comound modules are modules that use other modules as parameters. While this could be used in a variety of ways, there are two in particular that I'll mention here.
 
@@ -381,19 +388,19 @@ An example of this pattern is the MapGenEntranceCarver module. It takes an arbit
 
 The second and more substantial use is to modularize the cave itself, giving you more control over its large scale structure. This is extremely useful for creating randomized caves at run-time. 
 
-### 3.1 Modular cave building
+### 4.1 Modular cave building
 
-#### 3.1.1 Introduction
+#### 4.1.1 Introduction
 
 Compelling level design requires some control over what the user experiences and when. To this end, we need some constraints, or guarantees, from our level-building algorithms so that we can write algorithms to place content with some degree of organization. Furthermore, the nature of these guarantees will depend on what kind of game we are trying to build. 
 
-A particularly simple yet effective way to impose such constraints is with a modular level design. We can create a simple graph to describe the large scale structure of our level, then apply a module to each node in the graph to flesh out the level. To take a simple example, let's suppose we have a "Content" module and a "Tunnel" module. A content module could be the default map generator module, for example. A tunnel module could be a fairly simple module that carves a single tunnel between two or more modules. 
+A particularly simple yet effective way to impose such constraints is with a modular level design. We can create a simple graph to describe the large scale structure of our level, then apply a module to each node in the graph to flesh out the level. To take a simple example, let's suppose we have a "Content" module and a "Tunnel" module. A content module could be the default map generator module, for example, or a simple room. A tunnel module could be a fairly simple module that carves a single tunnel between two or more modules. 
 
 With just these two modules, we can develop a large, complex cave with several guaranteed constraints on the large scale topology of the cave system. We could design a simple linear system:
 
     CTCTCTC
 
-Each C is a content module and each T is a tunnel module: we have a sequence of content modules separated by a tunnel. We can safely assume the order in which each room will be entered, and we know for certain that if we put something in any of the tunnel modules, the player will encounter it before reaching the final room. These are assumptions we cannot get if we simply make one large content room. 
+Each C is a content module and each T is a tunnel module: we have a sequence of content modules separated by a tunnel. We can safely assume the order in which each room will be entered, and we know for certain that if we put something in any of the tunnel modules, the player will encounter it before reaching the final room. These are assumptions we cannot get if we simply make one large, randomized content room. 
 
 We can of course make more complex systems:
 
@@ -405,6 +412,6 @@ CTCTB
   C
 ```
 
-Where C and T are as before, and B is a boss room. B could be designed by hand, specifically designed for the boss in question, or with limited randomization. Furthermore, we could implement simple randomization (we need to keep it relatively simple to maintain constraints) to avoid being too predictable. 
+Where C and T are as before, and B is a boss room. B could be designed by hand, specifically designed for the boss in question, or with limited randomization. Furthermore, we could randomize the graph itself. 
 
-In the future, I intend to offer some tools to facilitate this type of modular building. To do so at the moment, you'd need to generate maps out of each room, create a new map object big enough to hold everything, then copy the values from each map onto the new one, translating the points to fit the rooms into the right spots. You may find the CopyRegion method on Map to be useful for this purpose. Something I wish to experiment with is a node-based visual editor for this type of construction, which would allow the construction of such modular graph-based maps without writing code. 
+In the future, I intend to offer some powerful tools to facilitate this type of modular building. To do so at the moment, you'd need to generate maps out of each room, create a new map object big enough to hold everything, then copy the values from each map onto the new one, translating the points to fit the rooms into the right spots. You may find the CopyRegion method on Map to be useful for this purpose. Something I wish to experiment with is a node-based visual editor for this type of construction, which would allow the construction of such modular graph-based maps without writing code.

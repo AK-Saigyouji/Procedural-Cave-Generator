@@ -25,12 +25,14 @@ public sealed class WeightedPrefabDrawer : PropertyDrawer
         propertyRect.width *= 0.6f;
         SerializedProperty prefab = property.FindPropertyRelative(PREFAB_NAME);
         EditorGUI.PropertyField(propertyRect, prefab, GUIContent.none);
+
         propertyRect.x += propertyRect.width + HORIZONTAL_PADDING;
         propertyRect.width *= 0.666f;
         propertyRect.width -= HORIZONTAL_PADDING;
         EditorGUIUtility.labelWidth = LABEL_WIDTH;
         GUIContent weightLabel = new GUIContent("Weight", WEIGHT_TOOLTIP);
-        EditorGUI.PropertyField(propertyRect, property.FindPropertyRelative(WEIGHT_NAME), weightLabel);
+        SerializedProperty weight = property.FindPropertyRelative(WEIGHT_NAME);
+        EditorGUI.PropertyField(propertyRect, weight, weightLabel);
         EditorGUI.EndProperty();
     }
 }

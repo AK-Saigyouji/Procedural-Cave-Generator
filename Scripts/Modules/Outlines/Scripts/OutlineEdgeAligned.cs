@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CaveGeneration.Modules
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + "Edge-Aligned")]
-    public sealed class OutlineAligned : OutlineModule
+    public sealed class OutlineEdgeAligned : OutlineModule
     {
         [SerializeField] WeightedPrefab[] rockPrefabs;
         [SerializeField] int seed;
@@ -37,7 +37,16 @@ namespace CaveGeneration.Modules
             if (rockPrefabs.Length == 0)
                 throw new InvalidOperationException("Must assign at least one rock prefab.");
 
-            return new AlignedPrefabber(seed, rockPrefabs);
+            var prefabPicker = new RandomPrefabPicker(rockPrefabs, seed);
+            return new EdgePrefabber(prefabPicker);
+        }
+
+        void OnValidate()
+        {
+            foreach (WeightedPrefab wPrefab in rockPrefabs)
+            {
+                wPrefab.OnValidate();
+            }
         }
     }
 }

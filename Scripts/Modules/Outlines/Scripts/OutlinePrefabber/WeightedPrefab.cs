@@ -3,7 +3,6 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
-
 namespace CaveGeneration.Modules
 {
     [Serializable]
@@ -15,6 +14,8 @@ namespace CaveGeneration.Modules
         public GameObject Prefab { get { return prefab; } }
         public int Weight { get { return weight; } }
 
+        const int MIN_WEIGHT = 1;
+
         /// <summary>
         /// Represents a prefab with a numerical weight.
         /// </summary>
@@ -24,11 +25,16 @@ namespace CaveGeneration.Modules
             if (prefab == null)
                 throw new ArgumentNullException("prefab");
 
-            if (weight < 1)
+            if (weight < MIN_WEIGHT)
                 throw new ArgumentOutOfRangeException("weight");
 
             this.prefab = prefab;
             this.weight = weight;
+        }
+
+        public void OnValidate()
+        {
+            weight = Mathf.Max(MIN_WEIGHT, weight);
         }
     } 
 }
