@@ -60,7 +60,7 @@ If taking this approach, be sure to save the modules you used when generating th
 
 #### 3.3 Design and build algorithmically at run-time.
 
-This is by far the most difficult approach, but allows for unlimited content as your game will generate a new, original cave every time. Configure modules to build the kind of caves you want, build a CaveConfiguration object, then pass them it to the CaveGenerator class, which will return a Cave object. You can then use this object to design algorithms to place content based on the resulting structure of the cav.e 
+This is by far the most difficult approach, but allows for unlimited content as your game will generate a new, original cave every time. Configure modules to build the kind of caves you want, build a CaveConfiguration object, then pass them to the CaveGenerator class, which will return a Cave object. You can then use this object to design algorithms to place content based on the resulting structure of the cave.
 
 Note that the default map generator can be difficult to use in this third approach, as there are few guaranteed constraints on the output: as such, you will likely need to define your own map generator, using a more structured approach so that you have more control over the resulting cave's structure to make content easier to place. 
 
