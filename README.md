@@ -2,7 +2,15 @@
 
 ## 0. Introduction
 
-This is a highly customizable, scalable system for generating randomized 3D cave terrain in Unity. 
+This is a highly customizable and scalable system for generating randomized 3D cave terrain in Unity. There are a number of systems at play:
+
+The Module system is an extension of ScriptableObject with improved support for composition. The inspector to a module exposes inspectors to all modules in its reference graph, allowing a complex composite module to be customized from a single point. Additionally, the context menu for Modules contains an option for a deep copy, which behaves similar to ScriptableObject.Instantiate, except it copies over every submodule as a subasset, saved to the new copied module. This system is at the heart of the customization provided by the project. 
+
+The Map Generation system provides a wealth of functionality for generating modules capable of producing 2D grids of binary tiles (floors and walls) called Maps. Such functionality includes: a visual editor for producing modules or individual maps by stitching together other modules, which can then be fed back into the editor as building blocks; support for converting between maps and PNG files, meaning you can paint a map in any paint program, then feed it into this system to be used either as a building block for a more complex module, or as a static module itself; and a highly optimized library of algorithms for generating maps in code, covering tasks such as connectivity, cellular automata and randomized tunneling. The Map Generation system can easily be extracted from this project for use in any project that uses 2D grids. 
+
+The Mesh Generation system converts 2D grids (in particular, Maps) into 3D meshes. The heart of this process is the Marching Squares algorithm. 
+
+Finally, the Cave Generation system ties everything together to produce 3D terrain from scratch, relying heavily on modules to make it easy to swap functionality in and out and to author custom modules without touching a line of the original source code.
 
 ![3D cave with height map](http://i.imgur.com/sBi6T2U.jpg)
 
@@ -16,56 +24,76 @@ Note: The textures themselves are from an excellent free asset pack called [Natu
 
 CaveGeneratorUI is your interface to the generator in the editor.
 
-The Modules folder contains the customizable components of the generator, in the form of Scriptable Objects. These can be independently customized and then plugged into the appropriate slots in the CaveGeneratorUI. Furthermore, you can write your own modules to replace the ones provided to customize the structure of the cave using your own algorithms. See the readme in the Modules folder for details on how to do that.
+The Sample Modules folder contains samples of the customizable components of the generator, which can be plugged into the appropriate slots in the CaveGeneratorUI. Furthermore, you can write your own modules to replace the ones provided to customize the structure of the cave using your own algorithms. See the section on Modules for information on writing your own.
 
-HeightMapVisualizer is an editor-only monobehaviour that draws a height map and automatically updates it in response to changes in the height map's properties. This facilitates the exploration of the relationship between a height map's properties and the end result, without having to bounce between the cave generator and the height map module.
+HeightMapVisualizer and MapGenVisualizer are MonoBehaviours that visualize the respective type of module, useful if you want immediate visual feedback while tinkering with the properties of a given module. 
 
-In all cases, the generated caves consist entirely of core Unity objects, ensuring compatibility with other tools. 
+Sample Modules contains sample instances of modules ready to be plugged into CaveGeneratorUI. Additional instances can be created through the Assets->Create menu or by duplicating the existing modules.
+
+Scripts contains the source code. The file structure within Scripts matches the namespace structure of the project. All scripts are contained within namespaces to avoid conflicts with other code in your project. You do not need to touch the source code to use the project, but if you do wish to dig into it or to extract only a part of this project for your own use, then see the readme in Scripts for an overview. As of this writing, there's about a hundred code files split over eleven namespaces. 
 
 ## 2. Quickstart
 
 ### 2.1 In editor
 
-Create a new empty game object, and attach the CaveGeneratorUI script. Set the properties in the inspector. You can find sample modules in the Modules folder, or alternatively you can click the selection circle beside the module slots, and find them under 'Assets'. You will need to supply your own materials, and if using the Rock Outline generator, also the rock prefabs. High quality materials and rock assets can be found for free on the Unity store.
+Create a new empty game object, and attach the CaveGeneratorUI script. Insert sample modules (provided) and materials (not provided), and if using the Rock Outline style of generator, also supply rock prefabs (not provided). High quality materials and rock assets can be found for free on the Unity store. Most modules also have parameters that can be tuned to get the desired result. 
 
-Run the scene, and you will see two buttons appear in the inspector: Generate New Cave and Create Prefab. Generating New Cave will create a new cave, overwriting any previously generated cave. Creating a prefab will convert the current cave into a prefab and save it into your directory in a folder called "GeneratedCave" along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. 
+Run the scene, and you will see two buttons appear in the inspector: Generate New Cave and Create Prefab. Generating New Cave will create a new cave as a child of the generator, overwriting the current child. Creating a prefab will convert the current child into a prefab and save it into your directory along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. It is composed entirely of core unity objects, meaning it retains no dependency on my code. This ensures compatibility with other tools, as well as future patches which may in principle break my code.  
 
-The modules required by the generator are Scriptable Objects and can themselves be configured. You can also create additional ones by going through the menu: Assets -> Create -> Cave Generation and selecting the appropriate options, or by duplicating an existing module. This allows you to define specific configurations of the various modules and save them as independent assets without writing serialization code.
-
-There are two types of generators currently available: Three Tiered and Rock Outline. Three tiered builds three meshes for the floor, ceiling and walls and is available as isometric (first image above) or enclosed (third image above). Rock outline builds just a floor, and then instantiates rock prefabs along the outlines of the floor (second image above). Multiple rock prefabs can be assigned in the inspector, and the generator will randomly pick from them. A weight can be assigned to each prefab to make certain prefabs instantiated more frequently than others. Note that in order for the prefab to be oriented correctly, make sure it's rotated so that the long side runs along the z-axis.
+There are two types of generators currently available: Three Tiered and Rock Outline. Three tiered builds three meshes for the floor, ceiling and walls and is available as isometric (first image above) or enclosed (third image above). Rock outline builds just a floor, and then instantiates rock prefabs along the outlines of the floor (second image above). Multiple rock prefabs can be assigned in the inspector, and the generator will randomly pick from them. A weight can be assigned to each prefab to make certain prefabs instantiated more frequently than others. Note that in order for the prefab to be oriented correctly, it must be rotated so that the long side runs along the z-axis. The prefab will be rotated so that the z-axis runs along the outline itself. 
 
 ### 2.2 In code
 
 Note: the API for the cave generator has gone through a complete redesign several times already, and this may happen again in the future. As such, backward compatibility should not be expected in a given version.
 
-You can also create caves entirely through code by adding the CaveGeneration namespace. The simple way is to configure a CaveGeneratorUI in the editor, then call the appropriate Generate method.
-
-To customize and build caves entirely through code, you can use the CaveGenerator (not CaveGeneratorUI) class. It is a static class, not a MonoBehaviour. It has Generate methods that take corresponding Configuration objects, used to package together modules and materials. 
+You can access the major features of this project entirely through code, including the generator itself. At a minimum you'll need to import AKSaigyouji.CaveGeneration, and access the static class CaveGenerator. All of my namespaces start with "AKSaigyouji." - this conforms to the best practice of using a distinct name at the start of namespaces for third party code to minimize the possibility of namespace conflicts. 
 
 ## 3. Workflow
 
-There are three ways to work with the generator.
+Broadly speaking, there are three ways to work with this project. 
 
 #### 3.1 Entirely through the editor
 
-Configure the CaveGeneratorUI through the inspector and plug in the appropriate modules. Generate caves until you find one that suits your purposes, tweaking the modules to get the right mix of properties. Convert it to a prefab, then work with that prefab directly in the editor. Note that it's very important to use the button on the inspector for CaveGeneratorUI to convert to prefabs: if you simply drag the cave from the hierarchy into the assets, the prefab will not be serialized correctly. 
+Configure the CaveGeneratorUI through the inspector and plug in the appropriate modules. Generate caves until you find one that suits your purposes, tweaking the modules to get the right mix of properties. Convert it to a prefab, then work with that prefab directly in the editor. Note that it's very important to use the button on the inspector for CaveGeneratorUI to convert to prefab: if you simply drag the cave from the hierarchy into the assets, the prefab will not be serialized correctly (it will work until the end of the session, but your meshes will disappear when you reload the project).
 
 #### 3.2 Design in the editor, then rebuild at runtime
 
-A downside to the first approach is that you have to save large meshes as assets. If you're generating large caves, or just a large number of them, this can consume a lot of memory, which can dramatically increase the build size of the game. 
+A downside to the first approach is that you have to save large meshes as assets. If you're generating large caves, or just a large number of them, this can consume a lot of memory and increase the build size of the game to an unacceptable size.
 
 This approach gives you the best of both worlds: save a cave as a prefab, design content for that prefab, then save all the content but destroy the prefab. Then, at run-time, call the Generate method on CaveGeneratorUI with the same modules loaded into it that were used to generate the cave in the first place. This will produce the exact same cave, as long as you uncheck "Randomize Seeds" on CaveGeneratorUI. Alternatively, you can pass the modules as arguments to the CaveGenerator class directly.
 
 If taking this approach, be sure to save the modules you used when generating the prefab. You'll want to duplicate the modules you used and store those duplicates somewhere safe. If you mutate the module (e.g. by generating a random cave with it, causing the seed to be rerolled) you won't be able to rebuild the cave unless you've saved all of its properties somewhere. 
 
-#### 3.3 Design and build algorithmically at run-time.
+An alternative to saving the module is to save a copy of the map itself using the visual editor, and then use a static map holder to reproduce that same map in the cave generator. The map will be saved as a PNG, which does an excellent job of compressing the map data so that it takes significantly less than 1 bit per tile. 
 
-This is by far the most difficult approach, but allows for unlimited content as your game will generate a new, original cave every time. Configure modules to build the kind of caves you want, build a CaveConfiguration object, then pass them to the CaveGenerator class, which will return a Cave object. You can then use this object to design algorithms to place content based on the resulting structure of the cave.
+#### 3.3 Design and build algorithmically at run-time
 
-Note that the default map generator can be difficult to use in this third approach, as there are few guaranteed constraints on the output: as such, you will likely need to define your own map generator, using a more structured approach so that you have more control over the resulting cave's structure to make content easier to place. 
+As certain recent games show us, procedurally generating content at run-time is difficult to do right. At the moment, support for this type of generation is limited, though I am working on some tools. For this approach, configure modules to build the kind of caves you want, write code to build the appropriate Configuration object, then pass it to the CaveGenerator class, which will return the cave. The challenging part is writing code to build content for the resulting cave at run-time without knowing its structure ahead of time. 
 
-A very useful tool for generating run-time caves is the compound module, which allows you to stitch together multiple smaller caves, giving you complete control over the global structure while being highly randomized locally. See the readme in Modules for more information about constructing compound modules.
+A more feasible approach (compared to complete randomization) is a hybrid approach along the lines of, for example, Diablo 2. Generate a number of fixed sections, place markers throughout the sections to indicate where content can be randomly generated, then assemble these pieces randomly to produce randomized yet highly structured content. The entrance carver map generator module was designed to help stitch together caves: you can slot a module into an entrance carver module, and it will carve an opening along the boundary, connecting it to the rest of the map. This is an approach I'm investigating more closely - the difficult infrastructure is already in place, I just need to wire it up and give it some polish.
 
-## 4. Acknowledgements
+## 4. Visual editor
 
-A number of core algorithms in this project (namely cellular automata, marching squares and the noise functions used for height maps) were learned from Sebastian Lagues videos on Procedural Cave Generation and Procedural Landmass Generation. Those videos and others can be found on his youtube channel [here](https://www.youtube.com/user/Cercopithecan). He has put together some remarkable visualizations of these and other algorithms in his tutorials. 
+Access the visual editor by going to Window, and selecting "AKS - Map Gen Editor". This is an incomplete feature, but is nonetheless usable in its current state. 
+
+The visual editor is a custom editor window that allows you to build map generator modules out of existing modules. The editor shows module outlines (for dynamic map generators, this means a boundary outline, since the exact outline will depend on the seed), allowing for multiple modules to be stitched together. I wish to experiment with the idea of allowing users to add markers to specific spots in various static maps, and giving each marker a string. These strings could either be used as keys in a dictionary to access the various markers at run-time to add content, or possibly as codes to automatically generate content. This would allow for the rapid generation of randomized maps in the style of Diablo 2, such as the den of evil, catacombs, sewers, durance of hate, etc, without having to come up with sophisticated algorithms that can understand the structure of a random cave. 
+
+## 5. Creating maps in paint programs
+
+It's possible to draw a map in any paint program and import it into this project. The resolution of the image will determine the map size: a 45 by 50 picture will be a 45 by 50 map. Black tiles will be interpreted as wall tiles, everything else will be interpreted as floor tiles. Save the image using a lossless format (I recommend PNG), and make sure "_map" is in the name. e.g. "CaveTest_map.png". This will allow the custom asset processor to intercept the import process and configure the texture so you don't have to mess with any of the settings. 
+
+Drag the file into your project, create an instance of the static map holder module (use the Assets/Create menu) and place the imported texture into the slot in the map holder. The module can now be used in the generator to render the drawn map as a 3D cave. 
+
+![PNG in GIMP and Cave in Unity](http://imgur.com/cJswOo1)
+
+This has many potential uses: it's an extremely efficient way to prototype certain types of levels, it can be used to build primitives to combine in the visual editor or in a custom module, or you can use it directly to generate a cave with specific structure without relying on modelling tools like Blender.
+
+## 6. Creating new module types
+
+The module system is designed to allow you not just to customize the modules I have provided, but to write your own either from scratch or on top of the ones provided to tailor the project to your own needs. Information on writing your own modules can be found here:
+
+[Modules](Modules.md)
+
+## 7. Acknowledgements
+
+Several core algorithms in this project (namely cellular automata, marching squares and the noise functions used for height maps) were learned from Sebastian Lagues videos on Procedural Cave Generation and Procedural Landmass Generation. Those videos and others can be found on his youtube channel [here](https://www.youtube.com/user/Cercopithecan). He has put together some remarkable visualizations of these and other algorithms in his tutorials. 

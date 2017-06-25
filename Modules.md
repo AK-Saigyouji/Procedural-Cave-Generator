@@ -1,33 +1,23 @@
 # Modules
 
-This folder contains modules: customizable Scriptable Objects that define core parts of the cave generator. Currently there are two types of modules: map generators and height maps. 
+Modules are customizable Scriptable Objects that define core parts of the cave generators. Currently there are three types of modules: map generators, height maps, and outlines.
 
 ## Table of Contents
-0. [Introduction](#introduction)
 1. [Building map modules](#map-modules)
 2. [Building heightmap modules](#heightmap-modules)
 3. [Outline modules](#outline-modules)
-4. [Advanced customization with compound modules](#compound-modules)
-
-### <a name="introduction"></a>0. Introduction
-
-Either use a sample module provided, or create one using the menu. Samples can be found in the relevant folders in this directory. To create one using the menu, select Assets -> Create -> Cave Generation and select the relevant module. Modules offer a number of customizable properties unique to their type. Alternatively, you can duplicate an existing module of the correct type directly. 
-
-Each module can be plugged into the CaveGeneratorUI inspector in the appropriately marked spot, or passed as an argument to the CaveGenerator.Generate method if working through code. 
-
-In addition to using and customizing the provided modules, you can write your own based on custom logic and plug them into the cave generator. By writing your own map modules you can define your own algorithms for determing the layout of the caves - i.e. where the floors and walls are. Similarly, writing your own height map modules allows you to control the height values taken by the cave. 
-
-The true power of the module system lies in composition: writing modules that leverage other modules. 
+4. [Taking control of randomization with compound modules](#compound-modules)
 
 ### <a name="map-modules"></a>1. Map modules
 
 Defining a custom map module gives you considerable control over the structure of the cave, allowing you to plug seamlessly into the engine for mesh generation. First we'll go over the bare minimum to implement them, then build up the default map module to illustrate a variety of ideas and tools. Here's a basic template for a custom map module:
 
 ```cs
+using System;
 using UnityEngine;
-using CaveGeneration.MapGeneration;
+using AKSaigyouji.Maps;
 
-namespace CaveGeneration.Modules
+namespace AKSaigyouji.Modules.MapGeneration
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
     public class MyCustomMapGen : MapGenModule
@@ -36,16 +26,21 @@ namespace CaveGeneration.Modules
         const string menuName = "My Custom Generator";
 
         // Insert properties to be set in the inspector here
-        
+
         public override Map Generate()
         {
-            throw new System.NotImplementedException();
+            throw new NotImplementedException();
+        }
+
+        public override Coord GetMapSize()
+        {
+            throw new NotImplementedException();
         }
     }
 }
 ```
 
-Note three things: first, we're extending MapGenModule, which is what allows this module to be plugged into the generator. Second, we're overriding the Generate method, which returns a Map object. This is the Map that will be used to produce the cave. Third, the class has a CreateAssetMenu attribute. This will allow us to create instances of this new module in the editor by using the Asset->Create menu.
+Note four things: first, we're extending MapGenModule, which is what allows this module to be plugged into the generator. Second, we're overriding the Generate method, which returns a Map object. This is the Map that will be used to produce the cave. Third, we're overriding the GetMapSize method, which should return the length and width of the maps produced by this module. If the length and width cannot be determined without computing the map, they should offer an upper bound instead. Fourth, the class has a CreateAssetMenu attribute. This will allow us to create instances of this new module in the editor by using the Asset->Create menu.
 
 You're free to choose your own class name instead of MyCustomMapGen (make sure the class name matches the name of that class file), and also to choose a new menuName. 
 
@@ -81,15 +76,20 @@ public override Map Generate()
     }
     return map;
 }
+
+public override Coord GetMapSize()
+{
+    return new Coord(10, 10);
+}
 ```
 
 If you're unfamiliar with scriptable objects, note that they're used differently from MonoBehaviours. The script we wrote is a template, which can produce instances, which act as permanent assets. To create an instance, we can return to the editor and go to Assets -> Create -> Cave Generation -> Map Generators -> My Custom Generator. We can name the instance anything we like. Note that the instance should have the Unity logo instead of the C# icon as its image. 
 
-Now that we have an instance of a map generator module, we can plug it into a CaveGeneratorUI in the appropriate slot to be consumed. If we then generate using the sample modules provided for floor and ceiling height maps, we get something like this (textures are from Natural Tiling Textures, see footnote on image in the main readme):
+Now that we have an instance of a map generator module, we can plug it into a CaveGeneratorUI in the appropriate slot to be consumed. If we then generate using the sample modules provided for floor and ceiling height maps, we get something like this (textures are from Natural Tiling Textures, see footnote on images in the main readme):
 
 ![Diagonal Cave](http://imgur.com/eeANGGC.jpeg)
 
-This covers the basics of creating a new module. Next we'll walk through an example that builds up the default map generator, to illustrate additional useful tools, and also to better understand the default generator and its customizable properties. We'll cover methods on the Map class, as well as the MapBuilder class which provides some more advanced functionality. Note that this example may become out of date if features are added to the default generator, but you can always inspect the source code for this generator directly to see the most up to date version.
+This covers the basics of creating a new module. Next we'll walk through an example that builds up the default map generator, to illustrate additional useful tools, and also to better understand the default generator and its customizable properties. We'll cover methods on the Map class, as well as the MapBuilder class (found in the AKSaigyouji.MapGeneration namespace) which provides some more advanced functionality. Note that this example may become out of date if features are added to the default generator, but you can always inspect the source code for this generator directly to see the most up to date version.
 
 #### 1.2 Building the default generator
 
@@ -102,10 +102,9 @@ So to start, let's create a random map generator. We can use the following MapBu
 public static Map InitializeRandomMap(int length, int width, float mapDensity, int seed);
 ```
 
-As we go along, we'll also expose the properties we use in the inspector so they can be customized. Here are the updated parts:
+As we go along, we'll also expose the properties we use in the inspector so they can be customized. Here are the updated parts (also add "using AKSaigyouji.MapGeneration;" alongside the other using statements):
 
 ```cs
-// Insert properties to be set in the inspector here
 public int length = 50;
 public int width = 50;
 public float mapDensity = 0.5f;
@@ -115,6 +114,11 @@ public override Map Generate()
 {
     Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
     return map;
+}
+
+public override Coord GetMapSize()
+{
+    return new Coord(length, width);
 }
 ```
 
@@ -163,7 +167,7 @@ To fix the other issue, we can apply a border to our map with the following meth
 public static Map ApplyBorder(Map inputMap, int borderSize);
 ```
 
-We'll add an inspector variable for the border size.
+We'll add an inspector variable for the border size, and also update GetMapSize to include the extra length and width introduced by the border.
 
 ```cs
 public int borderSize = 1;
@@ -175,6 +179,12 @@ public override Map Generate()
     MapBuilder.ConnectFloors(map);
     map = MapBuilder.ApplyBorder(map, borderSize);
     return map;
+}
+
+public override Coord GetMapSize()
+{
+    int borderContribution = 2 * borderSize;
+    return new Coord(length + borderContribution, width + borderContribution);
 }
 ```
 
@@ -188,7 +198,7 @@ Much better - we can't walk off into the void, and we can get to any open area f
 
 Fortunately there's a simple fix: right at the start, we can initialize the boundary tiles to be all wall tiles. That way, when we perform smoothing, we'll get a more natural cavern-like appearance.
 
-We could write a few loops to manually set map[x, y] = Tile.Wall at the appropriate places. But Map has a few extension methods that make such transformations simpler and more compact: they are Transform, TransformBoundary, and TransformInterior, and they take a Func<int, int, Tile>: i.e. any function that takes two integers and outputs a Tile. They can also take lambdas, which is what we'll use:
+We could write a few loops to manually set map[x, y] = Tile.Wall at the appropriate places. But Map has a few extension methods that make such transformations simpler: they are Transform, TransformBoundary, and TransformInterior, and they take a Func<int, int, Tile>: i.e. any function that takes two integers and outputs a Tile. They can also take lambdas, which is what we'll use:
 
 ```cs
 public override Map Generate()
@@ -238,7 +248,32 @@ public override Map Generate()
 }
 ```
 
-##### 1.2.6 Permitting automatic randomization
+##### 1.2.6 Ensuring minimum width
+
+We know that the map will contain a tile path from any two tiles. But how large of an object will this accommodate? As it turns out, in the worst, case, a tunnel can be exactly 1 game unit wide, and an object of exactly that size may have some trouble fitting through such an opening. It would be good if we could expand small tunnels to ensure that the map can be navigated without having to shrink the navigators. We could iterate over all floor tiles and expand the floors in every direction by a given radius. While this works, it would dramatically reduce the proportion of walls in the map. I've implemented a far less aggressive expansion algorithm which determines 'problem areas' and expands only those. It scales poorly and becomes aggressive for large values, so ideally it should be used for values between 0 and 3 or so. 
+
+```cs
+public static void WidenTunnels(Map inputMap, int radius);
+```
+
+```cs
+public int minTunnelRadius = 0;
+
+public override Map Generate()
+{
+    Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
+    map.TransformBoundary((x, y) => Tile.Wall);
+    MapBuilder.RemoveSmallFloorRegions(map, minFloorSize);
+    MapBuilder.Smooth(map);
+    MapBuilder.ConnectFloors(map);
+    MapBuilder.WidenTunnels(map, minTunnelRadius);
+    MapBuilder.RemoveSmallWallRegions(map, minWallSize);
+    map = MapBuilder.ApplyBorder(map, borderSize);
+    return map;
+}
+```
+
+##### 1.2.7 Permitting automatic randomization
 
 One final important change is to allow the cave generator to hook into this module's seed to automatically randomize it. This is done by overriding the base class Seed property.
 
@@ -246,15 +281,16 @@ One final important change is to allow the cave generator to hook into this modu
 public override int Seed { get { return seed; } set { seed = value; } }
 ```
 
-##### 1.2.7 Final result:
+##### 1.2.8 Final result:
 
 The final, complete script for reference:
 
 ```cs
 using UnityEngine;
-using CaveGeneration.MapGeneration;
+using AKSaigyouji.Maps;
+using AKSaigyouji.MapGeneration;
 
-namespace CaveGeneration.Modules
+namespace AKSaigyouji.Modules.MapGeneration
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName)]
     public class MyCustomMapGen : MapGenModule
@@ -268,11 +304,12 @@ namespace CaveGeneration.Modules
         public float mapDensity = 0.5f;
         public int seed = 0;
         public int borderSize = 1;
+        public int minTunnelRadius = 0;
         public int minWallSize = 50;
         public int minFloorSize = 50;
 
         public override int Seed { get { return seed; } set { seed = value; } }
-
+        
         public override Map Generate()
         {
             Map map = MapBuilder.InitializeRandomMap(length, width, mapDensity, seed);
@@ -280,9 +317,16 @@ namespace CaveGeneration.Modules
             MapBuilder.RemoveSmallFloorRegions(map, minFloorSize);
             MapBuilder.Smooth(map);
             MapBuilder.ConnectFloors(map);
+            MapBuilder.WidenTunnels(map, minTunnelRadius);
             MapBuilder.RemoveSmallWallRegions(map, minWallSize);
             map = MapBuilder.ApplyBorder(map, borderSize);
             return map;
+        }
+
+        public override Coord GetMapSize()
+        {
+            int borderContribution = 2 * borderSize;
+            return new Coord(length + borderContribution, width + borderContribution);
         }
     }
 }
@@ -307,11 +351,10 @@ Defining a height map module is similar to defining a map generator module. We'l
 Here's a template for a general height map module:
 
 ```cs
-using CaveGeneration.MeshGeneration;
-using CaveGeneration.HeightMaps;
 using UnityEngine;
+using AKSaigyouji.HeightMaps;
 
-namespace CaveGeneration.Modules
+namespace AKSaigyouji.Modules.HeightMaps
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
     public sealed class MyCustomHeightMap : HeightMapModule
@@ -325,7 +368,7 @@ namespace CaveGeneration.Modules
         {
             throw new System.NotImplementedException();
         }
-    } 
+    }
 }
 ```
 
@@ -346,11 +389,10 @@ The third method listed here is extremely flexible, as it allows you to pass in 
 Here's the complete example:
 
 ```cs
-using CaveGeneration.MeshGeneration;
-using CaveGeneration.HeightMaps;
+using AKSaigyouji.HeightMaps;
 using UnityEngine;
 
-namespace CaveGeneration.Modules
+namespace AKSaigyouji.Modules.HeightMaps
 {
     [CreateAssetMenu(fileName = fileName, menuName = rootMenuPath + menuName)]
     public sealed class HeightMapPerlinNoise : HeightMapModule
@@ -394,7 +436,7 @@ The second and more substantial use is to modularize the cave itself, giving you
 
 Compelling level design requires some control over what the user experiences and when. To this end, we need some constraints, or guarantees, from our level-building algorithms so that we can write algorithms to place content with some degree of organization. Furthermore, the nature of these guarantees will depend on what kind of game we are trying to build. 
 
-A particularly simple yet effective way to impose such constraints is with a modular level design. We can create a simple graph to describe the large scale structure of our level, then apply a module to each node in the graph to flesh out the level. To take a simple example, let's suppose we have a "Content" module and a "Tunnel" module. A content module could be the default map generator module, for example, or a simple room. A tunnel module could be a fairly simple module that carves a single tunnel between two or more modules. 
+A particularly simple yet effective way to impose such constraints is with a modular level design. We can create a simple graph to describe the large scale structure of our level, then apply a module to each node in the graph to flesh out the level. To take a simple example, let's suppose we have a "Content" module and a "Tunnel" module. A content module could be the default map generator module, for example, or a simple room. A tunnel module could be a fairly simple module that carves a single tunnel between two spots in a map. 
 
 With just these two modules, we can develop a large, complex cave with several guaranteed constraints on the large scale topology of the cave system. We could design a simple linear system:
 
@@ -414,4 +456,4 @@ CTCTB
 
 Where C and T are as before, and B is a boss room. B could be designed by hand, specifically designed for the boss in question, or with limited randomization. Furthermore, we could randomize the graph itself. 
 
-In the future, I intend to offer some powerful tools to facilitate this type of modular building. To do so at the moment, you'd need to generate maps out of each room, create a new map object big enough to hold everything, then copy the values from each map onto the new one, translating the points to fit the rooms into the right spots. You may find the CopyRegion method on Map to be useful for this purpose. Something I wish to experiment with is a node-based visual editor for this type of construction, which would allow the construction of such modular graph-based maps without writing code.
+I am currently working on tools to facilitate this type of compound generation to simplify the process of generating randomized content at run-time.
