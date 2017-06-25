@@ -188,7 +188,7 @@ namespace AKSaigyouji.CaveGeneration
                 }
                 foreach (var wall in cave.GetWalls())
                 {
-                    wall.Material = floorMat;
+                    wall.Material = wallMat;
                 }
                 foreach (var ceiling in cave.GetCeilings())
                 {
