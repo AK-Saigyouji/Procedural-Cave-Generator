@@ -30,7 +30,7 @@ namespace AKSaigyouji.Modules.MapGeneration
         const string SAVED_MODULE_NAME = "Compound.asset";
         readonly string SAVED_TEXTURE_NAME = string.Format("SavedNodeEditor{0}.png", MapImporter.MAP_SUBSTRING);
 
-        [MenuItem("Window/Node Based Editor")]
+        [MenuItem("Window/AKS - Map Gen Editor")]
         static void OpenWindow()
         {
             var window = GetWindow<MapEditorWindow>();
@@ -149,15 +149,15 @@ namespace AKSaigyouji.Modules.MapGeneration
 
         void DrawWindows()
         {
-            foreach (var item in nodes)
+            foreach (var nodes in nodes)
             {
-                item.DrawWindows();
+                nodes.DrawWindows();
             }
         }
 
         void DrawNodes()
         {
-            foreach (NodeGroup node in nodes)
+            foreach (var node in nodes)
             {
                 node.Draw();
             }
@@ -166,7 +166,7 @@ namespace AKSaigyouji.Modules.MapGeneration
         void ProcessNodeEvents()
         {
             NodeGroup selected = null;
-            foreach (NodeGroup node in Enumerable.Reverse(nodes))
+            foreach (var node in Enumerable.Reverse(nodes))
             {
                 if (node.UpdateSelection(Event.current, selection))
                 {
@@ -231,7 +231,7 @@ namespace AKSaigyouji.Modules.MapGeneration
         void AddNode(Vector2 mousePosition)
         {
             Rect position = new Rect(mousePosition, NodeEditorSettings.DEFAULT_NODE_SIZE * Vector2.one);
-            AddNode(position, null);
+            AddNode(position, mapGenModule: null);
         }
 
         void AddNode(Rect position, MapGenModule mapGenModule)
