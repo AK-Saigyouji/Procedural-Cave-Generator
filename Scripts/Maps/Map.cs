@@ -266,7 +266,7 @@ namespace AKSaigyouji.Maps
             {
                 for (int x = 0; x < length; x++)
                 {
-                    grid[x, y] = pixels[y * length + x] == Color.black ? Tile.Wall : Tile.Floor;
+                    grid[x, y] = (pixels[y * length + x] == Color.black ? Tile.Wall : Tile.Floor);
                 }
             }
             return map;
