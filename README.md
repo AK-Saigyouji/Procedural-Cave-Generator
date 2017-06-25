@@ -84,7 +84,7 @@ It's possible to draw a map in any paint program and import it into this project
 
 Drag the file into your project, create an instance of the static map holder module (use the Assets/Create menu) and place the imported texture into the slot in the map holder. The module can now be used in the generator to render the drawn map as a 3D cave. 
 
-![PNG in GIMP and Cave in Unity](http://imgur.com/cJswOo1)
+![PNG in GIMP and Cave in Unity](http://i.imgur.com/cJswOo1.png)
 
 This has many potential uses: it's an extremely efficient way to prototype certain types of levels, it can be used to build primitives to combine in the visual editor or in a custom module, or you can use it directly to generate a cave with specific structure without relying on modelling tools like Blender.
 
