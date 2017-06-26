@@ -6,6 +6,7 @@
  Even if we pack each tile into a single bit and serialize the bits, we'd end up with a file 10x the size of the
  corresponding PNG. */
 
+using AKSaigyouji.ArrayExtensions;
 using System;
 using UnityEngine;
 
@@ -274,197 +275,76 @@ namespace AKSaigyouji.Maps
 
         #region FunctionalExtensions
 
-        /// <summary>
-        /// Perform an action for each tile.
-        /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         public void ForEach(Action<int, int> action)
         {
-            ThrowIfNull(action);
-
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    action(x, y);
-                }
-            }
+            grid.ForEach(action);
         }
 
-        /// <summary>
-        /// Perform an action for each boundary tile.
-        /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         public void ForEachBoundary(Action<int, int> action)
         {
-            ThrowIfNull(action);
-
-            for (int x = 0; x < length; x++)
-            {
-                action(x, 0);
-                action(x, width - 1);
-            }
-            for (int y = 1; y < width - 1; y++)
-            {
-                action(0, y);
-                action(length - 1, y);
-            }
+            grid.ForEachBoundary(action);
         }
 
-        /// <summary>
-        /// Perform an action for each interior tile.
-        /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         public void ForEachInterior(Action<int, int> action)
         {
-            ThrowIfNull(action);
-
-            for (int y = 1; y < width - 1; y++)
-            {
-                for (int x = 1; x < length - 1; x++)
-                {
-                    action(x, y);
-                }
-            }
+            grid.ForEachInterior(action);
         }
 
-        /// <summary>
-        /// Reassigns every tile in the map using the provided function.
-        /// </summary>
+        /// <exception cref="ArgumentNullException"></exception>
+        public void ForEach(Action<int, int> action, Func<int, int, bool> predicate)
+        {
+            grid.ForEach(action, predicate);
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public void ForEachBoundary(Action<int, int> action, Func<int, int, bool> predicate)
+        {
+            grid.ForEachBoundary(action, predicate);
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public void ForEachInterior(Action<int, int> action, Func<int, int, bool> predicate)
+        {
+            grid.ForEachInterior(action, predicate);
+        }
+
         /// <exception cref="ArgumentNullException"></exception>
         public void Transform(Func<int, int, Tile> transformation)
         {
-            ThrowIfNull(transformation);
-
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    grid[x, y] = transformation(x, y);
-                }
-            }
+            grid.Transform(transformation);
         }
 
-        /// <summary>
-        /// Reassigns every boundary tile in the map using the provided function.
-        /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         public void TransformBoundary(Func<int, int, Tile> transformation)
         {
-            ThrowIfNull(transformation);
-
-            for (int x = 0; x < length; x++)
-            {
-                grid[x, 0] = transformation(x, 0);
-                grid[x, width - 1] = transformation(x, width - 1);
-            }
-            for (int y = 1; y < width - 1; y++)
-            {
-                grid[0, y] = transformation(0, y);
-                grid[length - 1, y] = transformation(length - 1, y);
-            }
+            grid.TransformBoundary(transformation);
         }
 
-        /// <summary>
-        /// Reassigns every interior tile in the map using the provided function.
-        /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         public void TransformInterior(Func<int, int, Tile> transformation)
         {
-            ThrowIfNull(transformation);
-
-            for (int y = 1; y < width - 1; y++)
-            {
-                for (int x = 1; x < length - 1; x++)
-                {
-                    grid[x, y] = transformation(x, y);
-                }
-            }
+            grid.TransformInterior(transformation);
         }
 
-        /// <summary>
-        /// Reassigns every tile that satisfies the provided predicate, using the provided transformation.
-        /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         public void Transform(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
         {
-            ThrowIfNull(transformation);
-            ThrowIfNull(predicate);
-
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    if (predicate(x, y))
-                    {
-                        grid[x, y] = transformation(x, y);
-                    }
-                }
-            }
+            grid.Transform(transformation, predicate);
         }
 
-        /// <summary>
-        /// Reassigns every boundary tile that satisfies the provided predicate, using the provided transformation.
-        /// </summary>
         /// <exception cref="ArgumentNullException"></exception>
         public void TransformBoundary(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
         {
-            ThrowIfNull(transformation);
-            ThrowIfNull(predicate);
-
-            for (int x = 0; x < length; x++)
-            {
-                if (predicate(x, 0))          grid[x, 0] = transformation(x, 0);
-                if (predicate(x, width - 1))  grid[x, width - 1] = transformation(x, width - 1);
-            }
-            for (int y = 1; y < width - 1; y++) // adjust boundaries so we don't double-visit 0,0 and length-1,width-1
-            {
-                if (predicate(0, y))          grid[0, y] = transformation(0, y);
-                if (predicate(length - 1, y)) grid[length - 1, y] = transformation(length - 1, y);
-            }
+            grid.TransformBoundary(transformation, predicate);
         }
 
-        /// <summary>
-        /// Reassigns every interior tile satisfying the provided predicate, using the provided transformation.
-        /// </summary
         /// <exception cref="ArgumentNullException"></exception>
         public void TransformInterior(Func<int, int, Tile> transformation, Func<int, int, bool> predicate)
         {
-            ThrowIfNull(transformation);
-            ThrowIfNull(predicate);
-
-            for (int y = 1; y < width - 1; y++)
-            {
-                for (int x = 1; x < length - 1; x++)
-                {
-                    if (predicate(x, y))
-                    {
-                        grid[x, y] = transformation(x, y);
-                    }
-                }
-            }
-        }
-
-        #endregion
-
-        #region ExceptionHelpers
-
-        void ThrowIfNull(Func<int, int, Tile> transformation)
-        {
-            if (transformation == null)
-                throw new ArgumentNullException("transformation");
-        }
-
-        void ThrowIfNull(Func<int, int, bool> predicate)
-        {
-            if (predicate == null)
-                throw new ArgumentNullException("predicate");
-        }
-
-        void ThrowIfNull(Action<int, int> action)
-        {
-            if (action == null)
-                throw new ArgumentNullException("action");
+            grid.TransformInterior(transformation, predicate);
         }
 
         #endregion
