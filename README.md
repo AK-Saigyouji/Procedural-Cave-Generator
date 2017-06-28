@@ -24,7 +24,7 @@ Finally, the Cave Generation system ties everything together to produce 3D terra
 
 ## 1. Overview of contents
 
-CaveGeneratorUI is your interface to the generator in the editor.
+CaveGeneratorUI is your interface to the generator in the editor. 
 
 The Sample Modules folder contains samples of the customizable components of the generator, which can be plugged into the appropriate slots in the CaveGeneratorUI. Furthermore, you can write your own modules to replace the ones provided to customize the structure of the cave using your own algorithms. See the section on Modules for information on writing your own.
 
@@ -37,6 +37,8 @@ Scripts contains the source code. The file structure within Scripts matches the 
 ## 2. Quickstart
 
 ### 2.1 In editor
+
+[CaveGeneratorUI's inspector](http://i.imgur.com/mmYcpcA.png)
 
 Create a new empty game object, and attach the CaveGeneratorUI script. Insert sample modules (provided) and materials (not provided), and if using the Rock Outline style of generator, also supply rock prefabs (not provided). High quality materials and rock assets can be found for free on the Unity store. Most modules also have parameters that can be tuned to control the results.
 
