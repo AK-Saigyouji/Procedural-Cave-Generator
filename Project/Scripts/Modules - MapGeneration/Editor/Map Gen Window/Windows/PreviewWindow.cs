@@ -12,9 +12,9 @@ public sealed class PreviewWindow : EditorWindow
         GUI.DrawTexture(new Rect(Vector2.zero, position.size), texture);
     }
 
-    public void UpdateWindow(MapGenModule module)
+    public void UpdateWindow(MapGenAtlas module)
     {
-        Map map = module.Generate();
+        Map map = module.GenerateWithSubmoduleSeeds();
         texture = map.ToTexture();
     }
 }

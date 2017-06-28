@@ -103,13 +103,7 @@ namespace AKSaigyouji.Maps
         /// </summary>
         public void Fill(Tile tileType)
         {
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    grid[x, y] = tileType;
-                }
-            }
+            grid.SetAll(tileType);
         }
 
         /// <summary>
@@ -223,6 +217,10 @@ namespace AKSaigyouji.Maps
             return 0 > x || x >= length || 0 > y || y >= width || grid[x, y] == Tile.Wall;
         }
 
+        /// <summary>
+        /// Returns true if the coordinates correspond to anything other than a valid floor tile. Differs from
+        /// IsWall by returning true for out of range coordinates.
+        /// </summary>
         public bool IsWallOrVoid(Coord coord)
         {
             return IsWallOrVoid(coord.x, coord.y);

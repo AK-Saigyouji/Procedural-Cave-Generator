@@ -1,8 +1,17 @@
-﻿using AKSaigyouji.ArrayExtensions;
+﻿/* When converting maps with 1-unit passages into 3d geometry, it was found that they could snag player colliders
+ that were exactly 1 unit in radius, and in some cases flat out block the player. This could prove gamebreaking, and
+ forcing users of this system to make their agents at least a little smaller than 1 unit was a bit onerous. 
+ 
+  Attempts at trying to create a algorithm to expand tunnels by n for arbitrary integers n proved problematic. 
+ They would either be too aggressive, or leave certain cases unaddressed, and generally scaled poorly. Ultimately I 
+ decided on a simple implementation which can only expand to a width of 2, but which handles that case very well (no
+ unaddressed edge cases, good performance). 
+ 
+  If one requires larger passages then either they can raise the scale, or else use a different algorithm.*/
+
+using AKSaigyouji.ArrayExtensions;
 using AKSaigyouji.Maps;
 using System;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace AKSaigyouji.GraphAlgorithms
 {
@@ -11,194 +20,71 @@ namespace AKSaigyouji.GraphAlgorithms
     /// </summary>
     public sealed class PassageEnlarger
     {
-        // These are cached as ExpandFloors may need to be called multiple times, and these arrays may be large
-        // enough to sit on the large object heap. 
-        readonly bool[,] cachedBoolArrayOne;
-        readonly bool[,] cachedBoolArrayTwo;
-        readonly int[,] cachedIntArray;
+        readonly bool[,] cachedBoolArray;
 
         readonly int length;
         readonly int width;
 
-        readonly Coord[] cachedNeighbours = new Coord[4];
+        // Clockwise loop around the origin, starting at the top left.
+        readonly Coord[] loop = new[]
+        {
+            Coord.Zero.TopLeft, Coord.Zero.Up, Coord.Zero.TopRight, Coord.Zero.Right,
+            Coord.Zero.BottomLeft, Coord.Zero.Down, Coord.Zero.BottomLeft, Coord.Zero.Left
+        };
 
         public PassageEnlarger(int length, int width)
         {
             this.length = length;
             this.width = width;
-            cachedBoolArrayOne = new bool[length, width];
-            cachedBoolArrayTwo = new bool[length, width];
-            cachedIntArray = new int[length, width];
+            cachedBoolArray = new bool[length, width];
         }
 
-        public void ExpandFloors(Map map, int radius)
+        public void ExpandFloors(Map map)
         {
-            if (radius < 0)
-                throw new ArgumentOutOfRangeException("radius");
-
             if (map.Length != length || map.Width != width)
                 throw new ArgumentException("Map dimensions must match dimensions passed to constructor.");
 
-            // a tile is good if it can fit an object with the given radius, if it's close enough to such a tile,
-            // or if it's a wall.
-            bool[,] goodTiles = cachedBoolArrayOne;
-            map.ToBoolArray(Tile.Wall, goodTiles);
-            goodTiles.ForEach((x, y) =>
+            bool[,] toExpand = cachedBoolArray;
+            toExpand.TransformInterior((x, y) => IsPassage(map, x, y));
+            toExpand.ForEach(
+                action:    (x, y) => ClearMap(map, new Coord(x, y)), 
+                predicate: (x, y) => toExpand[x, y]
+            );
+        }
+
+        /// <summary>
+        /// Does this square look like a passage? Must only be applied to interior points.
+        /// </summary>
+        bool IsPassage(Map map, int x, int y)
+        {
+            if (map[x, y] == Tile.Wall)
             {
-                if (CanFitBox(map, x, y, radius))
-                {
-                    FillBox(goodTiles, x, y, radius, true);
-                }
-            });
-            bool[,] badTiles = Invert(goodTiles);
-            int[,] labelledRegions = LabelRegions(badTiles);
-            foreach (List<Coord> region in GetRegionsToExpand(goodTiles, labelledRegions))
-            {
-                region.ForEach(coord => ClearMap(map, coord, radius));
+                return false;
             }
-        }
-
-        IEnumerable<List<Coord>> GetRegionsToExpand(bool[,] goodTiles, int[,] labelledRegions)
-        {
-            const int minRegionSize = 3;
-            var regionsToExpand = new List<List<Coord>>();
-            goodTiles.ForEach((x, y) =>
+            Coord center = new Coord(x, y);
+            // This is the number of times we change between floor and wall in a circular loop around the point.
+            int numChanges = 0;
+            for (int i = 1; i < loop.Length; i++)
             {
-                if (!goodTiles[x, y])
+                if (map[center + loop[i - 1]] != map[center + loop[i]])
                 {
-                    List<Coord> region = BFS.GetConnectedRegion(x, y, goodTiles);
-                    if (region.Count > minRegionSize || NeighboursMultipleRegions(region, labelledRegions))
-                    {
-                        regionsToExpand.Add(region);
-                    }
-                }
-            });
-            return regionsToExpand;
-        }
-
-        bool NeighboursMultipleRegions(List<Coord> region, int[,] regions)
-        {
-            Boundary boundary = new Boundary(regions.GetLength(0), regions.GetLength(1));
-            Coord[] neighbours = cachedNeighbours;
-            int neighbourType = 0; // this tracks the first neighbour: 0 represents no neighbour
-            for (int i = 0; i < region.Count; i++)
-            {
-                Coord coord = region[i];
-                neighbours[0] = coord.Left;
-                neighbours[1] = coord.Right;
-                neighbours[2] = coord.Up;
-                neighbours[3] = coord.Down;
-                foreach (Coord neighbour in neighbours)
-                {
-                    if (boundary.IsInBounds(neighbour))
-                    {
-                        int type = regions[neighbour.x, neighbour.y];
-                        if (type != 0 && type != neighbourType)
-                        {
-                            if (neighbourType == 0)
-                            {
-                                neighbourType = type;
-                            }
-                            else
-                            {
-                                return true;
-                            }
-                        }
-                    }
+                    numChanges++;
                 }
             }
-            return false;
+            return numChanges > 2;
         }
 
-        bool[,] Invert(bool[,] booleans)
+        void ClearMap(Map map, Coord center)
         {
-            bool[,] inverted = cachedBoolArrayTwo;
-            for (int y = 0; y < booleans.GetLength(1); y++)
-            {
-                for (int x = 0; x < booleans.GetLength(0); x++)
-                {
-                    inverted[x, y] = !booleans[x, y];
-                }
-            }
-            return inverted;
-        }
-
-        int[,] LabelRegions(bool[,] tilesToExpand)
-        {
-            // int was chosen in case the room is large and chaotic enough, having more than 256 or 65535 rooms.
-            // a possible future optimization is to offer byte and ushort versions for smaller maps.
-            int[,] regions = cachedIntArray;
-            Array.Clear(regions, 0, regions.Length);
-            int currentLevel = 1;
-            tilesToExpand.ForEach((x, y) =>
-            {
-                if (!tilesToExpand[x, y])
-                {
-                    List<Coord> region = BFS.GetConnectedRegion(x, y, tilesToExpand);
-                    FillRegion(regions, region, currentLevel);
-                    currentLevel++;
-                }
-            });
-            return regions;
-        }
-
-        void FillRegion(int[,] tiles, List<Coord> region, int value)
-        {
-            for (int i = 0; i < region.Count; i++)
-            {
-                Coord coord = region[i];
-                tiles[coord.x, coord.y] = value;
-            }
-        }
-
-        void ClearMap(Map map, Coord center, int radius)
-        {
-            int rr = radius * radius;
             Boundary bdry = new Boundary(1, map.Length - 2, 1, map.Width - 2);
-            for (int y = -radius; y <= radius; y++)
+            foreach (Coord offset in loop)
             {
-                int yy = y * y;
-                int yMap = center.y + y;
-                for (int x = -radius; x <= radius; x++)
+                Coord coord = center + offset;
+                if (bdry.IsInBounds(coord))
                 {
-                    int xx = x * x;
-                    int xMap = center.x + x;
-                    if (bdry.IsInBounds(xMap, yMap) && xx + yy <= rr)
-                    {
-                        map[xMap, yMap] = Tile.Floor;
-                    }
+                    map[coord] = Tile.Floor;
                 }
             }
-        }
-
-        void FillBox(bool[,] tiles, int xCenter, int yCenter, int radius, bool value)
-        {
-            for (int y = -radius; y <= radius; y++)
-            {
-                int yMap = yCenter + y;
-                for (int x = -radius; x <= radius; x++)
-                {
-                    int xMap = xCenter + x;
-                    tiles[xMap, yMap] = value;
-                }
-            }
-        }
-
-        bool CanFitBox(Map map, int xCenter, int yCenter, int radius)
-        {
-            for (int y = -radius; y <= radius; y++)
-            {
-                int yMap = yCenter + y;
-                for (int x = -radius; x <= radius; x++)
-                {
-                    int xMap = xCenter + x;
-                    if (map.IsWallOrVoid(xMap, yMap))
-                    {
-                        return false;
-                    }
-                }
-            }
-            return true;
         }
     } 
 }

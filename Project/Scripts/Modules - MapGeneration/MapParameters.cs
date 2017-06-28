@@ -48,12 +48,12 @@ namespace AKSaigyouji.Modules.MapGeneration
             set { SetMapDensity(value); }
         }
 
-        [Tooltip(PASSAGE_RADIUS_TOOLTIP)]
-        [SerializeField] int minPassageRadius;
-        public int MinPassageRadius
+        [Tooltip(EXPAND_TUNNELS_TOOLTIP)]
+        [SerializeField] bool expandTunnels;
+        public bool ExpandTunnels
         {
-            get { return minPassageRadius; }
-            set { SetPassageRadius(value); }
+            get { return expandTunnels; }
+            set { expandTunnels = value; }
         }
 
         [Tooltip(BORDER_SIZE_TOOLTIP)]
@@ -97,10 +97,8 @@ namespace AKSaigyouji.Modules.MapGeneration
         const string WIDTH_TOOLTIP =
             "Number of units across in the z-axis occupied by the map.";
 
-        const string PASSAGE_RADIUS_TOOLTIP =
-            "Ensures the map can be traversed by an object bounded by a ball of this radius by expanding floors"
-        + " as necessary. Use cautiously, and avoid using a higher value than is necessary, as it can destroy the map's structure." 
-        + " Run time scales with the radius.";
+        const string EXPAND_TUNNELS_TOOLTIP =
+            "Expands tunnels to a minimum width of 2. Useful for ensuring colliders don't get stuck in 1-unit passages.";
 
         const string DENSITY_TOOLTIP = 
             "Initial proportion of walls in the map, from 0 to 1. Note that the final proportion will likely be"
@@ -133,6 +131,8 @@ namespace AKSaigyouji.Modules.MapGeneration
         const int DEFAULT_PASSAGE_RADIUS = 0;
         const int MAXIMUM_PASSAGE_RADIUS = int.MaxValue;
 
+        const bool DEFAULT_EXPAND_TUNNELS = true;
+
         const float MINIMUM_MAP_DENSITY = 0f;
         const float DEFAULT_MAP_DENSITY = 0.5f;
         const float MAXIMUM_MAP_DENSITY = 1f;
@@ -163,7 +163,6 @@ namespace AKSaigyouji.Modules.MapGeneration
             length            = Mathf.Clamp(length, MINIMUM_LENGTH, MAXIMUM_LENGTH);
             width             = Mathf.Clamp(width, MINIMUM_WIDTH, MAXIMUM_WIDTH);
             initialMapDensity = Mathf.Clamp(initialMapDensity, MINIMUM_MAP_DENSITY, MAXIMUM_MAP_DENSITY);
-            minPassageRadius  = Mathf.Clamp(minPassageRadius, MINIMUM_PASSAGE_RADIUS, MAXIMUM_PASSAGE_RADIUS);
             borderSize        = Mathf.Clamp(borderSize, MINIMUM_BORDER_SIZE, MAXIMUM_BORDER_SIZE);
             minWallSize       = Mathf.Max(minWallSize, MINIMUM_WALL_THRESHOLD);
             minFloorSize      = Mathf.Max(minFloorSize, MINIMUM_FLOOR_THRESHOLD);
@@ -174,7 +173,7 @@ namespace AKSaigyouji.Modules.MapGeneration
             length            = DEFAULT_LENGTH;
             width             = DEFAULT_WIDTH;
             initialMapDensity = DEFAULT_MAP_DENSITY;
-            minPassageRadius  = DEFAULT_PASSAGE_RADIUS;
+            expandTunnels     = DEFAULT_EXPAND_TUNNELS;
             borderSize        = DEFAULT_BORDER_SIZE;
             minWallSize       = DEFAULT_WALL_THRESHOLD;
             minFloorSize      = DEFAULT_FLOOR_THRESHOLD;
@@ -190,12 +189,6 @@ namespace AKSaigyouji.Modules.MapGeneration
         {
             ValidateArgument(value, MINIMUM_WIDTH, MAXIMUM_WIDTH, "Width");
             width = value;
-        }
-
-        void SetPassageRadius(int value)
-        {
-            ValidateArgument(value, MINIMUM_PASSAGE_RADIUS, MAXIMUM_PASSAGE_RADIUS, "MinPassageRadius");
-            minPassageRadius = value;
         }
 
         void SetBorderSize(int value)

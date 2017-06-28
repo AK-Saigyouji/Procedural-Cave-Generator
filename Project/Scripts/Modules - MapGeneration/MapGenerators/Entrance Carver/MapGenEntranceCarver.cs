@@ -18,7 +18,7 @@ namespace AKSaigyouji.Modules.MapGeneration
         MapGenModule carvedModule;
 
         [Tooltip("The radius of any tunnels needed to connect carved entrances to the rest of the map, if applicable.")]
-        [SerializeField] int tunnelRadius;
+        [SerializeField] int tunnelRadius = 1;
 
         [SerializeField] int seed;
 
@@ -82,12 +82,10 @@ namespace AKSaigyouji.Modules.MapGeneration
             carvedModule.Seed = seed;
             Map map = carvedModule.Generate();
             Boundary boundary = new Boundary(map.Length, map.Width);
-            int entranceLength = 0;
             foreach (MapEntrance entrance in entrances)
             {
                 foreach (Coord coord in entrance.GetCoords(boundary))
                 {
-                    entranceLength++;
                     map[coord] = Tile.Floor;
                 }
             }

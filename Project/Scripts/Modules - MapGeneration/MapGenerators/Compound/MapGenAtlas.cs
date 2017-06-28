@@ -19,9 +19,23 @@ namespace AKSaigyouji.Modules.MapGeneration
 
         public override Map Generate()
         {
-            int[] range = Enumerable.Range(0, modules.Length).ToArray();
             var random = new System.Random(seed); // This is used to deterministically generate random seeds
             Map[] charts = modules.Select(mod => mod.Generate(random.Next())).ToArray();
+            return Generate(charts);
+        }
+
+        /// <summary>
+        /// Unlike generate, this method preserves the seeds of the submodules and uses those.
+        /// </summary>
+        public Map GenerateWithSubmoduleSeeds()
+        {
+            Map[] charts = modules.Select(mod => mod.Generate()).ToArray();
+            return Generate(charts);
+        }
+
+        Map Generate(Map[] charts)
+        {
+            int[] range = Enumerable.Range(0, modules.Length).ToArray();
             int totalLength = (int)range.Max(i => charts[i].Length + offsets[i].x);
             int totalWidth = (int)range.Max(i => charts[i].Width + offsets[i].y);
             Map map = new Map(totalLength, totalWidth);

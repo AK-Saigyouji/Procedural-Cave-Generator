@@ -31,7 +31,7 @@ arr.TransformInterior((x, y) => SomeOtherFunction(x, y, otherData));
 
 Dependencies: Everything else.
 
-The main class is CaveGenerator, which serves as the entry point to the entire system. Lots of plumbing, and a fairly bit of editor scripting for the custom inspector to CaveGeneratorUI, but not much else.
+The main class is CaveGenerator, which serves as the entry point to the entire system. Lots of plumbing, and a fair bit of editor scripting for the custom inspector to CaveGeneratorUI, but not much else.
 
 ### Editor
 

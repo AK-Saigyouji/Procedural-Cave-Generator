@@ -28,6 +28,12 @@ namespace AKSaigyouji.Modules.MapGeneration
         public Side BoundarySide { get { return side; } }
 
         /// <summary>
+        /// The boundary point on the opposite side, with the same magnitude. i.e. the complements are 
+        /// top/bottom, and left/right, with the same magnitude.
+        /// </summary>
+        public BoundaryPoint Complement { get { return new BoundaryPoint(GetOppositeSide(side), magnitude); } }
+
+        /// <summary>
         /// How many units along the side this point lies. Always goes from left to right, from bottom to top. 
         /// </summary>
         public int Magnitude { get { return magnitude; } }
@@ -104,6 +110,11 @@ namespace AKSaigyouji.Modules.MapGeneration
         static bool IsValidSide(Side side)
         {
             return side == Side.Bottom || side == Side.Top || side == Side.Left || side == Side.Right;
+        }
+
+        static Side GetOppositeSide(Side side)
+        {
+            return (Side)(((int)side + 2) % 4);
         }
     } 
 }

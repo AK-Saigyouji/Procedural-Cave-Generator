@@ -34,7 +34,7 @@ namespace AKSaigyouji.Modules.MapGeneration
             texture = map;
         }
 
-        public static MapGenStaticMap Create(Texture2D map)
+        public static MapGenStaticMap Construct(Texture2D map)
         {
             var module = CreateInstance<MapGenStaticMap>();
             module.AssignMap(map);

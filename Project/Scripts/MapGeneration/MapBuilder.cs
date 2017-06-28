@@ -149,46 +149,16 @@ namespace AKSaigyouji.MapGeneration
         }
 
         /// <summary>
-        /// Enlarges tunnels to accommodate the given radius, so that the map can be traversed by a hypothetical
-        /// circle of that radius. For small radii, is effective at minimizing unnecessary loss of walls. Can be
-        /// very destructive for larger radii, particularly for map with high density of thin regions. Run 
-        /// time and memory use proportional to radius * length * width. 
+        /// Enlarges tunnels so that they can be traversed by a slightly larger object. In particular, enlarges passages
+        /// that are of width 1, to be of width at least 2. 
         /// </summary>
-        public static void WidenTunnels(Map inputMap, int radius)
+        public static void WidenTunnels(Map inputMap)
         {
             if (inputMap == null)
                 throw new ArgumentNullException("inputMap");
 
-            if (radius < 0)
-                throw new ArgumentOutOfRangeException("radius");
-
-            if (radius == 0)
-                return;
-
             var floorEnlarger = new PassageEnlarger(inputMap.Length, inputMap.Width);
-            for (int i = 1; i <= radius; i++)
-            {
-                floorEnlarger.ExpandFloors(inputMap, i);
-            }
-        }
-
-        /// <summary>
-        /// Similar to WidenTunnels, but substantially faster for large radii. Also sloppier - intended to be used
-        /// only if a large radius is required and WidenTunnels has been found to be too slow after profiling.
-        /// </summary>
-        public static void WidenTunnelsFast(Map inputMap, int radius)
-        {
-            if (inputMap == null)
-                throw new ArgumentNullException("inputMap");
-
-            if (radius < 0)
-                throw new ArgumentOutOfRangeException("radius");
-
-            if (radius == 0)
-                return;
-
-            var floorEnlarger = new PassageEnlarger(inputMap.Length, inputMap.Width);
-            floorEnlarger.ExpandFloors(inputMap, radius);
+            floorEnlarger.ExpandFloors(inputMap);
         }
 
         /// <summary>

@@ -6,7 +6,8 @@
  values much larger than the range of a short.
  
   The other non-trivial design decision was to make Coord immutable, in contrast to Vector2. This is in keeping
- with best practices when dealing with C# structs.*/
+ with best practices when dealing with C# structs. The one annoying consequence of this decision is that Unity
+ does not serialize readonly fields, so that has to be worked around when serializing data involving coords.*/
 
 using System;
 using System.Collections;
@@ -15,7 +16,6 @@ using UnityEngine;
 
 namespace AKSaigyouji.Maps
 {
-    [Serializable]
     /// <summary>
     /// Similar to Vector2 but for integers, Coord is designed with coordinate grids (2d arrays) in mind. 
     /// Handles coordinates between -32768 and 32767. Unlike Vector2, Coord is immutable.

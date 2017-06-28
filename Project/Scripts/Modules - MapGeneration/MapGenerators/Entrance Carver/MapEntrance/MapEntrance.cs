@@ -12,13 +12,28 @@ namespace AKSaigyouji.Modules.MapGeneration
         public BoundaryPoint StartPoint { get { return startPoint; } }
         public BoundaryPoint EndPoint { get { return endPoint; } }
 
+        public MapEntrance Complement { get { return new MapEntrance(startPoint.Complement, endPoint.Complement); } }
+
         [SerializeField] BoundaryPoint startPoint;
         [SerializeField] BoundaryPoint endPoint;
 
+        /// <summary>
+        /// Define a map entrance between these two points. Note that start and end do not have to be on the same side.
+        /// </summary>
         public MapEntrance(BoundaryPoint startPoint, BoundaryPoint endPoint)
         {
             this.startPoint = startPoint;
             this.endPoint = endPoint;
+        }
+
+        /// <summary>
+        /// Define a map entrance starting at the startpoint, of the given length. e.g. passing in (Left, 15) for the
+        /// start point and 3 for the length will create an entrance between (Left, 15) and (Left, 18).
+        /// </summary>
+        public MapEntrance(BoundaryPoint startPoint, int length)
+        {
+            this.startPoint = startPoint;
+            endPoint = new BoundaryPoint(startPoint.BoundarySide, startPoint.Magnitude + length);
         }
 
         /// <summary>
@@ -44,7 +59,7 @@ namespace AKSaigyouji.Modules.MapGeneration
                 // This switch is terrible, but it's not obvious how to avoid all the explicit case-checking 
                 // without setting up a gratuitous amount of infrastructure just to avoid it. We're trying to find
                 // the corners between the two points along the shortest path (clockwise vs counterclockwise). 
-                // e.g. if on point is on top and the other is on the right, we know we need to go top->topright->right.
+                // e.g. if one point is on top and the other is on the right, we know we need to go top->topright->right.
                 // If points are on opposite sides, e.g. left and right, we have to go either left->topleft->topright->right
                 // or left->botleft->botright->right, depending on which path is shorter. We also need to check if we're
                 // starting at right or left, as the midpoints may need to be reversed.

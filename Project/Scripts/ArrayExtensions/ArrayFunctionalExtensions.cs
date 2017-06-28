@@ -1,7 +1,4 @@
-﻿/* This is a growing collection of simple, general-purpose extension methods. When enough methods for a given type
- are written, they get refactored into a separate class.*/
-
-using System;
+﻿using System;
 
 namespace AKSaigyouji.ArrayExtensions
 {

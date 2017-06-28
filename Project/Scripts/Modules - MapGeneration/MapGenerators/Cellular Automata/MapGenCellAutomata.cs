@@ -37,8 +37,11 @@ namespace AKSaigyouji.Modules.MapGeneration
             map.TransformBoundary((x, y) => Tile.Wall);
             MapBuilder.Smooth(map);
             MapBuilder.RemoveSmallFloorRegions(map, properties.MinFloorSize);
-            MapBuilder.ConnectFloors(map, seed, Mathf.Max(1, properties.MinPassageRadius));
-            MapBuilder.WidenTunnels(map, properties.MinPassageRadius);
+            MapBuilder.ConnectFloors(map, seed);
+            if (properties.ExpandTunnels)
+            {
+                MapBuilder.WidenTunnels(map);
+            }
             MapBuilder.RemoveSmallWallRegions(map, properties.MinWallSize);
             map = MapBuilder.ApplyBorder(map, properties.BorderSize);
             return map;

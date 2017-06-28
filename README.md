@@ -2,15 +2,7 @@
 
 ## 0. Introduction
 
-This is a highly customizable and scalable system for generating randomized 3D cave terrain in Unity. There are a number of systems at play:
-
-The Module system is an extension of ScriptableObject with improved support for composition. The inspector to a module exposes inspectors to all modules in its reference graph, allowing a complex composite module to be customized from a single point. Additionally, the context menu for Modules contains an option for a deep copy, which behaves similar to ScriptableObject.Instantiate, except it copies over every submodule as a subasset, saved to the new copied module. This system is at the heart of the customization provided by the project. 
-
-The Map Generation system provides a wealth of functionality for generating modules capable of producing 2D grids of binary tiles (floors and walls) called Maps. Such functionality includes: a visual editor for producing modules or individual maps by stitching together other modules, which can then be fed back into the editor as building blocks; support for converting between maps and PNG files, meaning you can paint a map in any paint program, then feed it into this system to be used either as a building block for a more complex module, or as a static module itself; and a highly optimized library of algorithms for generating maps in code, covering tasks such as connectivity, cellular automata and randomized tunneling. The Map Generation system can easily be extracted from this project for use in any project that uses 2D grids. 
-
-The Mesh Generation system converts 2D grids (in particular, Maps) into 3D meshes. The heart of this process is the Marching Squares algorithm. 
-
-Finally, the Cave Generation system ties everything together to produce 3D terrain from scratch, relying heavily on modules to make it easy to swap functionality in and out and to author custom modules without touching a line of the original source code.
+This is a highly customizable and scalable system for generating randomized 3D cave terrain in Unity. 
 
 ![3D cave with height map](http://i.imgur.com/sBi6T2U.jpg)
 
@@ -19,6 +11,16 @@ Finally, the Cave Generation system ties everything together to produce 3D terra
 ![Enclosed cave](http://i.imgur.com/GS2n1Nu.jpg)
 
 Note: The textures themselves are from an excellent free asset pack called [Natural Tiling Textures](https://www.assetstore.unity3d.com/en/#!/content/35173) by Terramorph Workshop. 
+
+The generator makes use of several systems: 
+
+The Module system is an extension of ScriptableObject with improved support for composition. 
+
+The Map Generation system provides a wealth of functionality for generating modules capable of producing 2D grids of binary tiles (floors and walls) called Maps: a visual editor for stitching together other modules to produce composite modules; support for converting between maps and textures, allowing maps to be produced in seconds in any paint program; and a highly optimized library of algorithms for generating maps.  
+
+The Mesh Generation system converts 2D grids (in particular, Maps) into 3D meshes. The heart of this process is the Marching Squares algorithm. 
+
+Finally, the Cave Generation system ties everything together to produce 3D terrain from scratch, relying heavily on modules to make it easy to swap functionality in and out and to author custom modules without touching a line of the original source code.
 
 ## 1. Overview of contents
 
@@ -36,11 +38,15 @@ Scripts contains the source code. The file structure within Scripts matches the 
 
 ### 2.1 In editor
 
-Create a new empty game object, and attach the CaveGeneratorUI script. Insert sample modules (provided) and materials (not provided), and if using the Rock Outline style of generator, also supply rock prefabs (not provided). High quality materials and rock assets can be found for free on the Unity store. Most modules also have parameters that can be tuned to get the desired result. 
+Create a new empty game object, and attach the CaveGeneratorUI script. Insert sample modules (provided) and materials (not provided), and if using the Rock Outline style of generator, also supply rock prefabs (not provided). High quality materials and rock assets can be found for free on the Unity store. Most modules also have parameters that can be tuned to control the results.
 
 Run the scene, and you will see two buttons appear in the inspector: Generate New Cave and Create Prefab. Generating New Cave will create a new cave as a child of the generator, overwriting the current child. Creating a prefab will convert the current child into a prefab and save it into your directory along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. It is composed entirely of core unity objects, meaning it retains no dependency on my code. This ensures compatibility with other tools, as well as future patches which may in principle break my code.  
 
-There are two types of generators currently available: Three Tiered and Rock Outline. Three tiered builds three meshes for the floor, ceiling and walls and is available as isometric (first image above) or enclosed (third image above). Rock outline builds just a floor, and then instantiates rock prefabs along the outlines of the floor (second image above). Multiple rock prefabs can be assigned in the inspector, and the generator will randomly pick from them. A weight can be assigned to each prefab to make certain prefabs instantiated more frequently than others. Note that in order for the prefab to be oriented correctly, it must be rotated so that the long side runs along the z-axis. The prefab will be rotated so that the z-axis runs along the outline itself. 
+There are two types of generators currently available: Three Tiered and Rock Outline. 
+
+Three tiered builds three meshes for the floor, ceiling and walls and is available as isometric (first image above) or enclosed (third image above). 
+
+Rock outline builds just a floor, and then instantiates rock prefabs along the outlines of the floor (second image above). Multiple rock prefabs can be assigned in the inspector, and the generator will randomly pick from them. A weight can be assigned to each prefab to make certain prefabs instantiated more frequently than others. Note that in order for the prefab to be oriented correctly, it must be rotated so that the long side runs along the z-axis. The prefab will be rotated so that the z-axis runs along the outline itself. 
 
 ### 2.2 In code
 
@@ -52,11 +58,11 @@ You can access the major features of this project entirely through code, includi
 
 Broadly speaking, there are three ways to work with this project. 
 
-#### 3.1 Entirely through the editor
+### 3.1 Entirely through the editor
 
 Configure the CaveGeneratorUI through the inspector and plug in the appropriate modules. Generate caves until you find one that suits your purposes, tweaking the modules to get the right mix of properties. Convert it to a prefab, then work with that prefab directly in the editor. Note that it's very important to use the button on the inspector for CaveGeneratorUI to convert to prefab: if you simply drag the cave from the hierarchy into the assets, the prefab will not be serialized correctly (it will work until the end of the session, but your meshes will disappear when you reload the project).
 
-#### 3.2 Design in the editor, then rebuild at runtime
+### 3.2 Design in the editor, then rebuild at runtime
 
 A downside to the first approach is that you have to save large meshes as assets. If you're generating large caves, or just a large number of them, this can consume a lot of memory and increase the build size of the game to an unacceptable size.
 
@@ -66,9 +72,9 @@ If taking this approach, be sure to save the modules you used when generating th
 
 An alternative to saving the module is to save a copy of the map itself using the visual editor, and then use a static map holder to reproduce that same map in the cave generator. The map will be saved as a PNG, which does an excellent job of compressing the map data so that it takes significantly less than 1 bit per tile. 
 
-#### 3.3 Design and build algorithmically at run-time
+### 3.3 Design and build algorithmically at run-time
 
-As certain recent games show us, procedurally generating content at run-time is difficult to do right. At the moment, support for this type of generation is limited, though I am working on some tools. For this approach, configure modules to build the kind of caves you want, write code to build the appropriate Configuration object, then pass it to the CaveGenerator class, which will return the cave. The challenging part is writing code to build content for the resulting cave at run-time without knowing its structure ahead of time. 
+As certain recent games show us, procedurally generating content at run-time is difficult to do right. At the moment, support for this type of generation is limited, though I am working on some tools. For this approach, configure modules to build the kind of caves you want, write code to build the appropriate Configuration object, then pass it to the CaveGenerator class, which will return the cave. Alternatively, wire everything up in the editor, and then simply have a script call the generate method on the CaveGeneratorUI script. The challenging part is writing code to build content for the resulting cave at run-time without knowing its structure ahead of time. 
 
 A more feasible approach (compared to complete randomization) is a hybrid approach along the lines of, for example, Diablo 2. Generate a number of fixed sections, place markers throughout the sections to indicate where content can be randomly generated, then assemble these pieces randomly to produce randomized yet highly structured content. The entrance carver map generator module was designed to help stitch together caves: you can slot a module into an entrance carver module, and it will carve an opening along the boundary, connecting it to the rest of the map. This is an approach I'm investigating more closely - the difficult infrastructure is already in place, I just need to wire it up and give it some polish.
 
@@ -76,7 +82,7 @@ A more feasible approach (compared to complete randomization) is a hybrid approa
 
 Access the visual editor by going to Window, and selecting "AKS - Map Gen Editor". This is an incomplete feature, but is nonetheless usable in its current state. 
 
-The visual editor is a custom editor window that allows you to build map generator modules out of existing modules. The editor shows module outlines (for dynamic map generators, this means a boundary outline, since the exact outline will depend on the seed), allowing for multiple modules to be stitched together. I wish to experiment with the idea of allowing users to add markers to specific spots in various static maps, and giving each marker a string. These strings could either be used as keys in a dictionary to access the various markers at run-time to add content, or possibly as codes to automatically generate content. This would allow for the rapid generation of randomized maps in the style of Diablo 2, such as the den of evil, catacombs, sewers, durance of hate, etc, without having to come up with sophisticated algorithms that can understand the structure of a random cave. 
+The visual editor is a custom editor window that allows you to stitch together map generator modules out of existing modules. The editor shows module outlines (for dynamic map generators, this means a boundary outline, since the exact outline will depend on the seed), allowing for multiple modules to be stitched together. I wish to experiment with the idea of allowing users to add markers to specific spots in various static maps, and giving each marker a string. These strings could either be used as keys in a dictionary to access the various markers at run-time to add content, or possibly as codes to automatically generate content. This would allow for the rapid generation of randomized maps in the style of Diablo 2, such as the den of evil, catacombs, sewers, durance of hate, etc, without having to come up with sophisticated algorithms that can understand the structure of a random cave. 
 
 ## 5. Creating maps in paint programs
 

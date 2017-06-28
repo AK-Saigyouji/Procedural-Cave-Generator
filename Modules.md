@@ -250,14 +250,15 @@ public override Map Generate()
 
 ##### 1.2.6 Ensuring minimum width
 
-We know that the map will contain a tile path from any two tiles. But how large of an object will this accommodate? As it turns out, in the worst, case, a tunnel can be exactly 1 game unit wide, and an object of exactly that size may have some trouble fitting through such an opening. It would be good if we could expand small tunnels to ensure that the map can be navigated without having to shrink the navigators. We could iterate over all floor tiles and expand the floors in every direction by a given radius. While this works, it would dramatically reduce the proportion of walls in the map. I've implemented a far less aggressive expansion algorithm which determines 'problem areas' and expands only those. It scales poorly and becomes aggressive for large values, so ideally it should be used for values between 0 and 3 or so. 
+We know that the map will contain a tile path from any two tiles. But how large of an object will this accommodate? As it turns out, in the worst, case, a tunnel can be exactly 1 game unit wide, and an object of exactly that size may have some trouble fitting through such an opening. It would be good if we could expand small tunnels to ensure that the map can be navigated without having to shrink the navigators. We could iterate over all floor tiles and expand the floors in every direction by a given radius. While this works, it would dramatically reduce the proportion of walls in the map. I've implemented a far less aggressive expansion algorithm which identifies likely passages and expands only those. The end result is that the map's passages have a minimum  width of 2 squares. 
+
 
 ```cs
-public static void WidenTunnels(Map inputMap, int radius);
+public static void WidenTunnels(Map inputMap);
 ```
 
 ```cs
-public int minTunnelRadius = 0;
+public bool expandTunnels = true;
 
 public override Map Generate()
 {
@@ -266,7 +267,10 @@ public override Map Generate()
     MapBuilder.RemoveSmallFloorRegions(map, minFloorSize);
     MapBuilder.Smooth(map);
     MapBuilder.ConnectFloors(map);
-    MapBuilder.WidenTunnels(map, minTunnelRadius);
+    if (expandTunnels)
+    {
+        MapBuilder.WidenTunnels(map);
+    }
     MapBuilder.RemoveSmallWallRegions(map, minWallSize);
     map = MapBuilder.ApplyBorder(map, borderSize);
     return map;
@@ -304,7 +308,7 @@ namespace AKSaigyouji.Modules.MapGeneration
         public float mapDensity = 0.5f;
         public int seed = 0;
         public int borderSize = 1;
-        public int minTunnelRadius = 0;
+        public bool expandTunnels = true;
         public int minWallSize = 50;
         public int minFloorSize = 50;
 
@@ -317,7 +321,10 @@ namespace AKSaigyouji.Modules.MapGeneration
             MapBuilder.RemoveSmallFloorRegions(map, minFloorSize);
             MapBuilder.Smooth(map);
             MapBuilder.ConnectFloors(map);
-            MapBuilder.WidenTunnels(map, minTunnelRadius);
+            if (expandTunnels)
+            {
+                MapBuilder.WidenTunnels(map);
+            }
             MapBuilder.RemoveSmallWallRegions(map, minWallSize);
             map = MapBuilder.ApplyBorder(map, borderSize);
             return map;
