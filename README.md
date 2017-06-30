@@ -42,7 +42,7 @@ Scripts contains the source code. The file structure within Scripts matches the 
 
 Create a new empty game object, and attach the CaveGeneratorUI script. Insert sample modules (provided) and materials (not provided), and if using the Rock Outline style of generator, also supply rock prefabs (not provided). High quality materials and rock assets can be found for free on the Unity store. Most modules also have parameters that can be tuned to control the results.
 
-Run the scene, and you will see two buttons appear in the inspector: Generate New Cave and Create Prefab. Generating New Cave will create a new cave as a child of the generator, overwriting the current child. Creating a prefab will convert the current child into a prefab and save it into your directory along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. It is composed entirely of core unity objects, meaning it retains no dependency on my code. This ensures compatibility with other tools, as well as future patches which may in principle break my code.  
+Run the scene, and you will see three buttons appear in the inspector. Generating Cave will create a new cave as a child of the generator, overwriting the current child. Save Single Map will generate a map using the current configuration of the map module and save it as an asset. Creating a prefab will convert the current child into a prefab and save it into your directory along with the meshes. This allows you to exit play mode, drag the cave into your scene, and work with it in the editor. It is composed entirely of core unity objects, meaning it retains no dependency on my code. This ensures compatibility with other tools, as well as future patches which may in principle break my code.  
 
 There are two types of generators currently available: Three Tiered and Rock Outline. 
 
@@ -72,7 +72,7 @@ This approach gives you the best of both worlds: save a cave as a prefab, design
 
 If taking this approach, be sure to save the modules you used when generating the prefab. You'll want to duplicate the modules you used and store those duplicates somewhere safe. If you mutate the module (e.g. by generating a random cave with it, causing the seed to be rerolled) you won't be able to rebuild the cave unless you've saved all of its properties somewhere. 
 
-An alternative to saving the module is to save a copy of the map itself using the visual editor, and then use a static map holder to reproduce that same map in the cave generator. The map will be saved as a PNG, which does an excellent job of compressing the map data so that it takes significantly less than 1 bit per tile. 
+An alternative to saving the module is to save a copy of the map, and then use a static map holder to reproduce that same map in the cave generator. The map will be saved as a PNG, which does an excellent job of compressing the map data so that it takes significantly less than 1 bit per tile. 
 
 ### 3.3 Design and build algorithmically at run-time
 
