@@ -1,10 +1,11 @@
-﻿/* This is the custom inspector for CaveGeneratorUI, and thus constitutes the main user interface for the cave
- generation system.*/
+﻿/* This is the custom inspector for CaveGeneratorUI, and the main user interface for the cave generation system.*/
 
 using UnityEngine;
 using UnityEditor;
+using System;
 using System.Collections.Generic;
 using AKSaigyouji.EditorScripting;
+using AKSaigyouji.Modules.MapGeneration;
 
 namespace AKSaigyouji.CaveGeneration
 {
@@ -12,7 +13,9 @@ namespace AKSaigyouji.CaveGeneration
     public class CaveGeneratorUIEditor : Editor
     {
         // Asset folder names
+        const string ROOT_FOLDER = "AKSaigyouji";
         const string CAVE_FOLDER = "Generated Cave";
+        const string MAP_FOLDER = "Maps";
         const string PREFAB_FOLDER = "Generated Caves";
         const string FLOOR_FOLDER = "FloorMeshes";
         const string WALL_FOLDER = "WallMeshes";
@@ -20,8 +23,9 @@ namespace AKSaigyouji.CaveGeneration
 
         const string CAVE_NAME = "Cave";
         const string PREFAB_NAME = "Cave.prefab";
+        const string MAP_NAME = "SavedCaveGenerator_map.png";
 
-        // These names must reflect the names of the corresponding variables in the corresponding scripts.
+        // These names must match the names of the corresponding variables in the corresponding scripts.
         const string THREE_TIER_CONFIG_NAME = "threeTierCaveConfig";
         const string ROCK_CAVE_CONFIG_NAME = "rockCaveConfig";
 
@@ -40,6 +44,7 @@ namespace AKSaigyouji.CaveGeneration
         const string FLOOR_HEIGHTMAP_LABEL = "Floor Heightmap Module";
         const string CEILING_HEIGHTMAP_LABEL = "Ceiling Heightmap Module";
         const string GENERATE_CAVE_BUTTON_LABEL = "Generate Cave";
+        const string SAVE_MAP_LABEL = "Save Single Map";
         const string CONVERT_PREFAB_BUTTON_LABEL = "Convert to Prefab";
         const string CAVE_CONFIG_LABEL = "Configuration";
 
@@ -61,6 +66,11 @@ namespace AKSaigyouji.CaveGeneration
         // generators are implemented, which is not currently planned.
         CaveGeneratorUI.CaveGeneratorType caveGenType;
         const string TYPE_ENUM_ERROR_FORMAT = "Internal error: {0} type not handled properly by custom editor.";
+
+        InvalidOperationException CaveGenTypeException
+        {
+            get { return new InvalidOperationException(string.Format(TYPE_ENUM_ERROR_FORMAT, caveGenType)); }
+        }
 
         public override void OnInspectorGUI()
         {
@@ -125,6 +135,10 @@ namespace AKSaigyouji.CaveGeneration
                     DestroyCave();
                     Generate();
                 }
+                if (GUILayout.Button(SAVE_MAP_LABEL))
+                {
+                    CreateMap();
+                }
                 if (GUILayout.Button(CONVERT_PREFAB_BUTTON_LABEL))
                 {
                     TryCreatePrefab();
@@ -137,8 +151,33 @@ namespace AKSaigyouji.CaveGeneration
         {
             string configName = GetConfigName();
             SerializedProperty module = serializedObject.FindProperty(configName).FindPropertyRelative(moduleName);
-            Object targetObject = module.objectReferenceValue;
+            UnityEngine.Object targetObject = module.objectReferenceValue;
             EditorHelpers.DrawFoldoutEditor(label, targetObject, ref drawEditor, ref editor);
+        }
+
+        void CreateMap()
+        {
+            string rootPath = IOHelpers.RequireFolder(ROOT_FOLDER);
+            string mapFolderPath = IOHelpers.RequireFolder(rootPath, MAP_FOLDER);
+            string mapPath = IOHelpers.GetAvailableAssetPath(mapFolderPath, MAP_NAME);
+            string configName;
+            switch (caveGenType)
+            {
+                case CaveGeneratorUI.CaveGeneratorType.ThreeTiered:
+                    configName = THREE_TIER_CONFIG_NAME;
+                    break;
+                case CaveGeneratorUI.CaveGeneratorType.RockOutline:
+                    configName = ROCK_CAVE_CONFIG_NAME;
+                    break;
+                default:
+                    throw CaveGenTypeException;
+            }
+            string property = string.Format("{0}.{1}", configName, MAP_GEN_NAME);
+            SerializedProperty mapGenProperty = serializedObject.FindProperty(property);
+            var mapGen = (MapGenModule)mapGenProperty.objectReferenceValue;
+            var map = mapGen.Generate();
+            var texture = map.ToTexture();
+            IOHelpers.SaveTextureAsPNG(texture, mapPath);
         }
 
         string GetConfigName()
@@ -153,7 +192,7 @@ namespace AKSaigyouji.CaveGeneration
                     configName = ROCK_CAVE_CONFIG_NAME;
                     break;
                 default:
-                    throw new System.InvalidOperationException(string.Format(TYPE_ENUM_ERROR_FORMAT, caveGenType));
+                    throw CaveGenTypeException;
             }
             return configName;
         }
@@ -188,14 +227,12 @@ namespace AKSaigyouji.CaveGeneration
 
             if (childCaves.Length == 0)
             {
-                Debug.LogErrorFormat("No cave found to convert. Cave must be a child of this generator and labelled {0}.", CAVE_NAME);
-                return;
+                throw new InvalidOperationException("No cave found to convert. Cave must be a child of this generator and labelled " + CAVE_NAME);
             }
 
             if (childCaves.Length > 1)
             {
-                Debug.LogError("Unexpected: multiple caves found under this generator. Must have only one.");
-                return;
+                throw new InvalidOperationException("Unexpected: multiple caves found under this generator. Must have only one.");
             }
 
             GameObject cave = childCaves[0].gameObject;
@@ -214,14 +251,14 @@ namespace AKSaigyouji.CaveGeneration
                     caveGenerator.GenerateRockCave();
                     break;
                 default:
-                    break;
+                    throw CaveGenTypeException;
             }
         }
 
         void CreatePrefab(GameObject cave)
         {
-            IOHelpers.RequireFolder("Assets", CAVE_FOLDER);
-            string caveFolderPath = IOHelpers.RequireFolder(CAVE_FOLDER, PREFAB_FOLDER);
+            string rootFolderPath = IOHelpers.RequireFolder(ROOT_FOLDER);
+            string caveFolderPath = IOHelpers.RequireFolder(rootFolderPath, PREFAB_FOLDER);
             string prefabFolderPath = IOHelpers.CreateFolder(caveFolderPath, CAVE_FOLDER);
 
             try
@@ -230,9 +267,9 @@ namespace AKSaigyouji.CaveGeneration
                 string path = IOHelpers.CombinePath(prefabFolderPath, PREFAB_NAME);
                 PrefabUtility.CreatePrefab(path, cave);
             }
-            catch (System.InvalidOperationException)
+            catch (InvalidOperationException)
             {
-                AssetDatabase.DeleteAsset(prefabFolderPath);
+                AssetDatabase.DeleteAsset(prefabFolderPath); 
                 throw;
             }
         }
@@ -278,18 +315,12 @@ namespace AKSaigyouji.CaveGeneration
 
         static Mesh ExtractMesh(GameObject component)
         {
-            const string errorMessage = "Prefab creation failed, unexpected cave hierarchy: sector child with no mesh.";
             MeshFilter meshFilter = component.GetComponent<MeshFilter>();
 
-            if (meshFilter == null)
-                throw new System.InvalidOperationException(errorMessage);
+            if (meshFilter == null || meshFilter.sharedMesh == null)
+                throw new InvalidOperationException("Prefab creation failed, unexpected cave hierarchy: sector child with no mesh.");
 
-            Mesh mesh = meshFilter.sharedMesh;
-
-            if (mesh == null)
-                throw new System.InvalidOperationException(errorMessage);
-
-            return mesh;
+            return meshFilter.sharedMesh;
         }
     } 
 }

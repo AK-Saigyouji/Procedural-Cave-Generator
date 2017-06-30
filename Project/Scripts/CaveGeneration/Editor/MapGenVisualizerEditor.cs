@@ -31,6 +31,7 @@ namespace AKSaigyouji.Modules.MapGeneration
         {
             if (Event.current.type == EventType.Repaint)
             {
+                bool suppressErrors = serializedObject.FindProperty("suppressErrors").boolValue;
                 MapGenModule mapGenerator = GetMapGenModule();
                 if (mapGenerator != null)
                 {
@@ -43,14 +44,13 @@ namespace AKSaigyouji.Modules.MapGeneration
                             GUI.DrawTexture(position, texture, ScaleMode.StretchToFill, false);
                         }
                     }
-                    // If the generator is not fully configured in the inspector yet, then a number of exceptions may occur,
-                    // which are caught and suppressed here. This results in the behaviour that the editor will only visualize
-                    // a map once the generator has a valid configuration. Doing so may suppress actual errors in a module's
-                    // code, in which case the module should be executed in the cave generator, or directly, for debugging
-                    // purposes.
-                    catch (InvalidOperationException) { }
-                    catch (NullReferenceException) { }
-                    catch (ArgumentException) { }
+                    // If the generator is not configured properly yet, then errors may occur. The following
+                    // likely, non-fatal exceptions are caught and (optionally) suppressed here, to avoid flooding
+                    // the editor console while configuring. This behaviour is optional to avoid suppressing
+                    // useful diagnostic information if using this visualizer while writing new code.
+                    catch (InvalidOperationException) { if (!suppressErrors) throw; }
+                    catch (NullReferenceException) { if (!suppressErrors) throw; }
+                    catch (ArgumentException) { if (!suppressErrors) throw; }
                 }
             }
         }
