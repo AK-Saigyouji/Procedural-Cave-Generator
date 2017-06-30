@@ -38,7 +38,7 @@ Scripts contains the source code. The file structure within Scripts matches the 
 
 ### 2.1 In editor
 
-[CaveGeneratorUI's inspector](http://i.imgur.com/mmYcpcA.png)
+![CaveGeneratorUI's inspector](http://i.imgur.com/mmYcpcA.png)
 
 Create a new empty game object, and attach the CaveGeneratorUI script. Insert sample modules (provided) and materials (not provided), and if using the Rock Outline style of generator, also supply rock prefabs (not provided). High quality materials and rock assets can be found for free on the Unity store. Most modules also have parameters that can be tuned to control the results.
 
