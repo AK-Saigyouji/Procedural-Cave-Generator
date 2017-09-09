@@ -16,11 +16,13 @@ namespace AKSaigyouji.Modules.MapGeneration
 
         public override Map Generate()
         {
+            Validate();
             return Map.FromTexture(texture);
         }
 
         public override Coord GetMapSize()
         {
+            Validate();
             return new Coord(texture.width, texture.height);
         }
 
@@ -34,6 +36,16 @@ namespace AKSaigyouji.Modules.MapGeneration
             texture = map;
         }
 
+        public static implicit operator MapGenStaticMap(Map map)
+        {
+            return Construct(map);
+        }
+
+        public static implicit operator MapGenStaticMap(Texture2D map)
+        {
+            return Construct(map);
+        }
+
         public static MapGenStaticMap Construct(Texture2D map)
         {
             var module = CreateInstance<MapGenStaticMap>();
@@ -41,11 +53,19 @@ namespace AKSaigyouji.Modules.MapGeneration
             return module;
         }
 
-        public static MapGenStaticMap Create(Map map)
+        public static MapGenStaticMap Construct(Map map)
         {
             var module = CreateInstance<MapGenStaticMap>();
             module.AssignMap(map);
             return module;
+        }
+
+        void Validate()
+        {
+            if (texture == null)
+            {
+                throw new InvalidOperationException("Map not assigned.");
+            }
         }
     }
 }

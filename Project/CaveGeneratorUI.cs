@@ -1,17 +1,17 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
+using System.Text;
 using UnityEngine;
 using UnityEditor;
 using AKSaigyouji.Modules;
 using AKSaigyouji.Modules.Outlines;
 using AKSaigyouji.Modules.HeightMaps;
 using AKSaigyouji.Modules.MapGeneration;
-using System.Text;
 
 namespace AKSaigyouji.CaveGeneration
 {   
     /// <summary>
-    /// Interface to the cave generator through the inspector. Can generate via code, but can only customize
-    /// through inspector. Use CaveGenerator directly to customze through code.
+    /// Interface to the cave generator through the inspector.
     /// </summary>
     public sealed class CaveGeneratorUI : MonoBehaviour
     {
@@ -21,7 +21,29 @@ namespace AKSaigyouji.CaveGeneration
             RockOutline
         }
 
-        // Note: changing the name of any properties may break the custom inspector (CaveGeneratorUIEditor). 
+        public ThreeTierCaveConfiguration ThreeTierConfig
+        {
+            get { return threeTierCaveConfig; }
+            set
+            {
+                if (value == null) throw new ArgumentNullException("value");
+                threeTierCaveConfig = value;
+            }
+        }
+
+        public RockCaveConfiguration RockConfig
+        {
+            get { return rockCaveConfig; }
+            set
+            {
+                if (value == null) throw new ArgumentNullException("value");
+                rockCaveConfig = value;
+            }
+        }
+
+        public bool Randomize { get { return randomize; } set { randomize = value; } }
+
+        // Note: changing the name of any serialized variable may break the custom inspector (CaveGeneratorUIEditor). 
 
         [SerializeField] CaveGeneratorType type;
 
@@ -60,10 +82,12 @@ namespace AKSaigyouji.CaveGeneration
                                             .Select(AssetDatabase.LoadAssetAtPath<Module>)
                                             .ToArray();
 
-            MapGenModule mapGenerator = modules.FirstOrDefault(m => m.name == "SampleMapGenerator") as MapGenModule;
-            HeightMapModule floor = modules.FirstOrDefault(m => m.name == "SampleFloorHeightMap") as HeightMapModule;
-            HeightMapModule ceiling = modules.FirstOrDefault(m => m.name == "SampleCeilingHeightMap") as HeightMapModule;
-            OutlineModule outline = modules.FirstOrDefault(m => m.name == "SampleOutline") as OutlineModule;
+            Func<string, Module> getModule = (name) => modules.FirstOrDefault(module => module.name == name);
+
+            MapGenModule mapGenerator = getModule("SampleMapGenerator") as MapGenModule;
+            HeightMapModule floor = getModule("SampleFloorHeightMap") as HeightMapModule;
+            HeightMapModule ceiling = getModule("SampleCeilingHeightMap") as HeightMapModule;
+            OutlineModule outline = getModule("SampleOutline") as OutlineModule;
 
             Undo.RecordObject(this, "Insert sample modules");
             var missingModules = new StringBuilder();

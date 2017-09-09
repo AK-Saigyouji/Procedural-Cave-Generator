@@ -150,7 +150,7 @@ namespace AKSaigyouji.CaveGeneration
         void DrawModuleEditor(string label, string moduleName, ref bool drawEditor, ref Editor editor)
         {
             string configName = GetConfigName();
-            SerializedProperty module = serializedObject.FindProperty(configName).FindPropertyRelative(moduleName);
+            SerializedProperty module = serializedObject.FindProperty(string.Format("{0}.{1}", configName, moduleName));
             UnityEngine.Object targetObject = module.objectReferenceValue;
             EditorHelpers.DrawFoldoutEditor(label, targetObject, ref drawEditor, ref editor);
         }
@@ -160,18 +160,7 @@ namespace AKSaigyouji.CaveGeneration
             string rootPath = IOHelpers.RequireFolder(ROOT_FOLDER);
             string mapFolderPath = IOHelpers.RequireFolder(rootPath, MAP_FOLDER);
             string mapPath = IOHelpers.GetAvailableAssetPath(mapFolderPath, MAP_NAME);
-            string configName;
-            switch (caveGenType)
-            {
-                case CaveGeneratorUI.CaveGeneratorType.ThreeTiered:
-                    configName = THREE_TIER_CONFIG_NAME;
-                    break;
-                case CaveGeneratorUI.CaveGeneratorType.RockOutline:
-                    configName = ROCK_CAVE_CONFIG_NAME;
-                    break;
-                default:
-                    throw CaveGenTypeException;
-            }
+            string configName = GetConfigName();
             string property = string.Format("{0}.{1}", configName, MAP_GEN_NAME);
             SerializedProperty mapGenProperty = serializedObject.FindProperty(property);
             var mapGen = (MapGenModule)mapGenProperty.objectReferenceValue;

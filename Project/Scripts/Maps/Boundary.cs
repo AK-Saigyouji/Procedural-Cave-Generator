@@ -28,7 +28,8 @@ namespace AKSaigyouji.Maps
         /// </summary>
         public Boundary(int xMin, int xMax, int yMin, int yMax)
         {
-            if (xMin > xMax || yMin > yMax) throw new ArgumentException("Minimum boundary cannot exceed maximum.");
+            if (xMin > xMax || yMin > yMax)
+                throw new ArgumentException("Minimum boundary cannot exceed maximum.");
 
             this.xMin = xMin;
             this.xMax = xMax;
@@ -65,8 +66,7 @@ namespace AKSaigyouji.Maps
 
         public override string ToString()
         {
-            return string.Format("Boundary with the following borders: {0} (top), {1} (right), {2} (bottom), {3} (left).",
-                yMax, xMax, yMin, xMin);
+            return string.Format("Boundary between {0} and {1} (inclusive).", BotLeft, TopRight);
         }
     } 
 }

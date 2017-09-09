@@ -1,12 +1,12 @@
 # Modules
 
-Modules are customizable Scriptable Objects that define core parts of the cave generators. Currently there are three types of modules: map generators, height maps, and outlines.
+Modules are customizable Scriptable Objects that define core parts of the cave generators. There are three types of modules: map generators, height maps, and outlines.
 
 ## Table of Contents
 1. [Building map modules](#map-modules)
 2. [Building heightmap modules](#heightmap-modules)
 3. [Outline modules](#outline-modules)
-4. [Taking control of randomization with compound modules](#compound-modules)
+4. [Compound modules](#compound-modules)
 
 ### <a name="map-modules"></a>1. Map modules
 
@@ -345,7 +345,7 @@ namespace AKSaigyouji.Modules.MapGeneration
 
 Depending on what type of game you're trying to make, the default generator may not suit your purposes. As an example, if you're trying to build a rogue-like or ARPG (action role playing game) and want to use procedural generation to produce a new cave automatically on each play-through, then you're going to have to come up with algorithms to add all content at run-time. But the output of the default generator gives you very little structure to work with. Maybe it will produce a single large room, or maybe a dozen small ones with tunnels connecting them. Maybe the rooms will be thin and tunnel-like, maybe they'll be round and wide. Maybe there will be many paths to any exit you place, maybe there will be just one. All these possibilities make controlling or even constraining the user experience very difficult. 
 
-This is why cellular automata is not typically used for games whose content is generated at run-time - it's too difficult to control. See the section on compound modules for further information.
+This is why cellular automata is not typically used for games whose content is generated at run-time, at least not by itself - it's too difficult to control. See the section on compound modules for further information.
 
 ### <a name="heightmap-modules"></a>2. Height map modules
 
@@ -429,38 +429,16 @@ I will revisit this section in the future to flesh it out.
 
 ### <a name="compound-modules"></a>4. Compound Modules
 
-Comound modules are modules that use other modules as parameters. While this could be used in a variety of ways, there are two in particular that I'll mention here.
+Compound modules are modules that make use of other modules (usually as exposed fields). This simple but powerful idea opens up a lot of design patterns, such as decoration. An example of decoration is the MapGenEntranceCarver module. It takes an arbitrary MapGenModule as an exposed field, carves out entrances at the points specified in the inspector, and then connects them to the internals of the module. This pattern can be used to add additional customizable properties to a variety of modules without having to modify each one. 
 
-The first is decoration. Decoration allows you to add functionality to a module without messing with or duplicating that module's code. The power of decorators is that you can write one simple decorator module, have it apply to any module of the appropriate type, and even stack it with other decorators.
+Another use for compound modules is to create a module that specifies the large scale structure of an environment/dungeon/cave/etc. but delegates the local details to other modules. As an example, we could write a simple maze-building module to generate mazes like this:
 
-An example of this pattern is the MapGenEntranceCarver module. It takes an arbitrary MapGenModule, carves out entrances at the points specified in the inspector, and then connects them to the internals of the module. 
+0-0
+|
+0-0
+  |
+0-0
 
-The second and more substantial use is to modularize the cave itself, giving you more control over its large scale structure. This is extremely useful for creating randomized caves at run-time. 
+Each 0 is a room, and each dash is a connection: one or more submodules are then used to fill in each room. 
 
-### 4.1 Modular cave building
-
-#### 4.1.1 Introduction
-
-Compelling level design requires some control over what the user experiences and when. To this end, we need some constraints, or guarantees, from our level-building algorithms so that we can write algorithms to place content with some degree of organization. Furthermore, the nature of these guarantees will depend on what kind of game we are trying to build. 
-
-A particularly simple yet effective way to impose such constraints is with a modular level design. We can create a simple graph to describe the large scale structure of our level, then apply a module to each node in the graph to flesh out the level. To take a simple example, let's suppose we have a "Content" module and a "Tunnel" module. A content module could be the default map generator module, for example, or a simple room. A tunnel module could be a fairly simple module that carves a single tunnel between two spots in a map. 
-
-With just these two modules, we can develop a large, complex cave with several guaranteed constraints on the large scale topology of the cave system. We could design a simple linear system:
-
-    CTCTCTC
-
-Each C is a content module and each T is a tunnel module: we have a sequence of content modules separated by a tunnel. We can safely assume the order in which each room will be entered, and we know for certain that if we put something in any of the tunnel modules, the player will encounter it before reaching the final room. These are assumptions we cannot get if we simply make one large, randomized content room. 
-
-We can of course make more complex systems:
-
-```
-  C
-  T
-CTCTB
-  T
-  C
-```
-
-Where C and T are as before, and B is a boss room. B could be designed by hand, specifically designed for the boss in question, or with limited randomization. Furthermore, we could randomize the graph itself. 
-
-I am currently working on tools to facilitate this type of compound generation to simplify the process of generating randomized content at run-time.
+This approach is common among successful ARPGs such as Diablo 2 and Path of Exile, and is something I'm exploring in greater generality in my Atlas Generation project: an atlas is the entire large-scale map, composed of charts (the individual rooms) mapped out locally by submodules. This atlas-chart framework generalizes the maze-room design seen in the mentioned games. 

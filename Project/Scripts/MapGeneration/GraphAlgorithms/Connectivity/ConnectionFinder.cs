@@ -31,12 +31,12 @@ namespace AKSaigyouji.GraphAlgorithms
             Assert.IsNotNull(regionB);
             Assert.AreNotEqual(regionA, regionB);
 
-            var bestConnection = new TempConnection(Coord.Zero, Coord.Zero, float.MaxValue);
+            var bestConnection = new TempConnection(Coord.zero, Coord.zero, float.MaxValue);
             int indexA = 0;
             while (indexA < regionA.Count)
             {
                 int indexB = 0;
-                var bestThisLoop = new TempConnection(regionA[indexA], Coord.Zero, float.MaxValue);
+                var bestThisLoop = new TempConnection(regionA[indexA], Coord.zero, float.MaxValue);
                 while (indexB < regionB.Count)
                 {
                     Coord tileB = regionB[indexB];

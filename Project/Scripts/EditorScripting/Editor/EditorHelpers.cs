@@ -1,7 +1,6 @@
-﻿/* Editor scripting in Unity is a bit of a mess, with a lot of magic numbers, undocumented features, and
- a less than intuitive API based on .NET reflection. This is a collection of commonly used functionality and 
- constants for editor scripting. Much of the functionality wraps existing functions, providing a more
- intuitive API, albeit one that still has to be used very carefully to avoid errors.
+﻿/* This is a collection of commonly used functionality and constants for editor scripting. 
+ Much of the functionality wraps existing functions, providing a more intuitive API, albeit one that still has to be 
+ used very carefully to avoid errors.
  
   The iteration logic over properties requires some explanation. In the context of editors, a SerializedObject
  represents a serialized stream for an object being inspected. A SerializedProperty, naturally, is a serialized stream
@@ -29,24 +28,19 @@ namespace AKSaigyouji.EditorScripting
     public static class EditorHelpers
     {
         /// <summary>
-        /// The height of a property field in the inspector for just the field itself, with no padding.
-        /// </summary>
-        public const int PROPERTY_HEIGHT_BASE = 16;
-
-        /// <summary>
-        /// The height of property padding.
-        /// </summary>
-        public const int PROPERTY_HEIGHT_PADDING = 2;
-
-        /// <summary>
         /// The total height of a property field.
         /// </summary>
-        public const int PROPERTY_HEIGHT_TOTAL = PROPERTY_HEIGHT_BASE + PROPERTY_HEIGHT_PADDING;
+        public static float PROPERTY_HEIGHT_TOTAL = EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
 
         /// <summary>
         /// The threshold for the inspector to wrap horizontal content to a second line.
         /// </summary>
         public const int MIN_WIDTH = 333;
+
+        /// <summary>
+        /// This appears to be the quantity that each indent level of the GUI provides.
+        /// </summary>
+        public const int HORIZONTAL_INDENT = 15;
 
         /// <summary>
         /// Draw a simple line in the inspector, for visual purposes.
@@ -102,7 +96,6 @@ namespace AKSaigyouji.EditorScripting
             }
         }
 
-
         /// <summary>
         /// Create a cached editor here, under a foldout.
         /// </summary>
@@ -125,11 +118,11 @@ namespace AKSaigyouji.EditorScripting
         /// <summary>
         /// Returns the height necessary to house the GUI provided by DrawSimpleGUI.
         /// </summary>
-        public static int GetHeightForSimpleGUI(SerializedProperty property)
+        public static float GetHeightForSimpleGUI(SerializedProperty property)
         {
             Assert.IsNotNull(property);
             int numChildren = GetChildren(property).Count();
-            return numChildren * PROPERTY_HEIGHT_TOTAL - PROPERTY_HEIGHT_PADDING;
+            return numChildren * PROPERTY_HEIGHT_TOTAL - EditorGUIUtility.standardVerticalSpacing;
         }
 
         /// <summary>
@@ -141,7 +134,7 @@ namespace AKSaigyouji.EditorScripting
             Assert.IsNotNull(property);
             Assert.IsNotNull(label);
             EditorGUI.BeginProperty(position, label, property);
-            position.height = PROPERTY_HEIGHT_BASE;
+            position.height = EditorGUIUtility.singleLineHeight;
             foreach (var child in GetChildren(property))
             {
                 EditorGUI.PropertyField(position, child);

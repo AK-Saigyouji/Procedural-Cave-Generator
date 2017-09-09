@@ -1,4 +1,7 @@
-﻿using System;
+﻿/* This class provides a clean, expressive API for working with grids (2D arrays), making extensive use of C#'s first-class
+ * treatment of functions. */
+
+using System;
 
 namespace AKSaigyouji.ArrayExtensions
 {

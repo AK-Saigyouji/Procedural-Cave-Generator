@@ -28,8 +28,8 @@ namespace AKSaigyouji.GraphAlgorithms
         // Clockwise loop around the origin, starting at the top left.
         readonly Coord[] loop = new[]
         {
-            Coord.Zero.TopLeft, Coord.Zero.Up, Coord.Zero.TopRight, Coord.Zero.Right,
-            Coord.Zero.BottomLeft, Coord.Zero.Down, Coord.Zero.BottomLeft, Coord.Zero.Left
+            Coord.zero.TopLeftShift, Coord.zero.UpShift, Coord.zero.TopRightShift, Coord.zero.RightShift,
+            Coord.zero.BottomLeftShift, Coord.zero.DownShift, Coord.zero.BottomLeftShift, Coord.zero.LeftShift
         };
 
         public PassageEnlarger(int length, int width)

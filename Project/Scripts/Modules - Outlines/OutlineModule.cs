@@ -3,7 +3,7 @@
     public abstract class OutlineModule : Module
     {
         protected const string fileName = "OutlinePrefabber";
-        protected const string rootMenupath = "Cave Generation/Outline Prefabbers/";
+        protected const string outlineMenuPath = MODULE_ASSET_PATH + "Outline Prefabbers/";
 
         public abstract IOutlinePrefabber GetOutlinePrefabber();
     } 

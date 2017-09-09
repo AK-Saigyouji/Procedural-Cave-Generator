@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace AKSaigyouji.Modules.Outlines
 {
-    [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + "Edge-Aligned")]
+    [CreateAssetMenu(fileName = fileName, menuName = outlineMenuPath + "Edge-Aligned")]
     public sealed class OutlineEdgeAligned : OutlineModule
     {
         [SerializeField] WeightedPrefab[] rockPrefabs;

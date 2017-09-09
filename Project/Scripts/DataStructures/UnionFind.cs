@@ -1,10 +1,11 @@
-﻿/* This is a general implementation of the UnionFind (also known as Disjoint Set) data structure.*/
+﻿using System;
 
-using System;
-
-namespace AKSaigyouji.GraphAlgorithms
+namespace AKSaigyouji.DataStructures
 {
-    sealed class UnionFind
+    /// <summary>
+    /// UnionFind, aka disjoint set, implemented with path compression and union by rank.
+    /// </summary>
+    public sealed class UnionFind
     {
         readonly int[] parents;
         readonly int[] ranks;

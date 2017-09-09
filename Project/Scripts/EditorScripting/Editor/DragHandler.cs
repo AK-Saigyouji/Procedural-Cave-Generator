@@ -1,11 +1,11 @@
-﻿using AKSaigyouji.EditorScripting;
-using UnityEngine;
+﻿using UnityEngine;
 
-namespace AKSaigyouji.Modules.MapGeneration
+namespace AKSaigyouji.EditorScripting
 {
     /// <summary>
     /// Responsible for determining whether an item is being dragged - does not do the actual dragging.
     /// </summary>
+    [System.Serializable]
     public sealed class DragHandler
     {
         bool isDragging = false;
@@ -15,7 +15,7 @@ namespace AKSaigyouji.Modules.MapGeneration
             switch (e.type)
             {
                 case EventType.MouseDown:
-                    if (e.button == WindowHelpers.LEFT_MOUSE_BUTTON)
+                    if (e.button == 0)
                     {
                         if (draggedItem.Contains(e.mousePosition))
                         {
@@ -29,7 +29,7 @@ namespace AKSaigyouji.Modules.MapGeneration
                     break;
 
                 case EventType.MouseDrag:
-                    if (e.button == WindowHelpers.LEFT_MOUSE_BUTTON && isDragging)
+                    if (e.button == 0 && isDragging)
                     {
                         return true;
                     }

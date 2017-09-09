@@ -30,6 +30,7 @@ namespace AKSaigyouji.Modules.Outlines
             GUIContent weightLabel = new GUIContent("Weight", WEIGHT_TOOLTIP);
             SerializedProperty weight = property.FindPropertyRelative(WEIGHT_NAME);
             EditorGUI.PropertyField(propertyRect, weight, weightLabel);
+            EditorGUIUtility.labelWidth = 0;
             EditorGUI.EndProperty();
         }
     } 

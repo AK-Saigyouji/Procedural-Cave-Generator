@@ -13,8 +13,12 @@ namespace AKSaigyouji.Modules
     /// </summary>
     public abstract class Module : ScriptableObject
     {
+        protected const string MODULE_ASSET_PATH = "AKSaigyouji/";
+
         /// <summary>
         /// Fixes any randomness possessed by this module. Does nothing if this module does not possess randomness.
+        /// Must be overriden when implementing a module that needs to permit its randomness to be fixed by an external
+        /// actor.
         /// </summary>
         public virtual int Seed { get { return 0; } set { } }
     }

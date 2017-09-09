@@ -1,7 +1,7 @@
 ﻿/* This class represents a 2D grid of Tiles, and offers low level functionality for this purpose. 
  
  Textures are serializable Unity objects, and are very convenient vehicles for serialized maps for several reasons.
- One is that visualization of the map is provided natively by Unity. Another is that it means maps can be edited by
+ One is that visualization of textures is provided natively by Unity. Another is that it means maps can be edited by
  any paint program. A third is that PNG files use a compression algorithm well-suited to compressing a 2D map. 
  Even if we pack each tile into a single bit and serialize the bits, we'd end up with a file 10x the size of the
  corresponding PNG. */
@@ -243,7 +243,7 @@ namespace AKSaigyouji.Maps
                 }
             }
             texture.SetPixels32(colors);
-            texture.Apply(updateMipmaps: true, makeNoLongerReadable: false);
+            texture.Apply(updateMipmaps: false, makeNoLongerReadable: false);
             return texture;
         }
 

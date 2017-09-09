@@ -43,7 +43,7 @@ namespace AKSaigyouji.Modules.MapGeneration
             propertyRect.width -= HORIZONTAL_PADDING;
             EditorGUIUtility.labelWidth = CHAR_LABEL_WIDTH;
             EditorGUI.PropertyField(propertyRect, magnitude, magnitudeLabel);
-
+            EditorGUIUtility.labelWidth = 0;
             EditorGUI.EndProperty();
         }
 

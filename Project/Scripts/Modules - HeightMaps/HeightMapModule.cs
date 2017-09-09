@@ -5,7 +5,7 @@ namespace AKSaigyouji.Modules.HeightMaps
     public abstract class HeightMapModule : Module
     {
         protected const string fileName = "HeightMap";
-        protected const string rootMenuPath = "Cave Generation/Height Maps/";
+        protected const string rootMenuPath = MODULE_ASSET_PATH + "Height Maps/";
 
         public abstract IHeightMap GetHeightMap();
 

@@ -81,6 +81,32 @@ namespace AKSaigyouji.Modules.MapGeneration
             }
         }
 
+        public static Side GetSideFromCoord(Coord coord)
+        {
+            Side side;
+            if (coord.x == 1 && coord.y == 0)
+            {
+                side = Side.Right;
+            }
+            else if (coord.x == -1 && coord.y == 0)
+            {
+                side = Side.Left;
+            }
+            else if (coord.x == 0 && coord.y == 1)
+            {
+                side = Side.Top;
+            }
+            else if (coord.x == 0 && coord.y == -1)
+            {
+                side = Side.Bottom;
+            }
+            else
+            {
+                throw new ArgumentException("Coordinates not adjacent.");
+            }
+            return side;
+        }
+
         /// <summary>
         /// Point lies on bottom or top. Is true if and only if IsVertical is false.
         /// </summary>

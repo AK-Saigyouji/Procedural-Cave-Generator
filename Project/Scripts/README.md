@@ -61,7 +61,7 @@ I often export this folder into other projects that make use of grids.
 
 ### MeshGeneration
 
-Dependencies: None.
+Dependencies: HeightMaps.
 
 This provides the functionality to produce 3D meshes out of 2D grids, making heavy use of the Marching Squares algorithm. Marching Squares converts a 2D grid into a flat mesh. The outline generator traces out the outlines (edges) of a flat mesh produced by the marching squares algorithm, which are used to build walls between ceilings and floors, though it could also be used to generate 2D polygon colliders for a 2D implementation.
 
@@ -69,7 +69,7 @@ This provides the functionality to produce 3D meshes out of 2D grids, making hea
 
 Dependencies: Editor.
 
-Contains the core module system explained at length in the other readmes. Most of its power comes from the editor scripting: a custom inspector which exposes editors to all of its submodules, and a context menu item that offers a deep copy for modules, a feature absent for ScriptableObjects. 
+Contains the core module system explained at length in the other readmes. Most of its power comes from editor scripting: a custom inspector which exposes editors to all of its submodules, and a context menu item that offers a deep copy for modules, a feature absent for ScriptableObjects. 
 
 ### Modules - HeightMaps
 

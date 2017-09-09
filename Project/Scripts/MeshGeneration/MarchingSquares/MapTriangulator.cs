@@ -15,7 +15,7 @@ namespace AKSaigyouji.MeshGeneration
     /// Triangulates a Map according to the Marching Squares algorithm, yielding vertices and triangles ready to be
     /// used in a mesh.
     /// </summary>
-    static class MapTriangulator
+    public static class MapTriangulator
     {
         const int perSquareCacheSize = 5;
 

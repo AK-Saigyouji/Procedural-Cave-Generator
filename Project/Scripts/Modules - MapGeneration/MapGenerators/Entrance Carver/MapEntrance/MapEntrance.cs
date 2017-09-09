@@ -32,9 +32,15 @@ namespace AKSaigyouji.Modules.MapGeneration
         /// </summary>
         public MapEntrance(BoundaryPoint startPoint, int length)
         {
+            if (length < 0)
+                throw new ArgumentOutOfRangeException("length");
+
             this.startPoint = startPoint;
             endPoint = new BoundaryPoint(startPoint.BoundarySide, startPoint.Magnitude + length);
         }
+
+        public MapEntrance(BoundaryPoint.Side side, int magnitude, int length) 
+            : this(new BoundaryPoint(side, magnitude), length) { }
 
         /// <summary>
         /// Get all the coordinates corresponding to this entrance, for the given boundary.

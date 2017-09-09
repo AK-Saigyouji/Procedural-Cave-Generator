@@ -5,11 +5,12 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Assertions;
 using AKSaigyouji.Maps;
 
 namespace AKSaigyouji.Modules.MapGeneration
 {
-    public sealed class MapGenAtlas : MapGenModule
+    public sealed class MapGenCompound : MapGenModule
     {
         [SerializeField] MapGenModule[] modules;
         [SerializeField] Vector2[] offsets;
@@ -67,12 +68,17 @@ namespace AKSaigyouji.Modules.MapGeneration
             return boundary;
         }
 
-        public static MapGenAtlas Build(IEnumerable<MapGenModule> modules, IEnumerable<Vector2> offsets)
+        public static MapGenCompound Construct(IEnumerable<MapGenModule> modules, IEnumerable<Vector2> offsets)
         {
-            var mapGen = CreateInstance<MapGenAtlas>();
+            var mapGen = CreateInstance<MapGenCompound>();
             mapGen.modules = modules.ToArray();
             mapGen.offsets = AnchorOffsets(offsets);
             return mapGen;
+        }
+
+        public static MapGenCompound Construct(IEnumerable<Map> maps, IEnumerable<Vector2> offsets)
+        {
+            return Construct(maps.Select(map => (MapGenModule)MapGenStaticMap.Construct(map)), offsets);
         }
 
         static void CopyChart(Map atlas, Map chart, Vector2 offset)
@@ -91,6 +97,8 @@ namespace AKSaigyouji.Modules.MapGeneration
         // Shifts the offsets uniformly so that their bounding box's bottom left corner is (0,0).
         static Vector2[] AnchorOffsets(IEnumerable<Vector2> rawOffsets)
         {
+            Assert.IsNotNull(rawOffsets);
+            Assert.IsTrue(rawOffsets.Count() > 0);
             float xMin = rawOffsets.Min(coord => coord.x);
             float yMin = rawOffsets.Min(coord => coord.y);
             Vector2[] anchoredOffsets = rawOffsets.Select(coord => new Vector2(coord.x - xMin, coord.y - yMin)).ToArray();

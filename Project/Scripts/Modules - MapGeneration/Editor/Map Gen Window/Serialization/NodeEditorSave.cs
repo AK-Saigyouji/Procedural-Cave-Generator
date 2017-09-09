@@ -28,7 +28,6 @@ namespace AKSaigyouji.Modules.MapGeneration
         const string resources = "Editor Default Resources";
         const string assetName = "AKSNodeEditorState";
         const string assetNameWithExtension = assetName + ".asset";
-        const string loadKey = "AKS - Node editor exists";
 
         /// <summary>
         /// Load the editor from the last session. If a previous editor is not found, returns an empty save which
@@ -37,19 +36,10 @@ namespace AKSaigyouji.Modules.MapGeneration
         public static NodeEditorSave Load()
         {
             NodeEditorSave save = null;
-            if (EditorPrefs.GetBool(loadKey))
-            {
-                save = EditorGUIUtility.Load(IOHelpers.CombinePath(assets, resources, assetNameWithExtension)) as NodeEditorSave;
-            }
+            save = EditorGUIUtility.Load(IOHelpers.CombinePath(assets, resources, assetNameWithExtension)) as NodeEditorSave;
             if (save == null)
             {
                 save = CreateInstance<NodeEditorSave>();
-            }
-            else
-            {
-                // Deep copy all nodes so that we're not maintaining any references to the saved asset.
-                // Otherwise, the references will break when we delete the asset.
-                //save = save.CopyDeep();
             }
             Assert.IsNotNull(save);
             return save;
@@ -70,9 +60,6 @@ namespace AKSaigyouji.Modules.MapGeneration
                 AssetDatabase.DeleteAsset(assetPath);
             }
             AssetDatabase.CreateAsset(save, assetPath);
-            //save = save.CopyDeep();
-            //ScriptableObjectHelpers.SaveCompoundScriptableObject(save, assetPath);
-            EditorPrefs.SetBool(loadKey, true);
             AssetDatabase.SaveAssets();
         }
 
@@ -83,7 +70,7 @@ namespace AKSaigyouji.Modules.MapGeneration
             var savedEditor = CreateInstance<NodeEditorSave>();
             savedEditor.Nodes = nodes.Select(node => new SavedNode(node.MapGenModule, node.Position)).ToList();
             savedEditor.Offset = offset;
-            savedEditor.hideFlags = HideFlags.HideInInspector;
+            savedEditor.hideFlags = HideFlags.NotEditable;
             return savedEditor;
         }
     } 

@@ -24,7 +24,7 @@ namespace AKSaigyouji.Modules.MapGeneration
         NodeEditorSave savedEditor;
         List<NodeGroup> nodes; // convention: nodes deeper in the list are drawn in front of shallow nodes.
 
-        readonly KeyCode ZOOM_IN_KEY = KeyCode.Plus;
+        readonly KeyCode ZOOM_IN_KEY = KeyCode.Equals;
         readonly KeyCode ZOOM_OUT_KEY = KeyCode.Minus;
 
         const string SAVED_MODULE_NAME = "Compound.asset";
@@ -36,7 +36,7 @@ namespace AKSaigyouji.Modules.MapGeneration
             var window = GetWindow<MapEditorWindow>();
             window.titleContent = new GUIContent("Map Designer");
         }
-
+        
         void OnGUI()
         {
             UpdateZoom();
@@ -116,12 +116,12 @@ namespace AKSaigyouji.Modules.MapGeneration
             IOHelpers.SaveTextureAsPNG(texture, texturePath);
         }
 
-        MapGenAtlas BuildModule()
+        MapGenCompound BuildModule()
         {
             var modules = nodes.Select(node => node.MapGenModule);
             var offsets = nodes.Select(node => node.Position.position)
                                .Select(vec => new Vector2(vec.x, -vec.y) / NodeEditorSettings.GRID_UNITS_TO_WORLD_UNITS);
-            var compoundModule = MapGenAtlas.Build(modules, offsets);
+            var compoundModule = MapGenCompound.Construct(modules, offsets);
             return compoundModule;
         }
 
@@ -144,7 +144,8 @@ namespace AKSaigyouji.Modules.MapGeneration
 
         void DrawGrid(float gridSpacing, Color color)
         {
-            HandleHelpers.DrawGrid(position, gridSpacing, color, DragOffset);
+            Rect area = new Rect(Vector2.zero, position.size);
+            HandleHelpers.DrawGrid(area, gridSpacing, color, DragOffset);
         }
 
         void DrawWindows()

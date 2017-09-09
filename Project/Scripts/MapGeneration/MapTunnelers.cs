@@ -73,7 +73,7 @@ namespace AKSaigyouji.MapGeneration
             public RandomDirectedWalker(Boundary boundary, int seed)
             {
                 this.boundary = boundary;
-                random = new System.Random(seed);
+                random = new Random(seed);
             }
 
             public IEnumerable<Coord> GetPath(Coord start, Coord end)
@@ -112,7 +112,7 @@ namespace AKSaigyouji.MapGeneration
 
         sealed class RandomWalk : ITunneler
         {
-            readonly System.Random random;
+            readonly Random random;
             readonly Boundary boundary;
             readonly RandomDirectedWalker tunneler;
 
@@ -120,7 +120,7 @@ namespace AKSaigyouji.MapGeneration
 
             public RandomWalk(Boundary boundary, int seed)
             {
-                random = new System.Random(seed);
+                random = new Random(seed);
                 this.boundary = boundary;
                 tunneler = new RandomDirectedWalker(boundary, seed);
             }
