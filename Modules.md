@@ -433,12 +433,14 @@ Compound modules are modules that make use of other modules (usually as exposed 
 
 Another use for compound modules is to create a module that specifies the large scale structure of an environment/dungeon/cave/etc. but delegates the local details to other modules. As an example, we could write a simple maze-building module to generate mazes like this:
 
+```
 0-0
 |
 0-0
   |
 0-0
+```
 
 Each 0 is a room, and each dash is a connection: one or more submodules are then used to fill in each room. 
 
-This approach is common among successful ARPGs such as Diablo 2 and Path of Exile, and is something I'm exploring in greater generality in my Atlas Generation project: an atlas is the entire large-scale map, composed of charts (the individual rooms) mapped out locally by submodules. This atlas-chart framework generalizes the maze-room design seen in the mentioned games. 
+This approach is common among successful ARPGs such as Diablo 2 and Path of Exile, and is something I'm exploring in greater generality in my Atlas Generation project (Atlas-Chart PCG): an atlas is the entire large-scale map, composed of charts (the individual rooms) mapped out locally by submodules. This atlas-chart framework generalizes the maze-room design seen in the above mentioned games. 
