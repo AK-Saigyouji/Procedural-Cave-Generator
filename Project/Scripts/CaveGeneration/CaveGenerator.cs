@@ -15,17 +15,24 @@ using UnityEngine;
 
 namespace AKSaigyouji.CaveGeneration
 {
-    public static class CaveGenerator
+    public sealed class CaveGenerator
     {
+        readonly MeshGenerator meshGenerator;
+
+        public CaveGenerator()
+        {
+            meshGenerator = new MeshGenerator();
+        }
+
         /// <summary>
         /// Generates a three tiered cave.
         /// </summary>
         /// <param name="randomizeSeeds">Will reroll the random seeds on each randomizable component.</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public static GameObject GenerateThreeTierCave(ThreeTierCaveConfiguration config, bool randomizeSeeds)
+        public GameObject GenerateThreeTierCave(ThreeTierCaveConfiguration config, bool randomizeSeeds)
         {
-            var generator = new ThreeTieredCaveGenerator();
+            var generator = new ThreeTieredCaveGenerator(meshGenerator);
             return generator.Generate(config, randomizeSeeds);
         }
 
@@ -36,9 +43,9 @@ namespace AKSaigyouji.CaveGeneration
         /// <param name="randomizeSeeds">Will reroll the random seeds on each randomizable component.</param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="ArgumentException"></exception>
-        public static GameObject GenerateRockCave(RockCaveConfiguration config, bool randomizeSeeds)
+        public GameObject GenerateRockCave(RockCaveConfiguration config, bool randomizeSeeds)
         {
-            var generator = new RockCaveGenerator();
+            var generator = new RockCaveGenerator(meshGenerator);
             return generator.Generate(config, randomizeSeeds);
         }
 
@@ -58,6 +65,13 @@ namespace AKSaigyouji.CaveGeneration
 
         sealed class RockCaveGenerator
         {
+            readonly MeshGenerator meshGenerator;
+
+            public RockCaveGenerator(MeshGenerator meshGenerator)
+            {
+                this.meshGenerator = meshGenerator;
+            }
+
             public GameObject Generate(RockCaveConfiguration config, bool randomizeSeeds)
             {
                 if (config == null)
@@ -107,7 +121,7 @@ namespace AKSaigyouji.CaveGeneration
 
             CaveMeshes BuildCaveMesh(WallGrid grid, IHeightMap heightMap)
             {
-                MeshData floorPreMesh = MeshGenerator.BuildFloor(grid, heightMap);
+                MeshData floorPreMesh = meshGenerator.BuildFloor(grid, heightMap);
                 Mesh floorMesh = floorPreMesh.CreateMesh();
                 return new CaveMeshes(floorMesh);
             }
@@ -131,6 +145,13 @@ namespace AKSaigyouji.CaveGeneration
 
         sealed class ThreeTieredCaveGenerator
         {
+            readonly MeshGenerator meshGenerator;
+
+            public ThreeTieredCaveGenerator(MeshGenerator meshGenerator)
+            {
+                this.meshGenerator = meshGenerator;
+            }
+
             public GameObject Generate(ThreeTierCaveConfiguration config, bool randomizeSeeds)
             {
                 if (config == null)
@@ -157,7 +178,7 @@ namespace AKSaigyouji.CaveGeneration
                 return cave.GameObject;
             }
 
-            static CaveMeshes[,] GenerateCaveChunks(Map[,] mapChunks, ThreeTierCaveType type, int scale, IHeightMap floor, IHeightMap ceiling)
+            CaveMeshes[,] GenerateCaveChunks(Map[,] mapChunks, ThreeTierCaveType type, int scale, IHeightMap floor, IHeightMap ceiling)
             {
                 int xNumChunks = mapChunks.GetLength(0);
                 int yNumChunks = mapChunks.GetLength(1);
@@ -169,9 +190,9 @@ namespace AKSaigyouji.CaveGeneration
                     actions[y * xNumChunks + x] = new Action(() =>
                     {
                         WallGrid grid        = MapConverter.MapToWallGrid(mapChunks[x, y], scale, index);
-                        MeshData floorMesh   = MeshGenerator.BuildFloor(grid, floor);
+                        MeshData floorMesh   = meshGenerator.BuildFloor(grid, floor);
                         MeshData ceilingMesh = SelectCeilingBuilder(type)(grid, ceiling);
-                        MeshData wallMesh    = MeshGenerator.BuildWalls(grid, floor, ceiling);
+                        MeshData wallMesh    = meshGenerator.BuildWalls(grid, floor, ceiling);
 
                         caveChunks[index.x, index.y] = new CaveMeshes(floorMesh, wallMesh, ceilingMesh);
                     });
@@ -180,7 +201,7 @@ namespace AKSaigyouji.CaveGeneration
                 return caveChunks;
             }
 
-            static void AssignMaterials(ThreeTierCave cave, Material floorMat, Material wallMat, Material ceilingMat)
+            void AssignMaterials(ThreeTierCave cave, Material floorMat, Material wallMat, Material ceilingMat)
             {
                 foreach (var floor in cave.GetFloors())
                 {
@@ -196,14 +217,14 @@ namespace AKSaigyouji.CaveGeneration
                 }
             }
 
-            static Func<WallGrid, IHeightMap, MeshData> SelectCeilingBuilder(ThreeTierCaveType caveType)
+            Func<WallGrid, IHeightMap, MeshData> SelectCeilingBuilder(ThreeTierCaveType caveType)
             {
                 switch (caveType)
                 {
                     case ThreeTierCaveType.Isometric:
-                        return MeshGenerator.BuildCeiling;
+                        return meshGenerator.BuildCeiling;
                     case ThreeTierCaveType.Enclosed:
-                        return MeshGenerator.BuildEnclosure;
+                        return meshGenerator.BuildEnclosure;
                     default:
                         throw new System.ComponentModel.InvalidEnumArgumentException();
                 }

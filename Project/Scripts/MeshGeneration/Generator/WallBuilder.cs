@@ -7,39 +7,54 @@
 
 using AKSaigyouji.HeightMaps;
 using UnityEngine;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 
 namespace AKSaigyouji.MeshGeneration
 {
-    static class WallBuilder
+    sealed class WallBuilder
     {
-        const float UVSCALE = 10f;
+        const float UV_SCALE = 10f;
+        const int VERTS_PER_CORNER = 2;
 
-        public static MeshData Build(List<Vector3[]> outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        readonly List<Vector3[]> outlines;
+        readonly IHeightMap floorHeightMap;
+        readonly IHeightMap ceilingHeightMap;
+
+        public WallBuilder(List<Vector3[]> outlines, IHeightMap floor, IHeightMap ceiling)
+        {
+            this.outlines = outlines;
+            floorHeightMap = floor;
+            ceilingHeightMap = ceiling;
+        }
+
+        public MeshData Build()
         {
             MeshData mesh = new MeshData();
-            mesh.vertices  = GetVertices(outlines, floorHeightMap, ceilingHeightMap);
-            mesh.uv        = GetUVs(outlines, mesh.vertices);
-            mesh.triangles = GetTriangles(outlines);
+            mesh.vertices = GetVertices();
+            mesh.uv = GetUVs(mesh.vertices);
+            mesh.triangles = GetTriangles();
             return mesh;
         }
 
-        static Vector3[] GetVertices(List<Vector3[]> outlines, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        Vector3[] GetVertices()
         {
-            int numWallVertices = 2 * outlines.Sum(outline => outline.Length);
+            int numWallVertices = VERTS_PER_CORNER * outlines.Sum(outline => outline.Length);
             var vertices = new Vector3[numWallVertices];
 
             int vertexIndex = 0;
-            foreach (Vector3[] outline in outlines)
+            foreach (Vector3 vertex in outlines.SelectMany(outline => outline))
             {
-                for (int i = 0; i < outline.Length; i++)
+                float x = vertex.x;
+                float z = vertex.z;
+                float floorHeight = floorHeightMap.GetHeight(x, z);
+                float ceilingHeight = ceilingHeightMap.GetHeight(x, z);
+                for (int i = 0; i < VERTS_PER_CORNER; i++)
                 {
-                    Vector3 vertex = outline[i];
-                    float x = vertex.x;
-                    float z = vertex.z;
-                    vertices[vertexIndex++] = new Vector3(x, ceilingHeightMap.GetHeight(x, z), z);
-                    vertices[vertexIndex++] = new Vector3(x, floorHeightMap.GetHeight(x, z), z);
+                    float interpolation = (float)i / (VERTS_PER_CORNER - 1);
+                    float interpolatedHeight = interpolation * floorHeight + (1 - interpolation) * ceilingHeight;
+                    vertices[vertexIndex++] = new Vector3(x, interpolatedHeight, z);
                 }
             }
             return vertices;
@@ -58,7 +73,7 @@ namespace AKSaigyouji.MeshGeneration
          * by a constant factor so that it doesn't tile too rapidly.
          */
 
-        static Vector2[] GetUVs(List<Vector3[]> outlines, Vector3[] vertices)
+        Vector2[] GetUVs(Vector3[] vertices)
         {
             var uv = new Vector2[vertices.Length];
             int vertexIndex = 0;
@@ -67,52 +82,56 @@ namespace AKSaigyouji.MeshGeneration
             {
                 float u = 0f;
                 float increment = ComputeUVIncrement(outline);
-                for (int i = 0; i < outline.Length; i++, vertexIndex += 2)
+                for (int i = 0; i < outline.Length; i++)
                 {
                     u += ComputeEdgeLength(outline, i) * increment;
-                    float vTop = vertices[vertexIndex].y / UVSCALE;
-                    float vBot = vertices[vertexIndex + 1].y / UVSCALE;
-                    uv[vertexIndex] = new Vector2(u, vTop);
-                    uv[vertexIndex + 1] = new Vector2(u, vBot);
+                    for (int j = 0; j < VERTS_PER_CORNER; j++, vertexIndex++)
+                    {
+                        uv[vertexIndex] = new Vector2(u, vertices[vertexIndex].y / UV_SCALE);
+                    }
                 }
             }
             return uv;
         }
 
-        static float ComputeUVIncrement(Vector3[] outline)
+        float ComputeUVIncrement(Vector3[] outline)
         {
             float perimeter = ComputeLength(outline);
-            float uvIncrement = Mathf.Round(perimeter / UVSCALE) / perimeter;
-            uvIncrement = Mathf.Max(uvIncrement, 1f / UVSCALE); // In case uvIncrement = 0 (can happen for tiny outlines)
+            float uvIncrement = Mathf.Round(perimeter / UV_SCALE) / perimeter;
+            uvIncrement = Mathf.Max(uvIncrement, 1f / UV_SCALE); // In case uvIncrement = 0 (can happen for tiny outlines)
             return uvIncrement;
         }
 
-        static int[] GetTriangles(List<Vector3[]> outlines)
+        int[] GetTriangles()
         {
-            int numTriangles = 6 * outlines.Sum(outline => outline.Length - 1);
+            int numTriangles = 6 * (VERTS_PER_CORNER - 1) * outlines.Sum(outline => outline.Length - 1);
             var triangles = new int[numTriangles];
 
             int triangleIndex = 0;
             int vertexIndex = 0;
             foreach (Vector3[] outline in outlines)
             {
-                for (int i = 0; i < outline.Length - 1; i++, triangleIndex += 6, vertexIndex += 2)
+                for (int i = 0; i < outline.Length - 1; i++)
                 {
-                    AddQuadAtIndex(triangles, triangleIndex, vertexIndex);
+                    for (int j = 0; j < VERTS_PER_CORNER - 1; j++, triangleIndex += 6, vertexIndex++)
+                    {
+                        AddQuadAtIndex(triangles, triangleIndex, vertexIndex);
+                    }
+                    vertexIndex++;
                 }
-                vertexIndex += 2; // skip the two vertices at the end of an outline
+                vertexIndex += VERTS_PER_CORNER;
             }
             return triangles;
         }
 
-        static void AddQuadAtIndex(int[] triangles, int triangleIndex, int vertexIndex)
+        void AddQuadAtIndex(int[] triangles, int triangleIndex, int vertexIndex)
         {
             triangles[triangleIndex++] = vertexIndex;
             triangles[triangleIndex++] = vertexIndex + 1;
-            triangles[triangleIndex++] = vertexIndex + 3;
+            triangles[triangleIndex++] = vertexIndex + 1 + VERTS_PER_CORNER;
 
-            triangles[triangleIndex++] = vertexIndex + 3;
-            triangles[triangleIndex++] = vertexIndex + 2;
+            triangles[triangleIndex++] = vertexIndex + 1 + VERTS_PER_CORNER;
+            triangles[triangleIndex++] = vertexIndex + VERTS_PER_CORNER;
             triangles[triangleIndex++] = vertexIndex;
         }
 

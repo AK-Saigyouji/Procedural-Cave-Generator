@@ -1,4 +1,9 @@
-﻿using System;
+﻿/* At the moment we are handling multiple types of cave (two in this case) UIs in a single class (this one). This is
+ * not too troublesome with just two types, but if multiple types were implemented, then each should get their own 
+ * UI class, and this class could be written as a facade to present a single interface that hooks into the others. 
+ * Otherwise the code will get too messy.*/
+
+using System;
 using System.Linq;
 using System.Text;
 using UnityEngine;
@@ -59,7 +64,8 @@ namespace AKSaigyouji.CaveGeneration
         /// </summary>
         public GameObject GenerateThreeTier()
         {
-            GameObject cave = CaveGenerator.GenerateThreeTierCave(threeTierCaveConfig, randomize);
+            var caveGenerator = new CaveGenerator();
+            GameObject cave = caveGenerator.GenerateThreeTierCave(threeTierCaveConfig, randomize);
             cave.transform.parent = transform;
             return cave;
         }
@@ -69,11 +75,14 @@ namespace AKSaigyouji.CaveGeneration
         /// </summary>
         public GameObject GenerateRockCave()
         {
-            GameObject cave = CaveGenerator.GenerateRockCave(rockCaveConfig, randomize);
+            var caveGenerator = new CaveGenerator();
+            GameObject cave = caveGenerator.GenerateRockCave(rockCaveConfig, randomize);
             cave.transform.parent = transform;
             return cave;
         }
 
+        // This creates an option in the UI's context menu to automatically find the sample modules in the project
+        // and slot them into the UI. 
         [ContextMenu("Insert Sample Modules")]
         void PopulateSamples()
         {
@@ -84,10 +93,10 @@ namespace AKSaigyouji.CaveGeneration
 
             Func<string, Module> getModule = (name) => modules.FirstOrDefault(module => module.name == name);
 
-            MapGenModule mapGenerator = getModule("SampleMapGenerator") as MapGenModule;
-            HeightMapModule floor = getModule("SampleFloorHeightMap") as HeightMapModule;
-            HeightMapModule ceiling = getModule("SampleCeilingHeightMap") as HeightMapModule;
-            OutlineModule outline = getModule("SampleOutline") as OutlineModule;
+            var mapGenerator = getModule("SampleMapGenerator")     as MapGenModule;
+            var floor        = getModule("SampleFloorHeightMap")   as HeightMapModule;
+            var ceiling      = getModule("SampleCeilingHeightMap") as HeightMapModule;
+            var outline      = getModule("SampleOutline")          as OutlineModule;
 
             Undo.RecordObject(this, "Insert sample modules");
             var missingModules = new StringBuilder();

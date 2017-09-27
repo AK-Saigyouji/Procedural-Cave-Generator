@@ -2,10 +2,7 @@
  will be immediately updated by the visualizer, allowing for a rapid exploration of how the properties of a given
  height map affect the final result. 
  
-  This takes an arbitrary HeightMapModule, which means it will work for custom modules as well. An alternative
- would have been to write an editor script that offers a preview window, but that doesn't play as well
- with inheritance: each custom module would require its own custom editor script to override the default
- behaviour to draw nothing.
+  This takes an arbitrary HeightMapModule, which means it will work for custom modules as well. 
  
   Note that this script will destroy itself if it's used in a live build (i.e. it's editor-only)*/
 
@@ -23,6 +20,8 @@ namespace AKSaigyouji.Modules.HeightMaps
         [SerializeField] int size;
         [SerializeField] int scale;
 
+        readonly MeshGenerator meshGenerator = new MeshGenerator();
+
         const int MIN_SIZE = 10;
         const int MAX_SIZE = 200;
         const int DEFAULT_SIZE = 75;
@@ -34,12 +33,14 @@ namespace AKSaigyouji.Modules.HeightMaps
         {
             var wallGrid = new WallGrid(new byte[size, size], Vector3.zero, scale);
             IHeightMap heightMap = heightMapModule.GetHeightMap();
-            MeshData preMesh = MeshGenerator.BuildFloor(wallGrid, heightMap);
+            MeshData preMesh = meshGenerator.BuildFloor(wallGrid, heightMap);
             return preMesh.CreateMesh();
         }
 
         void Awake()
         {
+            // if this class somehow ends up in a build, then it will only waste resources, so it automatically 
+            // destroys itself. 
             #if !UNITY_EDITOR
                 Destroy(this);
             #endif

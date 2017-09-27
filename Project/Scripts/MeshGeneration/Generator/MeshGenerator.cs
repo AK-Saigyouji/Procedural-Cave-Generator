@@ -4,26 +4,27 @@ using System.Collections.Generic;
 
 namespace AKSaigyouji.MeshGeneration
 {
-    public static class MeshGenerator
+    public sealed class MeshGenerator
     {
-        public static MeshData BuildFloor(WallGrid grid, IHeightMap heightMap)
+        public MeshData BuildFloor(WallGrid grid, IHeightMap heightMap)
         {
             WallGrid invertedGrid = grid.Invert();
             return BuildFlatMesh(invertedGrid, heightMap);
         }
 
-        public static MeshData BuildWalls(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        public MeshData BuildWalls(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
             var outlines = OutlineGenerator.Generate(grid);
-            return WallBuilder.Build(outlines, floorHeightMap, ceilingHeightMap);
+            var wallBuilder = new WallBuilder(outlines, floorHeightMap, ceilingHeightMap);
+            return wallBuilder.Build();
         }
 
-        public static MeshData BuildCeiling(WallGrid grid, IHeightMap heightMap)
+        public MeshData BuildCeiling(WallGrid grid, IHeightMap heightMap)
         {
             return BuildFlatMesh(grid, heightMap);
         }
 
-        public static MeshData BuildEnclosure(WallGrid grid, IHeightMap heightMap)
+        public MeshData BuildEnclosure(WallGrid grid, IHeightMap heightMap)
         {
             WallGrid invertedGrid = grid.Invert();
             MeshData mesh = BuildFlatMesh(invertedGrid, heightMap);
