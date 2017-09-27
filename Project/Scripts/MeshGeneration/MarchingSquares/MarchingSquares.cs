@@ -1,4 +1,4 @@
-﻿/* This class is used to store the core implementation of the marching squares algorithm. Specifically, how to
+/* This class is used to store the core implementation of the marching squares algorithm. Specifically, how to
  * triangulate a square based on which of its corners are walls, and an efficient function for querying whether
  * a point intersects a wall in a given configuration.
  * This class could be served well by making use of polymorphism, treating each configuration as a subclass of a 
@@ -66,7 +66,7 @@ namespace AKSaigyouji.MeshGeneration
             float x = point.x;
             float y = point.y;
             // This is likely to be compiler-optimized with a jump table, but just in case, the two most common cases 
-            // (empty and full) are handled first).
+            // (empty and full) are handled first.
             switch (configuration)
             {
                 case 0:
