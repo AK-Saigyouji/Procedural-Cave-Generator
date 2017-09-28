@@ -98,7 +98,7 @@ namespace AKSaigyouji.CaveGeneration
                     Coord index = new Coord(x, y);
 
                     WallGrid grid            = MapConverter.MapToWallGrid(mapChunks[x, y], scale, index);
-                    List<Vector3[]> outlines = MeshGenerator.BuildOutlines(grid);
+                    List<Vector3[]> outlines = meshGenerator.BuildOutlines(grid);
                     CaveMeshes caveMeshes    = BuildCaveMesh(grid, heightMap);
                     Sector sector            = BuildSector(caveMeshes, index, cave, floorMaterial);
                     GameObject rockAnchor    = BuildRockAnchor(sector.GameObject, index);

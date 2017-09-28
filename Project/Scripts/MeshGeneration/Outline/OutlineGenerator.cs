@@ -25,21 +25,56 @@ Positions in this algorithm are represented by a struct that admits of a natural
 */
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace AKSaigyouji.MeshGeneration
 {
-    static class OutlineGenerator
+    sealed class OutlineGenerator
     {
-        public static List<Vector3[]> Generate(WallGrid grid)
-        {
-            byte[][] outlineTable = BuildOutlineTable();
-            byte[,] configurations = MarchingSquares.ComputeConfigurations(grid);
-            int numOutlineEdges = CountOutlineEdges(configurations, outlineTable);
-            TwoWayLookup outlineLookup = CreateLookupTable(configurations, outlineTable, numOutlineEdges);
+        int length;
+        int width;
 
-            var outlines = new List<Vector3[]>();
-            var visited = new HashSet<LocalPosition>();
+        // a jagged array would be simpler here, but would require 640 bytes of overhead (from the 16 arrays)
+        // to store about 30 bytes of actual data. Here we use up to three extra bytes per row versus the 40 for
+        // an array's overhead. 
+        readonly byte[,] outlineTable =      
+        {
+            // the first number tells us how many non-zero entries there are in that row.
+            {0, 0, 0, 0, 0 }, //  0: empty
+            {2, 7, 5, 0, 0 }, //  1: bottom-left triangle
+            {2, 5, 3, 0, 0 }, //  2: bottom-right triangle
+            {2, 7, 3, 0, 0 }, //  3: bottom half
+            {2, 3, 1, 0, 0 }, //  4: top-right triangle
+            {4, 7, 1, 3, 5 }, //  5: all but top-left and bottom-right triangles
+            {2, 5, 1, 0, 0 }, //  6: right half
+            {2, 7, 1, 0, 0 }, //  7: all but top-left triangle
+            {2, 1, 7, 0, 0 }, //  8: top-left triangle
+            {2, 1, 5, 0, 0 }, //  9: left half
+            {4, 5, 7, 1, 3 }, // 10: all but bottom-left and top-right
+            {2, 1, 3, 0, 0 }, // 11: all but top-right
+            {2, 3, 7, 0, 0 }, // 12: top half
+            {2, 3, 5, 0, 0 }, // 13: all but bottom-right
+            {2, 5, 7, 0, 0 }, // 14: all but bottom-left
+            {0, 0, 0, 0, 0 }  // 15: full square
+        };
+
+        // cached collections to reduce allocations.
+        TwoWayLookup cachedLookup = new TwoWayLookup();
+        List<Vector3[]> cachedOutlines = new List<Vector3[]>();
+        HashSet<LocalPosition> cachedVisited = new HashSet<LocalPosition>();
+
+        public List<Vector3[]> Generate(WallGrid grid)
+        {
+            byte[,] configurations = MarchingSquares.ComputeConfigurations(grid);
+            length = configurations.GetLength(0);
+            width = configurations.GetLength(1);
+            TwoWayLookup outlineLookup = CreateLookupTable(configurations, outlineTable);
+
+            var outlines = cachedOutlines;
+            outlines.Clear();
+            var visited = cachedVisited;
+            visited.Clear();
             foreach (var pair in outlineLookup)
             {
                 if (!visited.Contains(pair.Key))
@@ -64,37 +99,11 @@ namespace AKSaigyouji.MeshGeneration
                             AddToOutline(outline, next, visited);
                         }
                     }
-                    outlines.Add(ToGlobalPositions(outline, grid.Scale, grid.Position));
+                    Vector3[] completeOutline = outline.Select(p => p.ToGlobalPosition(grid.Scale, grid.Position)).ToArray();
+                    outlines.Add(completeOutline);
                 }
             }
             return outlines;
-        }
-
-        static byte[][] BuildOutlineTable()
-        {
-            // This table gives us the squarepoints corresponding to the outlines in each square.
-            // e.g. configuration 2 gives us just the bottom-right triangle, which has one outline edge
-            // running from point 3 (mid-right) to 5 (down-mid). The order is always such that
-            // the triangle is to the right of the edge when travelling from the first point to the second.
-            return new byte[][]
-            {
-                new byte[] { },           //  0: empty
-                new byte[] {7, 5 },       //  1: bottom-left triangle
-                new byte[] {5, 3 },       //  2: bottom-right triangle
-                new byte[] {7, 3 },       //  3: bottom half
-                new byte[] {3, 1 },       //  4: top-right triangle
-                new byte[] {7, 1, 3, 5 }, //  5: all but top-left and bottom-right triangles
-                new byte[] {5, 1 },       //  6: right half
-                new byte[] {7, 1 },       //  7: all but top-left triangle
-                new byte[] {1, 7 },       //  8: top-left triangle
-                new byte[] {1, 5 },       //  9: left half
-                new byte[] {5, 7, 1, 3 }, // 10: all but bottom-left and top-right
-                new byte[] {1, 3 },       // 11: all but top-right
-                new byte[] {3, 7 },       // 12: top half
-                new byte[] {3, 5 },       // 13: all but bottom-right
-                new byte[] {5, 7 },       // 14: all but bottom-left
-                new byte[] {}             // 15: full square
-            };
         }
 
         static void AddToOutline(List<LocalPosition> outline, LocalPosition item, HashSet<LocalPosition> visited)
@@ -103,36 +112,20 @@ namespace AKSaigyouji.MeshGeneration
             outline.Add(item);
         }
 
-        static int CountOutlineEdges(byte[,] configurations, byte[][] outlineTable)
+        TwoWayLookup CreateLookupTable(byte[,] configurations, byte[,] outlineTable)
         {
-            int length = configurations.GetLength(0);
-            int width = configurations.GetLength(1);
-            int numOutlinePoints = 0;
+            cachedLookup.Clear();
+            var lookupTable = cachedLookup;
             for (int y = 0; y < width; y++)
             {
                 for (int x = 0; x < length; x++)
                 {
-                    // Each square has 1 or 2 outlines running through it. This corresponds to 2 or 4 points in the array.
-                    numOutlinePoints += outlineTable[configurations[x, y]].Length;
-                }
-            }
-            return numOutlinePoints / 2;
-        }
-
-        static TwoWayLookup CreateLookupTable(byte[,] configurations, byte[][] outlineTable, int capacity)
-        {
-            var lookupTable = new TwoWayLookup(capacity);
-            int length = configurations.GetLength(0);
-            int width = configurations.GetLength(1);
-            for (int y = 0; y < width; y++)
-            {
-                for (int x = 0; x < length; x++)
-                {
-                    byte[] outlineData = outlineTable[configurations[x, y]];
-                    for (int i = 0; i < outlineData.Length; i += 2)
+                    int configuration = configurations[x, y];
+                    int rowLength = outlineTable[configuration, 0];
+                    for (int i = 1; i < rowLength; i += 2)
                     {
-                        var a = new LocalPosition(x, y, outlineData[i]);
-                        var b = new LocalPosition(x, y, outlineData[i + 1]);
+                        var a = new LocalPosition(x, y, outlineTable[configuration, i]);
+                        var b = new LocalPosition(x, y, outlineTable[configuration, i + 1]);
 
                         lookupTable.AddPair(a, b);
                     }
@@ -141,22 +134,12 @@ namespace AKSaigyouji.MeshGeneration
             return lookupTable;
         }
 
-        static Vector3[] ToGlobalPositions(List<LocalPosition> localPositions, int scale, Vector3 basePosition)
-        {
-            var vertices = new Vector3[localPositions.Count];
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                vertices[i] = localPositions[i].ToGlobalPosition(scale, basePosition);
-            }
-            return vertices;
-        }
-
         private sealed class TwoWayLookup
         {
             readonly Dictionary<LocalPosition, LocalPosition> forwardLookup;
             readonly Dictionary<LocalPosition, LocalPosition> backwardLookup;
 
-            public TwoWayLookup(int capacity)
+            public TwoWayLookup(int capacity = 10)
             {
                 forwardLookup = new Dictionary<LocalPosition, LocalPosition>(capacity);
                 backwardLookup = new Dictionary<LocalPosition, LocalPosition>(capacity);
@@ -184,6 +167,12 @@ namespace AKSaigyouji.MeshGeneration
             public Dictionary<LocalPosition, LocalPosition>.Enumerator GetEnumerator()
             {
                 return backwardLookup.GetEnumerator();
+            }
+
+            public void Clear()
+            {
+                forwardLookup.Clear();
+                backwardLookup.Clear();
             }
         }
 

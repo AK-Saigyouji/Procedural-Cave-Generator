@@ -14,7 +14,7 @@ namespace AKSaigyouji.MeshGeneration
 
         public MeshData BuildWalls(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
         {
-            var outlines = OutlineGenerator.Generate(grid);
+            var outlines = BuildOutlines(grid);
             var wallBuilder = new WallBuilder(outlines, floorHeightMap, ceilingHeightMap);
             return wallBuilder.Build();
         }
@@ -32,14 +32,16 @@ namespace AKSaigyouji.MeshGeneration
             return mesh;
         }
 
-        public static List<Vector3[]> BuildOutlines(WallGrid grid)
+        public List<Vector3[]> BuildOutlines(WallGrid grid)
         {
-            return OutlineGenerator.Generate(grid);
+            var generator = new OutlineGenerator();
+            return generator.Generate(grid);
         }
 
         static MeshData BuildFlatMesh(WallGrid grid, IHeightMap heightMap)
         {
-            MeshData mesh = MapTriangulator.Triangulate(grid);
+            var triangulator = new MapTriangulator();
+            MeshData mesh = triangulator.Triangulate(grid);
             mesh.uv = ComputeFlatUVArray(mesh.vertices);
             ApplyHeightMap(mesh.vertices, heightMap);
             return mesh;
