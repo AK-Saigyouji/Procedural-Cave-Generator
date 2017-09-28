@@ -3,12 +3,20 @@
 
 using System;
 
+#if NET_4_6
+using System.Threading.Tasks;
+#endif
+
 namespace AKSaigyouji.ArrayExtensions
 {
     public static class ArrayFunctionalExtensions
     {
+        #region SingleThreaded
         public static void SetAll<T>(this T[,] grid, T value)
         {
+            if (grid == null)
+                throw new ArgumentNullException("grid");
+
             int length = grid.GetLength(0);
             int width = grid.GetLength(1);
             for (int y = 0; y < width; y++)
@@ -26,6 +34,7 @@ namespace AKSaigyouji.ArrayExtensions
             ThrowIfNull(action);
             int length = grid.GetLength(0);
             int width = grid.GetLength(1);
+
             for (int y = 0; y < width; y++)
             {
                 for (int x = 0; x < length; x++)
@@ -237,6 +246,152 @@ namespace AKSaigyouji.ArrayExtensions
                 }
             }
         }
+        #endregion
+
+        #region MultiThreaded
+
+        #if NET_4_6
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void ForEachParallel<T>(this T[,] grid, Action<int, int> action)
+        {
+            ThrowIfNull(action);
+            int length = grid.GetLength(0);
+            int width = grid.GetLength(1);
+
+            Parallel.For(0, width, y =>
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    action(x, y);
+                }
+            });
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void ForEachInteriorParallel<T>(this T[,] grid, Action<int, int> action)
+        {
+            ThrowIfNull(action);
+            int length = grid.GetLength(0);
+            int width = grid.GetLength(1);
+            Parallel.For(1, width - 1, y =>
+            {
+                for (int x = 1; x < length - 1; x++)
+                {
+                    action(x, y);
+                }
+            });
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void ForEachParallel<T>(this T[,] grid, Action<int, int> action, Func<int, int, bool> predicate)
+        {
+            ThrowIfNull(action);
+            ThrowIfNull(predicate);
+            int length = grid.GetLength(0);
+            int width = grid.GetLength(1);
+            Parallel.For(0, width, y =>
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    if (predicate(x, y))
+                    {
+                        action(x, y);
+                    }
+                }
+            });
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void ForEachInteriorParallel<T>(this T[,] grid, Action<int, int> action, Func<int, int, bool> predicate)
+        {
+            ThrowIfNull(action);
+            ThrowIfNull(predicate);
+            int length = grid.GetLength(0);
+            int width = grid.GetLength(1);
+            Parallel.For(1, width - 1, y =>
+            {
+                for (int x = 1; x < length - 1; x++)
+                {
+                    if (predicate(x, y))
+                    {
+                        action(x, y);
+                    }
+                }
+            });
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void TransformParallel<T>(this T[,] grid, Func<int, int, T> transformation)
+        {
+            ThrowIfNull(transformation);
+            int length = grid.GetLength(0);
+            int width = grid.GetLength(1);
+            Parallel.For(0, width, y =>
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    grid[x, y] = transformation(x, y);
+                }
+            });
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void TransformInteriorParallel<T>(this T[,] grid, Func<int, int, T> transformation)
+        {
+            ThrowIfNull(transformation);
+            int length = grid.GetLength(0);
+            int width = grid.GetLength(1);
+            Parallel.For(1, width - 1, y =>
+            {
+                for (int x = 1; x < length - 1; x++)
+                {
+                    grid[x, y] = transformation(x, y);
+                }
+            });
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void TransformParallel<T>(this T[,] grid, Func<int, int, T> transformation, Func<int, int, bool> predicate)
+        {
+            ThrowIfNull(transformation);
+            ThrowIfNull(predicate);
+            int length = grid.GetLength(0);
+            int width = grid.GetLength(1);
+            Parallel.For(0, width, y =>
+            {
+                for (int x = 0; x < length; x++)
+                {
+                    if (predicate(x, y))
+                    {
+                        grid[x, y] = transformation(x, y);
+                    }
+                }
+            });
+        }
+
+        /// <exception cref="ArgumentNullException"></exception>
+        public static void TransformInteriorParallel<T>(this T[,] grid, Func<int, int, T> transformation, Func<int, int, bool> predicate)
+        {
+            ThrowIfNull(transformation);
+            ThrowIfNull(predicate);
+            int length = grid.GetLength(0);
+            int width = grid.GetLength(1);
+            Parallel.For(1, width - 1, y =>
+            {
+                for (int x = 1; x < length - 1; x++)
+                {
+                    if (predicate(x, y))
+                    {
+                        grid[x, y] = transformation(x, y);
+                    }
+                }
+            });
+        }
+
+        #endif
+
+        #endregion
 
         static void ThrowIfNull<T>(Func<int, int, T> transformation)
         {
