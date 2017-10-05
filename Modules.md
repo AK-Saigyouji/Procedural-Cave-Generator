@@ -1,16 +1,22 @@
 # Modules
 
-Modules are customizable Scriptable Objects that define core parts of the cave generators. There are three types of modules: map generators, height maps, and outlines.
+Modules are customizable Scriptable Objects that define core parts of the cave generators. There are three types of modules: map generators, height maps, and outlines. They can be used by plugging them into the appropriate slots into the cave generator's inspector. This readme covers the process of defining new types of modules. 
+
+The map generator module defines the locations of walls and walkable areas. The provided module uses cellular automata, but any algorithm used to generate 2D dungeons/levels could be used to define a module. 
+
+Height maps define the height of each vertex in the floor and ceiling of the cave. The provided modules are fairly conventional perlin-noise based height maps typically used for terrain. 
+
+Outlines are used by the outline cave generator to generate a boundary out of prefabs along the outline of a floor.
 
 ## Table of Contents
-1. [Building map modules](#map-modules)
-2. [Building heightmap modules](#heightmap-modules)
+1. [Map modules](#map-modules)
+2. [Heightmap modules](#heightmap-modules)
 3. [Outline modules](#outline-modules)
 4. [Compound modules](#compound-modules)
 
 ### <a name="map-modules"></a>1. Map modules
 
-Defining a custom map module gives you considerable control over the structure of the cave, allowing you to plug seamlessly into the engine for mesh generation. First we'll go over the bare minimum to implement them, then build up the default map module to illustrate a variety of ideas and tools. Here's a basic template for a custom map module:
+Defining a custom map module gives you complete control over the structure of the cave, allowing you to plug seamlessly into the engine for mesh generation. First we'll go over the bare minimum to implement them, then build up the default map module to illustrate a variety of ideas and tools. Here's a basic template for a custom map module:
 
 ```cs
 using System;
@@ -44,7 +50,7 @@ Note four things: first, we're extending MapGenModule, which is what allows this
 
 You're free to choose your own class name instead of MyCustomMapGen (make sure the class name matches the name of that class file), and also to choose a new menuName. 
 
-Now, let's explore what we can do with this.
+Next we'll start with a very simple implementation.
 
 #### 1.1 A trivial example
 
@@ -423,9 +429,93 @@ namespace AKSaigyouji.Modules.HeightMaps
 
 ### <a name="outline-modules"></a>3. Rock outline modules
 
-Rock outline caves are a newer type of cave that lays down a floor, and then instantiates rocks all along the outlines of the floor. The outline module (OutlineModule) takes an outline in the form of a sequence of Vector3s, and instantiates rocks along it: the default (OutlineEdgeAligned) allows an array of prefabs to be assigned. It instantiates rocks randomly on the midpoint of each edge in the outline, rotating them so that the long side runs along the edge. For this to work correctly, the prefabs need to be rotated so that their long side runs down the z-axis, if applicable (i.e. if it has a longer side).
+The rock outline cave generator lays down a floor, and then instantiates rocks along the outlines of the floor. The outline module (OutlineModule) takes an outline in the form of a sequence of Vector3s, and instantiates rocks along it: the default (OutlineEdgeAligned) allows an array of prefabs to be assigned. It instantiates rocks randomly on the midpoint of each edge in the outline, rotating them so that the long side runs along the edge. For this to work correctly, the prefabs need to be rotated so that their long side runs down the z-axis, if applicable (i.e. if it has a longer side).
 
-I will revisit this section in the future to flesh it out.
+To create a custom outline module, you'll need to extend the OutlineModule class, and override one method:
+
+```cs
+public abstract void ProcessOutlines(IEnumerable<Outline> outlines, Transform parent);
+```
+
+Outline implements ```IList<Vector3>```, and you can get the corners of the outlines by indexing, or like so:
+
+```cs
+foreach (Outline outline in outlines){
+    foreach (Vector3 corner in outline){
+        // ...
+    }
+}
+```
+
+Alternatively, you can iterate over the edges of the outlines:
+
+```cs
+foreach (Outline outline in outlines){
+    foreach (Edge edge in outline.GetEdges()){
+        // ...
+    }
+}
+```
+
+Edge is a simple struct with the following readonly properties:
+* Vector3 StartPoint;
+* Vector3 EndPoint;
+* Vector3 MidPoint;
+* Vector3 Direction; (from start to end)
+* float Length; (only takes on two values: 1 or about 0.7071)
+
+The intended idea behind an OutlineModule is that rocks (or other objects) should somehow be placed (instantiated) along the provided outlines. The provided default module (OutlineEdgeAligned) takes a list of rock prefabs, and randomly instantiates a rock on the midpoint of each outline edge, rotating the rock so that it's z-axis runs along the direction of the edge.
+
+Some other ideas would be to instantiate objects along the corners of the outlines rather than the edges, or perhaps both: we could instantiate walls at the midpoints of edges, and some kind of post/connector on the corners. Note that since the Length of each edge can only take one of two values as indicated above, this can be used to carefully fit walls of an exact length together. 
+
+Here's the essence of what the implementation of OutlineEdgeAligned looks like (I've omitted validation and accessors for simplicity):
+
+```cs
+[SerializeField] WeightedPrefab[] rockPrefabs;
+[SerializeField] int seed;
+
+public override int Seed { get { return seed; } set { seed = value; } }
+
+public override void ProcessOutlines(IEnumerable<Outline> outlines, Transform parent)
+{
+    var prefabPicker = new WeightedPrefabPicker(rockPrefabs, seed);
+    var prefabber = new EdgePrefabber(prefabPicker);
+    foreach (Outline outline in outlines)
+    {
+        prefabber.ProcessOutline(outline, parent);
+    }
+}
+```
+
+WeightedPrefabPicker performs a weighted random choice among a list of prefabs. EdgePrefabber instantiates rocks along the midpoints of the edges. ProcessOutline is implemented inside EdgePrefabber as follows:
+
+```cs
+public void ProcessOutline(Outline outline, Transform parent)
+{
+    foreach (Edge edge in outline.GetEdges())
+    {
+        GameObject rockPrefab = prefabPicker.PickPrefab();
+        Vector3 position = edge.MidPoint;
+        Vector3 direction = edge.Direction;
+        Quaternion prefabRotation = rockPrefab.transform.rotation;
+        GameObject rockInstance = GameObject.Instantiate(rockPrefab, position, prefabRotation, parent);
+        if (!IsParallelToTarget(direction))
+        {
+            Quaternion rotation = Quaternion.FromToRotation(Vector3.forward, direction);
+            rockInstance.transform.rotation = rotation * prefabRotation;
+        }
+        rockInstance.name = string.Format("{0} ({1})", rockPrefab.name, rockCounter);
+        rockCounter++; // used only for the name
+    }
+}
+
+static bool IsParallelToTarget(Vector3 direction)
+{
+    return direction == Vector3.forward || direction == Vector3.back;
+}
+```
+
+The only non-trivial part is ensuring the prefab is rotated correctly.
 
 ### <a name="compound-modules"></a>4. Compound Modules
 

@@ -1,9 +1,13 @@
 ﻿using AKSaigyouji.HeightMaps;
+using AKSaigyouji.Modules.CaveWalls;
 using UnityEngine;
 using System.Collections.Generic;
 
 namespace AKSaigyouji.MeshGeneration
 {
+    /// <summary>
+    /// Generates various components of a cave. 
+    /// </summary>
     public sealed class MeshGenerator
     {
         public MeshData BuildFloor(WallGrid grid, IHeightMap heightMap)
@@ -12,10 +16,10 @@ namespace AKSaigyouji.MeshGeneration
             return BuildFlatMesh(invertedGrid, heightMap);
         }
 
-        public MeshData BuildWalls(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap)
+        public MeshData BuildWalls(WallGrid grid, IHeightMap floorHeightMap, IHeightMap ceilingHeightMap, CaveWallModule caveWall)
         {
             var outlines = BuildOutlines(grid);
-            var wallBuilder = new WallBuilder(outlines, floorHeightMap, ceilingHeightMap);
+            var wallBuilder = new WallBuilder(outlines, floorHeightMap, ceilingHeightMap, caveWall);
             return wallBuilder.Build();
         }
 

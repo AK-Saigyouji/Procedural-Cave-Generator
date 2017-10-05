@@ -1,11 +1,5 @@
-﻿/* The task of building the walls is sufficiently complicated that it warranted a separate class. The basic
- idea is simple: taking a 2D outline of the walls, build a quad on each edge of the outline. The difficult
- part is the task of assigning texture coordinates.
-
- The task of determining the outlines for a grid is delegated to a separate class.
-*/
-
-using AKSaigyouji.HeightMaps;
+﻿using AKSaigyouji.HeightMaps;
+using AKSaigyouji.Modules.CaveWalls;
 using UnityEngine;
 using System;
 using System.Linq;
@@ -16,17 +10,20 @@ namespace AKSaigyouji.MeshGeneration
     sealed class WallBuilder
     {
         const float UV_SCALE = 10f;
-        const int VERTS_PER_CORNER = 2;
+        readonly int VERTS_PER_CORNER;
 
         readonly List<Vector3[]> outlines;
         readonly IHeightMap floorHeightMap;
         readonly IHeightMap ceilingHeightMap;
+        readonly CaveWallModule wallModule;
 
-        public WallBuilder(List<Vector3[]> outlines, IHeightMap floor, IHeightMap ceiling)
+        public WallBuilder(List<Vector3[]> outlines, IHeightMap floor, IHeightMap ceiling, CaveWallModule walls)
         {
             this.outlines = outlines;
             floorHeightMap = floor;
             ceilingHeightMap = ceiling;
+            wallModule = walls;
+            VERTS_PER_CORNER = wallModule.NumVerticesPerCorner;
         }
 
         public MeshData Build()
@@ -44,20 +41,38 @@ namespace AKSaigyouji.MeshGeneration
             var vertices = new Vector3[numWallVertices];
 
             int vertexIndex = 0;
-            foreach (Vector3 vertex in outlines.SelectMany(outline => outline))
+            foreach (Vector3[] outline in outlines)
             {
-                float x = vertex.x;
-                float z = vertex.z;
-                float floorHeight = floorHeightMap.GetHeight(x, z);
-                float ceilingHeight = ceilingHeightMap.GetHeight(x, z);
-                for (int i = 0; i < VERTS_PER_CORNER; i++)
+                for (int i = 0; i < outline.Length; i++)
                 {
-                    float interpolation = (float)i / (VERTS_PER_CORNER - 1);
-                    float interpolatedHeight = interpolation * floorHeight + (1 - interpolation) * ceilingHeight;
-                    vertices[vertexIndex++] = new Vector3(x, interpolatedHeight, z);
+                    Vector3 vertex = outline[i];
+                    Vector3 normal = ComputeNormal(outline, i);
+                    float x = vertex.x;
+                    float z = vertex.z;
+                    float floorHeight = floorHeightMap.GetHeight(x, z);
+                    float ceilingHeight = ceilingHeightMap.GetHeight(x, z);
+                    float interpolationScale = 1 / (VERTS_PER_CORNER - 1f);
+                    for (int j = 0; j < VERTS_PER_CORNER; j++)
+                    {
+                        float interpolation = j * interpolationScale;
+                        vertex.y = interpolation * floorHeight + (1 - interpolation) * ceilingHeight;
+                        vertices[vertexIndex++] = wallModule.GetAdjustedCorner(vertex, normal, floorHeight, ceilingHeight);
+                    }
                 }
             }
             return vertices;
+        }
+
+        // a corner does not have a well-defined tangent and consequently lacks a normal. But we can define
+        // a reasonable normal as being the average of the normals of the two adjacent panels.
+        Vector3 ComputeNormal(Vector3[] outline, int index)
+        {
+            // modulo operator would be simpler but slower.
+            int finalIndex = outline.Length - 1;
+            Vector3 left = index > 0 ? outline[index - 1] : outline[finalIndex];
+            Vector3 mid = outline[index];
+            Vector3 right = index < finalIndex ? outline[index + 1] : outline[0];
+            return (Vector3.Cross(mid - left, Vector3.up) + Vector3.Cross(right - mid, Vector3.up)) / 2;
         }
 
         /* Computing the UV array for the walls proves to be a tricky matter. Unlike other meshes such as the floor,

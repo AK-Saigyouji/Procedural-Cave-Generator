@@ -4,14 +4,14 @@ using UnityEngine;
 
 namespace AKSaigyouji.Modules.Outlines
 {
-    public sealed class RandomPrefabPicker
+    public sealed class WeightedPrefabPicker: IPrefabPicker
     {
         readonly System.Random random;
         readonly GameObject[] prefabs;
         readonly int[] risingWeights;
         readonly int maxWeight;
 
-        public RandomPrefabPicker(WeightedPrefab[] prefabs, int seed)
+        public WeightedPrefabPicker(WeightedPrefab[] prefabs, int seed)
         {
             if (prefabs == null)
                 throw new ArgumentNullException("prefabs");
@@ -34,7 +34,7 @@ namespace AKSaigyouji.Modules.Outlines
             random = new System.Random(seed);
         }
 
-        public GameObject PickRandomPrefab()
+        public GameObject PickPrefab()
         {
             int randomWeight = random.Next(0, maxWeight + 1);
             for (int i = 0; i < risingWeights.Length; i++)

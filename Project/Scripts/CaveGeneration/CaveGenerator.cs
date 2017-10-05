@@ -9,8 +9,10 @@ using AKSaigyouji.HeightMaps;
 using AKSaigyouji.Maps;
 using AKSaigyouji.MeshGeneration;
 using AKSaigyouji.Modules.Outlines;
+using AKSaigyouji.Modules.CaveWalls;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace AKSaigyouji.CaveGeneration
@@ -88,7 +90,7 @@ namespace AKSaigyouji.CaveGeneration
                 Map map = config.MapGenerator.Generate();
                 Material floorMaterial = config.Material;
                 IHeightMap heightMap = config.HeightMapModule.GetHeightMap();
-                IOutlinePrefabber outlinePrefabber = config.OutlineModule.GetOutlinePrefabber();
+                OutlineModule outlinePrefabber = config.OutlineModule;
 
                 GameObject cave = new GameObject("Cave");
 
@@ -102,7 +104,7 @@ namespace AKSaigyouji.CaveGeneration
                     CaveMeshes caveMeshes    = BuildCaveMesh(grid, heightMap);
                     Sector sector            = BuildSector(caveMeshes, index, cave, floorMaterial);
                     GameObject rockAnchor    = BuildRockAnchor(sector.GameObject, index);
-                    PlaceRocks(outlines, outlinePrefabber, rockAnchor.transform);
+                    BuildOutline(outlines, outlinePrefabber, rockAnchor.transform);
                 });
                
                 return cave;
@@ -126,20 +128,17 @@ namespace AKSaigyouji.CaveGeneration
                 return new CaveMeshes(floorMesh);
             }
 
+            void BuildOutline(IEnumerable<Vector3[]> outlineVertices, OutlineModule prefabber, Transform parent)
+            {
+                prefabber.ProcessOutlines(outlineVertices.Select(vertices => new Outline(vertices)), parent);
+            }
+
             Sector BuildSector(CaveMeshes caveMeshes, Coord index, GameObject parent, Material mat)
             {
                 Sector sector = new Sector(caveMeshes, index.x, index.y);
                 sector.Floor.Material = mat;
                 sector.GameObject.transform.parent = parent.transform;
                 return sector;
-            }
-
-            void PlaceRocks(List<Vector3[]> outlines, IOutlinePrefabber outlinePrefabber, Transform parent)
-            {
-                foreach (var outline in outlines)
-                {
-                    outlinePrefabber.ProcessOutline(outline, parent);
-                }
             }
         }
 
@@ -169,16 +168,18 @@ namespace AKSaigyouji.CaveGeneration
                 Map map            = config.MapGenerator.Generate();
                 IHeightMap floor   = config.FloorHeightMapModule.GetHeightMap();
                 IHeightMap ceiling = config.CeilingHeightMapModule.GetHeightMap();
+                CaveWallModule caveWalls = CaveWallModule.Default;
 
                 Map[,] mapChunks         = MapSplitter.Subdivide(map);
-                CaveMeshes[,] caveChunks = GenerateCaveChunks(mapChunks, config.CaveType, config.Scale, floor, ceiling);
+                CaveMeshes[,] caveChunks = GenerateCaveChunks(mapChunks, config.CaveType, config.Scale, floor, ceiling, caveWalls);
                 ThreeTierCave cave       = new ThreeTierCave(caveChunks);
                 AssignMaterials(cave, config.FloorMaterial, config.WallMaterial, config.CeilingMaterial);
 
                 return cave.GameObject;
             }
 
-            CaveMeshes[,] GenerateCaveChunks(Map[,] mapChunks, ThreeTierCaveType type, int scale, IHeightMap floor, IHeightMap ceiling)
+            CaveMeshes[,] GenerateCaveChunks(Map[,] mapChunks, ThreeTierCaveType type, int scale, 
+                IHeightMap floor, IHeightMap ceiling, CaveWallModule walls)
             {
                 int xNumChunks = mapChunks.GetLength(0);
                 int yNumChunks = mapChunks.GetLength(1);
@@ -192,7 +193,7 @@ namespace AKSaigyouji.CaveGeneration
                         WallGrid grid        = MapConverter.MapToWallGrid(mapChunks[x, y], scale, index);
                         MeshData floorMesh   = meshGenerator.BuildFloor(grid, floor);
                         MeshData ceilingMesh = SelectCeilingBuilder(type)(grid, ceiling);
-                        MeshData wallMesh    = meshGenerator.BuildWalls(grid, floor, ceiling);
+                        MeshData wallMesh    = meshGenerator.BuildWalls(grid, floor, ceiling, walls);
 
                         caveChunks[index.x, index.y] = new CaveMeshes(floorMesh, wallMesh, ceilingMesh);
                     });

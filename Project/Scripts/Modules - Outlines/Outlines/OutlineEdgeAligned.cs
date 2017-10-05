@@ -29,7 +29,7 @@ namespace AKSaigyouji.Modules.Outlines
 
         public override int Seed { get { return seed; } set { seed = value; } }
 
-        public override IOutlinePrefabber GetOutlinePrefabber()
+        public override void ProcessOutlines(IEnumerable<Outline> outlines, Transform parent)
         {
             if (rockPrefabs == null)
                 throw new InvalidOperationException("Rock prefabs not set.");
@@ -37,8 +37,12 @@ namespace AKSaigyouji.Modules.Outlines
             if (rockPrefabs.Length == 0)
                 throw new InvalidOperationException("Must assign at least one rock prefab.");
 
-            var prefabPicker = new RandomPrefabPicker(rockPrefabs, seed);
-            return new EdgePrefabber(prefabPicker);
+            var prefabPicker = new WeightedPrefabPicker(rockPrefabs, seed);
+            var prefabber = new EdgePrefabber(prefabPicker);
+            foreach (Outline outline in outlines)
+            {
+                prefabber.ProcessOutline(outline, parent);
+            }
         }
 
         void OnValidate()

@@ -109,18 +109,6 @@ namespace AKSaigyouji.CaveGeneration
             scale = DEFAULT_SCALE;
         }
 
-        /// <summary>
-        /// Copies the configuration. Materials receive a shallow copy, everything else receives a deep copy.
-        /// </summary>
-        public ThreeTierCaveConfiguration Clone()
-        {
-            var newConfig = (ThreeTierCaveConfiguration)MemberwiseClone();
-            newConfig.mapGenerator = ScriptableObject.Instantiate(mapGenerator);
-            newConfig.floorHeightMap = ScriptableObject.Instantiate(floorHeightMap);
-            newConfig.ceilingHeightMap = ScriptableObject.Instantiate(ceilingHeightMap);
-            return newConfig;
-        }
-
         public void SetSeed(int seed)
         {
             mapGenerator.Seed = seed;
@@ -131,6 +119,7 @@ namespace AKSaigyouji.CaveGeneration
         /// <summary>
         /// All the properties are in valid state, i.e. ready to be used to generate a cave.
         /// </summary>
+        /// <returns>Readable string indicating all invalid state.</returns>
         public string Validate()
         {
             var sb = new StringBuilder();
