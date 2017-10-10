@@ -18,7 +18,7 @@ namespace AKSaigyouji.CaveGeneration
     /// <summary>
     /// Interface to the cave generator through the inspector.
     /// </summary>
-    public sealed class CaveGeneratorUI : MonoBehaviour
+    public class CaveGeneratorUI : MonoBehaviour
     {
         public enum CaveGeneratorType
         {
@@ -48,8 +48,6 @@ namespace AKSaigyouji.CaveGeneration
 
         public bool Randomize { get { return randomize; } set { randomize = value; } }
 
-        // Note: changing the name of any serialized variable may break the custom inspector (CaveGeneratorUIEditor). 
-
         [SerializeField] CaveGeneratorType type;
 
         [SerializeField] ThreeTierCaveConfiguration threeTierCaveConfig;
@@ -58,16 +56,24 @@ namespace AKSaigyouji.CaveGeneration
         [Tooltip("Select to automatically randomize the seeds of components that use seed values.")]
         [SerializeField] bool randomize = true;
 
+        CaveGeneratorFactory caveGeneratorFactory;
+
+        void Awake()
+        {
+            caveGeneratorFactory = new CaveGeneratorFactory();
+        }
+
         /// <summary>
         /// Generate a three tier cave: a distinct mesh will be produced for the floor, walls and ceiling. 
         /// Furthermore, large caves will be broken up into sectors which each have their own floor/wall/ceiling.
         /// </summary>
         public GameObject GenerateThreeTier()
         {
-            var caveGenerator = new CaveGenerator();
-            GameObject cave = caveGenerator.GenerateThreeTierCave(threeTierCaveConfig, randomize);
-            cave.transform.parent = transform;
-            return cave;
+            if (randomize)
+                threeTierCaveConfig.SetSeed(GetRandomSeed());
+
+            CaveGenerator caveGenerator = caveGeneratorFactory.BuildThreeTierCaveGen(threeTierCaveConfig);
+            return GenerateCave(caveGenerator);
         }
 
         /// <summary>
@@ -75,10 +81,23 @@ namespace AKSaigyouji.CaveGeneration
         /// </summary>
         public GameObject GenerateRockCave()
         {
-            var caveGenerator = new CaveGenerator();
-            GameObject cave = caveGenerator.GenerateRockCave(rockCaveConfig, randomize);
+            if (randomize)
+                rockCaveConfig.SetSeed(GetRandomSeed());
+            
+            CaveGenerator caveGenerator = caveGeneratorFactory.BuildOutlineCaveGen(rockCaveConfig);
+            return GenerateCave(caveGenerator);
+        }
+
+        GameObject GenerateCave(CaveGenerator generator)
+        {
+            GameObject cave = generator.Generate();
             cave.transform.parent = transform;
             return cave;
+        }
+
+        int GetRandomSeed()
+        {
+            return Guid.NewGuid().GetHashCode();
         }
 
         // This creates an option in the UI's context menu to automatically find the sample modules in the project
