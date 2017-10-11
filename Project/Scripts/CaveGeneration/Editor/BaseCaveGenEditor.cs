@@ -60,8 +60,6 @@ namespace AKSaigyouji.CaveGeneration
             EditorHelpers.DrawFoldoutEditor(MAP_GEN_MODULE_LABEL, GetMapGenModule(), ref drawMapGenEditor, ref mapGenEditor);
         }
 
-        protected abstract void Generate(CaveGeneratorUI caveGenerator);
-
         /// <summary>
         /// Draw the configurable properties for this type of cave generator here.
         /// </summary>
@@ -86,7 +84,8 @@ namespace AKSaigyouji.CaveGeneration
                 if (GUILayout.Button(GENERATE_CAVE_BUTTON_LABEL))
                 {
                     DestroyCave();
-                    Generate();
+                    CaveGeneratorUI caveGenerator = (CaveGeneratorUI)target;
+                    caveGenerator.Generate();
                 }
                 if (GUILayout.Button(SAVE_MAP_LABEL))
                 {
@@ -151,12 +150,6 @@ namespace AKSaigyouji.CaveGeneration
 
             GameObject cave = childCaves[0].gameObject;
             CreatePrefab(cave);
-        }
-
-        void Generate()
-        {
-            CaveGeneratorUI caveGenerator = (CaveGeneratorUI)target;
-            Generate(caveGenerator);
         }
 
         void CreatePrefab(GameObject cave)

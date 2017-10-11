@@ -12,9 +12,19 @@ namespace AKSaigyouji.CaveGeneration
     {
         readonly MeshGenerator meshGenerator = new MeshGenerator();
 
+        public ThreeTierCaveConfiguration GetConfigForThreeTierCaveGen()
+        {
+            return new ThreeTierCaveConfiguration();
+        }
+
         public CaveGenerator BuildThreeTierCaveGen(ThreeTierCaveConfiguration config)
         {
             return new ThreeTieredCaveGenerator(meshGenerator, config);
+        }
+
+        public RockCaveConfiguration GetConfigForOutlineCaveGen()
+        {
+            return new RockCaveConfiguration();
         }
 
         public CaveGenerator BuildOutlineCaveGen(RockCaveConfiguration config)

@@ -63,11 +63,20 @@ namespace AKSaigyouji.CaveGeneration
             caveGeneratorFactory = new CaveGeneratorFactory();
         }
 
-        /// <summary>
-        /// Generate a three tier cave: a distinct mesh will be produced for the floor, walls and ceiling. 
-        /// Furthermore, large caves will be broken up into sectors which each have their own floor/wall/ceiling.
-        /// </summary>
-        public GameObject GenerateThreeTier()
+        public GameObject Generate()
+        {
+            switch (type)
+            {
+                case CaveGeneratorType.ThreeTiered:
+                    return GenerateThreeTier();
+                case CaveGeneratorType.RockOutline:
+                    return GenerateRockCave();
+                default:
+                    throw new System.ComponentModel.InvalidEnumArgumentException();
+            }
+        }
+
+        GameObject GenerateThreeTier()
         {
             if (randomize)
                 threeTierCaveConfig.SetSeed(GetRandomSeed());
@@ -76,10 +85,7 @@ namespace AKSaigyouji.CaveGeneration
             return GenerateCave(caveGenerator);
         }
 
-        /// <summary>
-        /// Generate a cave whose outline consists of distinct rocks.
-        /// </summary>
-        public GameObject GenerateRockCave()
+        GameObject GenerateRockCave()
         {
             if (randomize)
                 rockCaveConfig.SetSeed(GetRandomSeed());

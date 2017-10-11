@@ -47,11 +47,6 @@ namespace AKSaigyouji.CaveGeneration
             EditorGUILayout.PropertyField(property, label, true);
         }
 
-        protected override void Generate(CaveGeneratorUI caveGenerator)
-        {
-            caveGenerator.GenerateThreeTier();
-        }
-
         protected override void DrawModuleEditors()
         {
             base.DrawModuleEditors();

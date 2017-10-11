@@ -91,7 +91,6 @@ namespace AKSaigyouji.CaveGeneration
         }
 
         #endregion
-        // Note: changing the names of these modules will break the CaveGeneratorUI custom editor
         [SerializeField] MapGenModule mapGenerator;
         [SerializeField] HeightMapModule floorHeightMap;
         [SerializeField] HeightMapModule ceilingHeightMap;

@@ -6,7 +6,7 @@ using UnityEditor;
 namespace AKSaigyouji.CaveGeneration
 {
     [CustomEditor(typeof(CaveGeneratorUI))]
-    public class CaveGeneratorUIEditor : Editor
+    public sealed class CaveGeneratorUIEditor : Editor
     {
         Editor outlineEditor;
         Editor threeTierEditor;

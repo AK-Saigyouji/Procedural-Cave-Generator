@@ -90,7 +90,7 @@ namespace AKSaigyouji.EditorScripting
         }
 
         /// <summary>
-        /// If the path is unavailable, with add the smallest integer to the file name in the path such that
+        /// If the path is unavailable, will add the smallest integer to the file name in the path such that
         /// the resulting path does not already exist. This ensures that AssetDatabase.CreateAsset will not 
         /// overwrite an existing file. Example: Assets/Materials/floor.mat -> Assets/Materials/floor 1.asset ->
         /// Assets/Material/floor 2.asset etc.
