@@ -39,7 +39,7 @@ namespace AKSaigyouji.CaveGeneration
             Map map = configuration.MapGenerator.Generate();
             IHeightMap floor = configuration.FloorHeightMapModule.GetHeightMap();
             IHeightMap ceiling = configuration.CeilingHeightMapModule.GetHeightMap();
-            CaveWallModule caveWalls = CaveWallModule.Default;
+            CaveWallModule caveWalls = configuration.WallModule;
 
             Map[,] mapChunks = MapSplitter.Subdivide(map);
             CaveMeshes[,] caveChunks = GenerateCaveChunks(mapChunks, configuration.CaveType, configuration.Scale, floor, ceiling, caveWalls);

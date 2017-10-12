@@ -9,6 +9,7 @@ using System.Text;
 using UnityEngine;
 using UnityEditor;
 using AKSaigyouji.Modules;
+using AKSaigyouji.Modules.CaveWalls;
 using AKSaigyouji.Modules.Outlines;
 using AKSaigyouji.Modules.HeightMaps;
 using AKSaigyouji.Modules.MapGeneration;
@@ -122,6 +123,7 @@ namespace AKSaigyouji.CaveGeneration
             var floor        = getModule("SampleFloorHeightMap")   as HeightMapModule;
             var ceiling      = getModule("SampleCeilingHeightMap") as HeightMapModule;
             var outline      = getModule("SampleOutline")          as OutlineModule;
+            var wall         = getModule("SampleWallModule")       as CaveWallModule;
 
             Undo.RecordObject(this, "Insert sample modules");
             var missingModules = new StringBuilder();
@@ -161,6 +163,15 @@ namespace AKSaigyouji.CaveGeneration
             else
             {
                 missingModules.AppendLine("Sample outline module not found.");
+            }
+
+            if (wall != null)
+            {
+                threeTierCaveConfig.WallModule = wall;
+            }
+            else
+            {
+                missingModules.AppendLine("Sample wall module not found.");
             }
 
             if (missingModules.Length > 0)

@@ -10,13 +10,13 @@ using UnityEngine.Assertions;
 
 namespace AKSaigyouji.Modules.CaveWalls
 {
+    [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + "Flat (Default)")]
     sealed class CaveWallFlat : CaveWallModule
     {
-        public CaveWallFlat() : base(MIN_VERTICES_PER_CORNER) { }
+        public CaveWallFlat() : base(0) { }
 
         public override Vector3 GetAdjustedCorner(Vector3 original, Vector3 normal, float floorHeight, float ceilingHeight)
         {
-            // To get a flat cave wall, we simply return the unaltered corner: 
             return original;
         }
     }

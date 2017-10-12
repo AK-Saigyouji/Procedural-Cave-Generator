@@ -1,5 +1,6 @@
 ﻿using AKSaigyouji.Modules.MapGeneration;
 using AKSaigyouji.Modules.HeightMaps;
+using AKSaigyouji.Modules.CaveWalls;
 using System;
 using System.Text;
 using UnityEngine;
@@ -8,7 +9,8 @@ namespace AKSaigyouji.CaveGeneration
 {
     [Serializable]
     /// <summary>
-    /// Complete set of information necessary to build a cave. 
+    /// Complete set of information necessary to build a cave consisting of three tiers or layers: a floor, a ceiling,
+    /// and walls inbetween.
     /// </summary>
     public sealed class ThreeTierCaveConfiguration
     {
@@ -41,6 +43,16 @@ namespace AKSaigyouji.CaveGeneration
             {
                 if (value == null) throw new ArgumentNullException("value");
                 ceilingHeightMap = value;
+            }
+        }
+
+        public CaveWallModule WallModule
+        {
+            get { return wallModule; }
+            set
+            {
+                if (value == null) throw new ArgumentNullException("value");
+                wallModule = value;
             }
         }
 
@@ -94,6 +106,7 @@ namespace AKSaigyouji.CaveGeneration
         [SerializeField] MapGenModule mapGenerator;
         [SerializeField] HeightMapModule floorHeightMap;
         [SerializeField] HeightMapModule ceilingHeightMap;
+        [SerializeField] CaveWallModule wallModule;
         [SerializeField] Material floorMaterial;
         [SerializeField] Material wallMaterial;
         [SerializeField] Material ceilingMaterial;
@@ -110,6 +123,7 @@ namespace AKSaigyouji.CaveGeneration
 
         public void SetSeed(int seed)
         {
+            wallModule.Seed = seed;
             mapGenerator.Seed = seed;
             floorHeightMap.Seed = seed;
             ceilingHeightMap.Seed = seed;
@@ -131,6 +145,9 @@ namespace AKSaigyouji.CaveGeneration
 
             if (ceilingHeightMap == null)
                 sb.AppendLine("No height map assigned for the ceiling.");
+
+            if (wallModule == null)
+                sb.AppendLine("No wall module assigned.");
 
             return sb.ToString();
         }

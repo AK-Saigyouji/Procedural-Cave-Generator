@@ -1,6 +1,6 @@
 ﻿/* This module was created to allow for the customization of cave wall geometry. When using large cave walls, the flat
- * walls would become very noticeable aesthetically displeasing. By increasing the number of vertices on the walls (spread 
- * roughly uniformly between the original vertices) and displacing the vertices (at a minimum, pushing them in or out)
+ * walls would become very noticeably aesthetically displeasing. By increasing the number of vertices on the walls (spread 
+ * roughly uniformly between the original vertices) and displacing the vertices (e.g. pushing them in or out)
  * we can get far more interesting and natural looking cave walls. */
 
 using System;
@@ -18,33 +18,54 @@ namespace AKSaigyouji.Modules.CaveWalls
     /// </summary>
     public abstract class CaveWallModule : Module
     {
+        protected const string fileName = "Wall Module";
+        protected const string rootMenupath = MODULE_ASSET_PATH + "Wall Modules/";
+
         /// <summary>
         /// Returns the simplest cave wall module, which produces flat walls with the minimum amount of geometry. 
         /// </summary>
         public static CaveWallModule Default { get { return CreateInstance<CaveWallFlat>(); } }
 
-        public int NumVerticesPerCorner { get { return numVerticesPerCorner; } }
-        readonly int numVerticesPerCorner;
+        /// <summary>
+        /// Determines whether or not the top (ceiling) vertex of each corner should be adjusted. False by default.
+        /// Strongly recommended to leave false if working with the isometric cave generator. Use carefully, as may
+        /// easily cause visible gaps between the walls and ceiling.
+        /// </summary>
+        public virtual bool AdjustCeilingCorners { get { return false; } }
 
-        protected const int MIN_VERTICES_PER_CORNER = 2;
+        /// <summary>
+        /// Determines whether or not the bottom (floor) vertex of each corner should be adjusted. False by default.
+        /// Use carefully, as my easily cause visible gaps between the walls and floor.
+        /// </summary>
+        public virtual bool AdjustFloorCorners { get { return false; } }
 
-        /// <param name="numVerticesPerCorner">How many vertices will be stacked up on each corner in the wall outline. 
-        /// Must be at least 2. Avoid using any more than necessary, as this will result in more vertices and triangles
-        /// in the resulting wall mesh. A larger number will increase the number of vertices and triangles in the resulting
-        /// mesh proportionally. Setting to too large of a number exceed Unity's vertex limit for meshes, resulting
+        /// <summary>
+        /// If adjusting ceiling or floor corners, setting this to true will ensure that the new ceiling/floor vertices
+        /// will have their height fixed to be the same as the actual ceiling/floor. False by default. Does nothing if
+        /// AdjustCeilingCorners and AdjustFloorCorners are both set to false.
+        /// </summary>
+        public virtual bool AutoCorrectCornerHeights { get { return false; } }
+
+        public int ExtraVerticesPerCorner { get { return extraVerticesPerCorner; } }
+        readonly int extraVerticesPerCorner;
+
+        /// <param name="extraVerticesPerCorner">How many vertices will be added to each corner in the wall. 
+        /// Must be non-negative. Avoid using any more than necessary, as this will result in more vertices and triangles
+        /// in the resulting wall mesh. Setting to too large of a number exceed Unity's vertex limit for meshes, resulting
         /// in an exception.</param>
-        public CaveWallModule(int numVerticesPerCorner)
+        public CaveWallModule(int extraVerticesPerCorner)
         {
-            if (numVerticesPerCorner < MIN_VERTICES_PER_CORNER)
-                throw new ArgumentOutOfRangeException("numVerticesPerCorner", "Must have at least two vertices per corner.");
+            if (extraVerticesPerCorner < 0)
+                throw new ArgumentOutOfRangeException("extraVerticesPerCorner");
 
-            this.numVerticesPerCorner = numVerticesPerCorner;
+            this.extraVerticesPerCorner = extraVerticesPerCorner;
         }
 
         /// <summary>
         /// Adjust the position of this vertex in the original flat wall. Normally only the x and z values of 
         /// original should be altered: altering y runs the risk of degenerate triangles in the wall mesh, so modify
-        /// with caution. 
+        /// with caution. Will only be called on the added vertices: the original floor and ceiling vertices cannot
+        /// be modified. 
         /// </summary>
         /// <param name="original">The original wall vertex.</param>
         /// <param name="normal">The direction orthogonal to the wall's corner, pointing outwards away from the wall.</param>

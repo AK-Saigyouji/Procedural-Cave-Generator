@@ -10,7 +10,8 @@ namespace AKSaigyouji.MeshGeneration
     sealed class WallBuilder
     {
         const float UV_SCALE = 10f;
-        readonly int VERTS_PER_CORNER;
+        readonly int extraVertsPerCorner;
+        readonly int totalVertsPerCorner;
 
         readonly List<Vector3[]> outlines;
         readonly IHeightMap floorHeightMap;
@@ -23,7 +24,8 @@ namespace AKSaigyouji.MeshGeneration
             floorHeightMap = floor;
             ceilingHeightMap = ceiling;
             wallModule = walls;
-            VERTS_PER_CORNER = wallModule.NumVerticesPerCorner;
+            extraVertsPerCorner = wallModule.ExtraVerticesPerCorner;
+            totalVertsPerCorner = extraVertsPerCorner + 2;
         }
 
         public MeshData Build()
@@ -37,7 +39,7 @@ namespace AKSaigyouji.MeshGeneration
 
         Vector3[] GetVertices()
         {
-            int numWallVertices = VERTS_PER_CORNER * outlines.Sum(outline => outline.Length);
+            int numWallVertices = totalVertsPerCorner * outlines.Sum(outline => outline.Length);
             var vertices = new Vector3[numWallVertices];
 
             int vertexIndex = 0;
@@ -51,13 +53,37 @@ namespace AKSaigyouji.MeshGeneration
                     float z = vertex.z;
                     float floorHeight = floorHeightMap.GetHeight(x, z);
                     float ceilingHeight = ceilingHeightMap.GetHeight(x, z);
-                    float interpolationScale = 1 / (VERTS_PER_CORNER - 1f);
-                    for (int j = 0; j < VERTS_PER_CORNER; j++)
+                    float interpolationScale = 1 / (totalVertsPerCorner - 1f);
+
+                    Vector3 ceilingVertex = new Vector3(x, ceilingHeight, z);
+                    if (wallModule.AdjustCeilingCorners)
                     {
-                        float interpolation = j * interpolationScale;
+                        ceilingVertex = wallModule.GetAdjustedCorner(ceilingVertex, normal, floorHeight, ceilingHeight);
+                        if (wallModule.AutoCorrectCornerHeights)
+                        {
+                            ceilingVertex.y = ceilingHeightMap.GetHeight(ceilingVertex.x, ceilingVertex.z);
+                        }
+                    }
+                    vertices[vertexIndex++] = ceilingVertex;
+
+                    for (int j = 0; j < extraVertsPerCorner; j++)
+                    {
+                        float interpolation = (j + 1) * interpolationScale;
+                        vertex.y = Mathf.Lerp(ceilingHeight, floorHeight, interpolation);
                         vertex.y = interpolation * floorHeight + (1 - interpolation) * ceilingHeight;
                         vertices[vertexIndex++] = wallModule.GetAdjustedCorner(vertex, normal, floorHeight, ceilingHeight);
                     }
+
+                    Vector3 floorVertex = new Vector3(x, floorHeight, z);
+                    if (wallModule.AdjustFloorCorners)
+                    {
+                        floorVertex = wallModule.GetAdjustedCorner(floorVertex, normal, floorHeight, ceilingHeight);
+                        if (wallModule.AutoCorrectCornerHeights)
+                        {
+                            floorVertex.y = floorHeightMap.GetHeight(floorVertex.x, floorVertex.z);
+                        }
+                    }
+                    vertices[vertexIndex++] = floorVertex;
                 }
             }
             return vertices;
@@ -100,7 +126,7 @@ namespace AKSaigyouji.MeshGeneration
                 for (int i = 0; i < outline.Length; i++)
                 {
                     u += ComputeEdgeLength(outline, i) * increment;
-                    for (int j = 0; j < VERTS_PER_CORNER; j++, vertexIndex++)
+                    for (int j = 0; j < totalVertsPerCorner; j++, vertexIndex++)
                     {
                         uv[vertexIndex] = new Vector2(u, vertices[vertexIndex].y / UV_SCALE);
                     }
@@ -119,7 +145,7 @@ namespace AKSaigyouji.MeshGeneration
 
         int[] GetTriangles()
         {
-            int numTriangles = 6 * (VERTS_PER_CORNER - 1) * outlines.Sum(outline => outline.Length - 1);
+            int numTriangles = 6 * (totalVertsPerCorner - 1) * outlines.Sum(outline => outline.Length - 1);
             var triangles = new int[numTriangles];
 
             int triangleIndex = 0;
@@ -128,13 +154,13 @@ namespace AKSaigyouji.MeshGeneration
             {
                 for (int i = 0; i < outline.Length - 1; i++)
                 {
-                    for (int j = 0; j < VERTS_PER_CORNER - 1; j++, triangleIndex += 6, vertexIndex++)
+                    for (int j = 0; j < totalVertsPerCorner - 1; j++, triangleIndex += 6, vertexIndex++)
                     {
                         AddQuadAtIndex(triangles, triangleIndex, vertexIndex);
                     }
                     vertexIndex++;
                 }
-                vertexIndex += VERTS_PER_CORNER;
+                vertexIndex += totalVertsPerCorner;
             }
             return triangles;
         }
@@ -143,10 +169,10 @@ namespace AKSaigyouji.MeshGeneration
         {
             triangles[triangleIndex++] = vertexIndex;
             triangles[triangleIndex++] = vertexIndex + 1;
-            triangles[triangleIndex++] = vertexIndex + 1 + VERTS_PER_CORNER;
+            triangles[triangleIndex++] = vertexIndex + 1 + totalVertsPerCorner;
 
-            triangles[triangleIndex++] = vertexIndex + 1 + VERTS_PER_CORNER;
-            triangles[triangleIndex++] = vertexIndex + VERTS_PER_CORNER;
+            triangles[triangleIndex++] = vertexIndex + 1 + totalVertsPerCorner;
+            triangles[triangleIndex++] = vertexIndex + totalVertsPerCorner;
             triangles[triangleIndex++] = vertexIndex;
         }
 
