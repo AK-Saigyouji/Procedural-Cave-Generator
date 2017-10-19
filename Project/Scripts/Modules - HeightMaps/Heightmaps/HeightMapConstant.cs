@@ -15,7 +15,7 @@ namespace AKSaigyouji.Modules.HeightMaps
 
         public override IHeightMap GetHeightMap()
         {
-            return HeightMapFactory.Build(height);
+            return HeightMapFactory.BuildConstant(height);
         }
     } 
 }

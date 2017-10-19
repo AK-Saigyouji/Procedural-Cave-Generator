@@ -65,6 +65,18 @@ namespace AKSaigyouji.CaveGeneration
         /// </summary>
         protected abstract void DrawConfiguration();
 
+        protected static string GetPath(string configName, string propertyName)
+        {
+            return string.Format("{0}.{1}", configName, propertyName);
+        }
+
+        protected void DrawModuleEditor(string path, string label, ref bool toggled, ref Editor editor)
+        {
+            EditorHelpers.DrawLine();
+            var module = serializedObject.FindProperty(path).objectReferenceValue;
+            EditorHelpers.DrawFoldoutEditor(label, module, ref toggled, ref editor);
+        }
+
         void DrawCaveGenType()
         {
             SerializedProperty typeProperty = serializedObject.FindProperty(CAVE_GEN_TYPE_NAME);

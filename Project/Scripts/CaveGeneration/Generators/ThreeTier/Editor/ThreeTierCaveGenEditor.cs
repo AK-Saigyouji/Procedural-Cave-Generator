@@ -15,9 +15,11 @@ namespace AKSaigyouji.CaveGeneration
         const string MAP_GENERATOR_NAME = "mapGenerator";
         const string FLOOR_HEIGHTMAP_NAME = "floorHeightMap";
         const string CEILING_HEIGHTMAP_NAME = "ceilingHeightMap";
+        const string WALL_MODULE_NAME = "wallModule";
 
         const string FLOOR_HEIGHTMAP_LABEL = "Floor Heightmap Module";
         const string CEILING_HEIGHTMAP_LABEL = "Ceiling Heightmap Module";
+        const string WALL_MODULE_LABEL = "Wall Module";
 
         const string CONFIG_NAME = "threeTierCaveConfig";
 
@@ -25,25 +27,24 @@ namespace AKSaigyouji.CaveGeneration
         const string WALL_FOLDER = "WallMeshes";
         const string CEILING_FOLDER = "CeilingMeshes";
 
-        const string MAP_GEN_PATH = CONFIG_NAME + "." + MAP_GENERATOR_NAME;
-        const string FLOOR_HEIGHTMAP_PATH = CONFIG_NAME + "." + FLOOR_HEIGHTMAP_NAME;
-        const string CEILING_HEIGHTMAP_PATH = CONFIG_NAME + "." + CEILING_HEIGHTMAP_NAME;
+        Editor floorEditor;
+        Editor ceilingEditor;
+        Editor wallEditor;
 
-        Editor floorHeightMapEditor;
-        Editor ceilingHeightMapEditor;
-
-        bool drawFloorHeightMapEditor;
-        bool drawCeilingHeightMapEditor;
+        bool drawFloorEditor;
+        bool drawCeilingEditor;
+        bool drawWallEditor;
 
         protected override MapGenModule GetMapGenModule()
         {
-            return (MapGenModule)serializedObject.FindProperty(MAP_GEN_PATH).objectReferenceValue;
+            return (MapGenModule)serializedObject.FindProperty(GetPath(MAP_GENERATOR_NAME))
+                                                 .objectReferenceValue;
         }
 
         protected override void DrawConfiguration()
         {
             SerializedProperty property = serializedObject.FindProperty(CONFIG_NAME);
-            GUIContent label = new GUIContent("Configuration");
+            var label = new GUIContent("Configuration");
             EditorGUILayout.PropertyField(property, label, true);
         }
 
@@ -51,13 +52,13 @@ namespace AKSaigyouji.CaveGeneration
         {
             base.DrawModuleEditors();
 
-            EditorHelpers.DrawLine();
-            var floorHeightMap = serializedObject.FindProperty(FLOOR_HEIGHTMAP_PATH).objectReferenceValue;
-            EditorHelpers.DrawFoldoutEditor(FLOOR_HEIGHTMAP_LABEL, floorHeightMap, ref drawFloorHeightMapEditor, ref floorHeightMapEditor);
+            string floorPath = GetPath(FLOOR_HEIGHTMAP_NAME);
+            string ceilingPath = GetPath(CEILING_HEIGHTMAP_NAME);
+            string wallPath = GetPath(WALL_MODULE_NAME);
 
-            EditorHelpers.DrawLine();
-            var ceilingModule = serializedObject.FindProperty(CEILING_HEIGHTMAP_PATH).objectReferenceValue;
-            EditorHelpers.DrawFoldoutEditor(CEILING_HEIGHTMAP_LABEL, ceilingModule, ref drawCeilingHeightMapEditor, ref ceilingHeightMapEditor);
+            DrawModuleEditor(floorPath, FLOOR_HEIGHTMAP_LABEL, ref drawFloorEditor, ref floorEditor);
+            DrawModuleEditor(ceilingPath, CEILING_HEIGHTMAP_LABEL, ref drawCeilingEditor, ref ceilingEditor);
+            DrawModuleEditor(wallPath, WALL_MODULE_LABEL, ref drawWallEditor, ref wallEditor);
 
             EditorHelpers.DrawLine();
         }
@@ -85,6 +86,11 @@ namespace AKSaigyouji.CaveGeneration
                     }
                 }
             }
+        }
+
+        static string GetPath(string propertyName)
+        {
+            return GetPath(CONFIG_NAME, propertyName);
         }
     }
 }

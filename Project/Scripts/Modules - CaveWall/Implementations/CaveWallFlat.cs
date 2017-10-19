@@ -13,11 +13,11 @@ namespace AKSaigyouji.Modules.CaveWalls
     [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + "Flat (Default)")]
     sealed class CaveWallFlat : CaveWallModule
     {
-        public CaveWallFlat() : base(0) { }
+        public override int ExtraVerticesPerCorner { get { return 0; } }
 
-        public override Vector3 GetAdjustedCorner(Vector3 original, Vector3 normal, float floorHeight, float ceilingHeight)
+        public override Vector3 GetAdjustedCorner(VertexContext context)
         {
-            return original;
+            return context.Vertex;
         }
     }
 }

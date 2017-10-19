@@ -23,10 +23,6 @@ namespace AKSaigyouji.CaveGeneration
 
         const string FLOOR_FOLDER = "FloorMeshes";
 
-        const string MAP_GENERATOR_PATH = CONFIG_NAME + "." + MAP_GENERATOR_NAME;
-        const string FLOOR_HEIGHTMAP_PATH = CONFIG_NAME + "." + FLOOR_HEIGHTMAP_NAME;
-        const string OUTLINE_MODULE_PATH = CONFIG_NAME + "." + OUTLINE_NAME;
-
         Editor outlineEditor;
         Editor floorHeightMapEditor;
 
@@ -35,13 +31,13 @@ namespace AKSaigyouji.CaveGeneration
 
         protected override MapGenModule GetMapGenModule()
         {
-            return (MapGenModule)serializedObject.FindProperty(MAP_GENERATOR_PATH).objectReferenceValue;
+            return (MapGenModule)serializedObject.FindProperty(GetPath(MAP_GENERATOR_NAME)).objectReferenceValue;
         }
 
         protected override void DrawConfiguration()
         {
             SerializedProperty property = serializedObject.FindProperty(CONFIG_NAME);
-            GUIContent label = new GUIContent("Configuration");
+            var label = new GUIContent("Configuration");
             EditorGUILayout.PropertyField(property, label, true);
         }
 
@@ -49,13 +45,11 @@ namespace AKSaigyouji.CaveGeneration
         {
             base.DrawModuleEditors();
 
-            EditorHelpers.DrawLine();
-            var floorHeightMap = serializedObject.FindProperty(FLOOR_HEIGHTMAP_PATH).objectReferenceValue;
-            EditorHelpers.DrawFoldoutEditor(FLOOR_HEIGHTMAP_LABEL, floorHeightMap, ref drawFloorHeightMapEditor, ref floorHeightMapEditor);
+            string floorPath = GetPath(FLOOR_HEIGHTMAP_NAME);
+            string outlinePath = GetPath(OUTLINE_NAME);
 
-            EditorHelpers.DrawLine();
-            var outlineModule = serializedObject.FindProperty(OUTLINE_MODULE_PATH).objectReferenceValue;
-            EditorHelpers.DrawFoldoutEditor(OUTLINE_MODULE_LABEL, outlineModule, ref drawOutlineEditor, ref outlineEditor);
+            DrawModuleEditor(floorPath, FLOOR_HEIGHTMAP_LABEL, ref drawFloorHeightMapEditor, ref floorHeightMapEditor);
+            DrawModuleEditor(outlinePath, OUTLINE_MODULE_LABEL, ref drawOutlineEditor, ref outlineEditor);
 
             EditorHelpers.DrawLine();
         }
@@ -73,6 +67,11 @@ namespace AKSaigyouji.CaveGeneration
                     }
                 }
             }
+        }
+
+        static string GetPath(string propertyName)
+        {
+            return GetPath(CONFIG_NAME, propertyName);
         }
     }
 }

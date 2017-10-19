@@ -41,6 +41,7 @@ namespace AKSaigyouji.MeshGeneration
         {
             int numWallVertices = totalVertsPerCorner * outlines.Sum(outline => outline.Length);
             var vertices = new Vector3[numWallVertices];
+            var context = new VertexContext(floorHeightMap, ceilingHeightMap, totalVertsPerCorner);
 
             int vertexIndex = 0;
             foreach (Vector3[] outline in outlines)
@@ -55,35 +56,15 @@ namespace AKSaigyouji.MeshGeneration
                     float ceilingHeight = ceilingHeightMap.GetHeight(x, z);
                     float interpolationScale = 1 / (totalVertsPerCorner - 1f);
 
-                    Vector3 ceilingVertex = new Vector3(x, ceilingHeight, z);
-                    if (wallModule.AdjustCeilingCorners)
+                    for (int j = 0; j < totalVertsPerCorner; j++)
                     {
-                        ceilingVertex = wallModule.GetAdjustedCorner(ceilingVertex, normal, floorHeight, ceilingHeight);
-                        if (wallModule.AutoCorrectCornerHeights)
-                        {
-                            ceilingVertex.y = ceilingHeightMap.GetHeight(ceilingVertex.x, ceilingVertex.z);
-                        }
-                    }
-                    vertices[vertexIndex++] = ceilingVertex;
-
-                    for (int j = 0; j < extraVertsPerCorner; j++)
-                    {
-                        float interpolation = (j + 1) * interpolationScale;
+                        float interpolation = j * interpolationScale;
                         vertex.y = Mathf.Lerp(ceilingHeight, floorHeight, interpolation);
                         vertex.y = interpolation * floorHeight + (1 - interpolation) * ceilingHeight;
-                        vertices[vertexIndex++] = wallModule.GetAdjustedCorner(vertex, normal, floorHeight, ceilingHeight);
+                        context.Update(vertex, normal, j);
+                        vertices[vertexIndex++] = wallModule.GetAdjustedCorner(context);
                     }
 
-                    Vector3 floorVertex = new Vector3(x, floorHeight, z);
-                    if (wallModule.AdjustFloorCorners)
-                    {
-                        floorVertex = wallModule.GetAdjustedCorner(floorVertex, normal, floorHeight, ceilingHeight);
-                        if (wallModule.AutoCorrectCornerHeights)
-                        {
-                            floorVertex.y = floorHeightMap.GetHeight(floorVertex.x, floorVertex.z);
-                        }
-                    }
-                    vertices[vertexIndex++] = floorVertex;
                 }
             }
             return vertices;
@@ -100,19 +81,6 @@ namespace AKSaigyouji.MeshGeneration
             Vector3 right = index < finalIndex ? outline[index + 1] : outline[0];
             return (Vector3.Cross(mid - left, Vector3.up) + Vector3.Cross(right - mid, Vector3.up)) / 2;
         }
-
-        /* Computing the UV array for the walls proves to be a tricky matter. Unlike other meshes such as the floor,
-         * it is not possible to consistently determine the UV for walls based purely on global coordinates. On top of that,
-         * there are two extra challenges. Walls are built on top of outline edges. But the length of 
-         * outline edges is inconsistent. So it's necessary to incorporate length in computing the u coordinate. 
-         * The second challenge is ensuring that the start and end of an outline line up.
-         * 
-         * The following implementation addresses both issues. To address the first, we base the u coordinate
-         * for each point in the outline on the length of the outline so far. To address the second, we scale
-         * this value by a quantity (uvIncrement) which ensures that the final u coordinate will be an integer,
-         * so that the texture will tile seamlessly. uvIncrement also serves the purpose of reducing the growth of u
-         * by a constant factor so that it doesn't tile too rapidly.
-         */
 
         Vector2[] GetUVs(Vector3[] vertices)
         {

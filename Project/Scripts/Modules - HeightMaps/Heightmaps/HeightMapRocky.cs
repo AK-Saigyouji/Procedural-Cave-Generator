@@ -24,7 +24,7 @@ namespace AKSaigyouji.Modules.HeightMaps
 
         public override IHeightMap GetHeightMap()
         {
-            return HeightMapFactory.Build(properties, seed);
+            return HeightMapFactory.BuildLayeredPerlin(properties, seed);
         }
 
         void Reset()
