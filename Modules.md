@@ -12,7 +12,8 @@ Outlines are used by the outline cave generator to generate a boundary out of pr
 1. [Map modules](#map-modules)
 2. [Heightmap modules](#heightmap-modules)
 3. [Outline modules](#outline-modules)
-4. [Compound modules](#compound-modules)
+4. [CaveWall modules]($cave-wall-modules)
+5. [Compound modules](#compound-modules)
 
 ### <a name="map-modules"></a>1. Map modules
 
@@ -517,7 +518,82 @@ static bool IsParallelToTarget(Vector3 direction)
 
 The only non-trivial part is ensuring the prefab is rotated correctly.
 
-### <a name="compound-modules"></a>4. Compound Modules
+### <a name="cave-wall-modules"></a>4. CaveWall Modules
+
+This module is designed to allow customization of the geometry of the walls in the cave. By default, the walls are entirely flat. This generally works fine for short walls, but is unappealing for higher walls. 
+
+Normally, walls are created as follows: a 2D outline is created in the xz plane. Along each edge, a quad is placed: these quads form the walls of the caves. Another way to think of this is that for each (x, 0, z) point in the outline, a point (x, y, z) is added above it, and used to form quads that run along the outline. What this module allows is for additional points (x, y_i, z) to be added such that 0 < y_i < y. Then, these additional points can be moved around to give the walls a more interesting shape. A simple approach to create more interesting walls is to add a little bit noise to each extra vertex: (x, y_i, z) + (e_x, e_y, e_z), where e is a small, random vector. 
+
+To define your own cave wall module, here's a template:
+
+```cs
+using System;
+using UnityEngine;
+
+namespace AKSaigyouji.Modules.CaveWalls
+{
+    [CreateAssetMenu(fileName = fileName, menuName = rootMenupath + menuName]
+    sealed class MyCaveWallModule : CaveWallModule
+    {
+        const string menuName = "My Cave Wall Module";
+        
+        public override int ExtraVerticesPerCorner { get { return 0; } }
+
+        public override Vector3 GetAdjustedCorner(VertexContext context)
+        {
+            return context.Vertex;
+        }
+    }
+}
+```
+
+First, determine how many vertices should be added to the wall at each corner. This will increase the size of the mesh, so use the smallest number of vertices that will achieve the effect you want. 
+
+Next, implement GetAdjustedCorner. This will receive every vertex in the new wall one by one, along with some extra information, packaged together into a VertexContext object. The value you return will be used to replace the original vertex. 
+
+VertexContext has the following properties:
+* Vector3 Vertex;
+* Vector3 Normal;
+* bool IsFloor;
+* bool IsCeiling;
+* int InterpolationIndex;
+
+And the following methods:
+* float GetFloorHeightAt(float x, float z);
+* float GetCeilingHeightAt(float x, float z);
+
+For most purposes, you only need to use Vertex, Normal, IsFloor and IsCeiling. 
+
+Vertex is the original vertex from the wall.
+
+Normal is a unit vector that points out of the wall: when adjusting the position of the vertex, it's a good idea to adjust in the direction of normal: vertex + coefficient * normal. 
+
+IsFloor and IsCeiling indicate whether the current vertex is on the floor or ceiling respectively. Messing with these vectors runs the risk of creating a visible gap between the floor/wall or wall/ceiling, so you may wish to skip the floor and ceiling by returning the unaltered vertex.
+
+InterpolationIndex indicates how many vertices down the wall that particular vertex is. e.g. if there are four vertices per corner, then the ceiling vertex is 0, the next one down is 1, then 2, and the floor is 3. This isn't needed for most purposes, but can be useful in some cases.
+
+GetFloorHeightAt and GetCeilingHeightAt give the height of the floor and ceiling at a particular point (x, z). You probably won't need to use them unless you move the floor/ceiling vertices. If you move the ceiling vertex, then updating the height to match the ceiling height will ensure the wall lines up with the ceiling.
+
+To give an example of an implementation, here's the overriden method in the CaveWallPerlin module:
+
+```cs
+public override Vector3 GetAdjustedCorner(VertexContext context)
+{
+    if (context.IsCeiling || context.IsFloor)
+    {
+        return context.Vertex;
+    }
+    else
+    {
+        float adjustment = ComputeAdjustment(context.Vertex);
+        return context.Vertex + adjustment * context.Normal;
+    }
+}
+```
+
+The implementation of ComputeAdjustment is omitted as the details are not the point of the example. This example leaves the floor and ceiling vertices unaltered, and otherwise returns the original vertex perturbed along its normal by a magnitude of 'adjustment', which is a small, random float. 
+
+### <a name="compound-modules"></a>5. Compound Modules
 
 Compound modules are modules that make use of other modules (usually as exposed fields). This simple but powerful idea opens up a lot of design patterns, such as decoration. An example of decoration is the MapGenEntranceCarver module. It takes an arbitrary MapGenModule as an exposed field, carves out entrances at the points specified in the inspector, and then connects them to the internals of the module. This pattern can be used to add additional customizable properties to a variety of modules without having to modify each one. 
 
