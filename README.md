@@ -2,7 +2,7 @@
 
 ## 0. Introduction
 
-This is a highly customizable and scalable system for generating randomized 3D cave terrain in Unity. 
+This is a highly customizable system for generating randomized 3D cave terrain in Unity. The project is complete, and in maintenance mode - I will continue to fix issues, but am unlikely to implement new features, and will take care to preserve the interface so that later versions can be swapped without breaking a project. 
 
 ![3D cave with height map](http://i.imgur.com/sBi6T2U.jpg)
 
@@ -54,7 +54,7 @@ An alternative to saving the module is to save a copy of the map, and then use a
 
 ### 3.3 Design and build algorithmically at run-time
 
-As certain recent games show us, procedurally generating content at run-time is difficult to do right. For this approach, configure modules to build the kind of caves you want, write code to build the appropriate Configuration object, then pass it to the CaveGeneratorFactory class, which will return an appropriate cave generator capable of building the corresponding cave. Alternatively, wire everything up in the editor, and then simply have a script call the generate method on the CaveGeneratorUI script. The challenging part is writing code to build content for the resulting cave at run-time without knowing its structure ahead of time. 
+As certain recent games show us, procedurally generating content at run-time is difficult to do right. For this approach, configure modules to build the kind of caves you want, write code to build the appropriate Configuration object, then pass it to the CaveGeneratorFactory class, which will return an appropriate cave generator capable of building the corresponding cave. Alternatively, wire everything up in the editor, and then simply have a script call the generate method on the CaveGeneratorUI script. Note that these classes are in the "AKSaigyouji.CaveGeneration" namespace, so you'll need to add the appropriate using statement. The challenging part is writing code to build content for the resulting cave at run-time without knowing its structure ahead of time. 
 
 A more feasible approach (compared to complete randomization) is a hybrid approach along the lines of, for example, Diablo 2. Generate a number of fixed chunks, place markers throughout the sections to indicate where content can be randomly generated, then assemble these pieces randomly to produce randomized yet highly structured content. The entrance carver map generator module was designed to help stitch together caves: you can slot a module into an entrance carver module, and it will carve an opening along the boundary, connecting it to the rest of the map.
 
@@ -62,7 +62,7 @@ I am building a framework for this approach, which can be found in my Atlas-Char
 
 ## 4. Visual editor
 
-The visual editor is an experimental feature (specifically, a custom editor window) to visually create a map generator module out of other map generator modules. It's a neat tool, but suffers from the problem of lacking any obvious use cases, making it more of a toy than a tool at the moment. As such I am not actively working on it at the moment. Nonetheless I've left it in the live build in case anyone wants to play around with it. 
+The visual editor is an experimental feature (specifically, a custom editor window: access by going to Window -> AKS - Map Gen Editor) to visually create a map generator module out of other map generator modules. It's a neat tool, but suffers from the problem of lacking any obvious use cases, making it more of a toy than a tool at the moment. Nonetheless I've left it in the live build in case anyone wants to play around with it. Most of the commands can be accessed through the context window by right clicking on the grid.
 
 ## 5. Creating maps in paint programs
 
@@ -82,4 +82,4 @@ The module system is designed to allow you not just to customize the modules I h
 
 ## 7. Acknowledgements
 
-Several core algorithms in this project (namely cellular automata, marching squares and the noise functions used for height maps) were learned from Sebastian Lagues videos on Procedural Cave Generation and Procedural Landmass Generation. Those videos and others can be found on his youtube channel [here](https://www.youtube.com/user/Cercopithecan). He has put together some remarkable visualizations of these and other algorithms in his tutorials. 
+Several core algorithms in this project (namely cellular automata, marching squares and the noise functions used for height maps) were learned from Sebastian Lagues videos on Procedural Cave Generation and Procedural Landmass Generation. Those videos and others can be found on his youtube channel [here](https://www.youtube.com/user/Cercopithecan). He has put together some remarkable visualizations of these and other algorithms in his tutorials, making them a good starting point if you're interesting in getting into procedural generation.
